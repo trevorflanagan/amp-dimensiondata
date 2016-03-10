@@ -18,7 +18,6 @@
  */
 package org.jclouds.dimensiondata.cloudcontroller.compute.functions;
 
-import static com.google.common.base.Preconditions.checkNotNull;
 import static com.google.common.collect.Iterables.get;
 
 import javax.inject.Singleton;
@@ -36,17 +35,16 @@ import com.google.common.base.Splitter;
 public class OsImageToImage implements Function<OsImage, Image> {
 
 
-    private static final String CENTOS = "CENTOS";
-    private static final String REDHAT = "REDHAT";
-    private static final String UBUNTU = "UBUNTU";
+    private static final String CENTOS = "CentOS";
+    private static final String REDHAT = "RedHat";
+    private static final String UBUNTU = "Ubuntu";
+    private static final String SUSE = "SuSE";
+    private static final String WINDOWS = "Win";
 
     @Override
     public Image apply(OsImage from) {
-
-        checkNotNull(from, "image");
-
-        OsFamily osFamily = osFamily().apply(from.operatingSystem().id());
-        String osVersion = parseVersion(from.operatingSystem().id());
+        OsFamily osFamily = osFamily().apply(from.description());
+        String osVersion = parseVersion(from.description());
 
         OperatingSystem os = OperatingSystem.builder()
                 .description(from.description())
@@ -71,19 +69,28 @@ public class OsImageToImage implements Function<OsImage, Image> {
         return new Function<String, OsFamily>() {
 
             @Override
-            public OsFamily apply(final String id) {
-                if (id != null) {
-                    if (id.startsWith(CENTOS)) return OsFamily.CENTOS;
-                    else if (id.contains(UBUNTU)) return OsFamily.UBUNTU;
-                    else if (id.contains(REDHAT)) return OsFamily.RHEL;
+            public OsFamily apply(final String description) {
+                if (description != null) {
+                    if (description.startsWith(CENTOS)) return OsFamily.CENTOS;
+                    else if (description.contains(UBUNTU)) return OsFamily.UBUNTU;
+                    else if (description.contains(REDHAT)) return OsFamily.RHEL;
+                    else if (description.contains(SUSE)) return OsFamily.RHEL;
+                    else if (description.contains(WINDOWS)) return OsFamily.WINDOWS;
                 }
                 return OsFamily.UNRECOGNIZED;
             }
         };
     }
 
-    private String parseVersion(String id) {
-        String idWithoutArch = get(Splitter.on("/").split(id), 0);
-        return idWithoutArch.substring(idWithoutArch.length() - 1);
+    private String parseVersion(String documentation) {
+        String version;
+        if (documentation.toLowerCase().startsWith(OsFamily.CENTOS.value().toLowerCase())) {
+            version = get(Splitter.on(" ").split(documentation), 2);
+        } else if (documentation.toLowerCase().startsWith(OsFamily.SUSE.value().toLowerCase())) {
+            version = get(Splitter.on(" ").split(documentation), 4);
+        } else {
+            version = get(Splitter.on(" ").split(documentation), 1);
+        }
+        return version;
     }
 }
