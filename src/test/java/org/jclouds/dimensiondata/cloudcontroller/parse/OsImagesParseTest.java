@@ -28,7 +28,6 @@ import org.jclouds.dimensiondata.cloudcontroller.domain.Disk;
 import org.jclouds.dimensiondata.cloudcontroller.domain.OperatingSystem;
 import org.jclouds.dimensiondata.cloudcontroller.domain.OsImage;
 import org.jclouds.dimensiondata.cloudcontroller.domain.OsImages;
-import org.jclouds.dimensiondata.cloudcontroller.domain.Servers;
 import org.jclouds.dimensiondata.cloudcontroller.internal.BaseDimensionDataCloudControllerParseTest;
 import org.testng.annotations.Test;
 

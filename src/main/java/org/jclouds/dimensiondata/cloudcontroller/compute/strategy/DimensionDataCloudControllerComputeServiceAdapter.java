@@ -16,17 +16,20 @@
  */
 package org.jclouds.dimensiondata.cloudcontroller.compute.strategy;
 
+import static com.google.common.base.Preconditions.checkNotNull;
 import static org.jclouds.compute.reference.ComputeServiceConstants.COMPUTE_LOGGER;
 
 import javax.annotation.Resource;
+import javax.inject.Inject;
 import javax.inject.Named;
 import javax.inject.Singleton;
 
 import org.jclouds.compute.ComputeServiceAdapter;
 import org.jclouds.compute.domain.Hardware;
 import org.jclouds.compute.domain.Template;
+import org.jclouds.dimensiondata.cloudcontroller.DimensionDataCloudControllerApi;
 import org.jclouds.dimensiondata.cloudcontroller.domain.Datacenter;
-import org.jclouds.dimensiondata.cloudcontroller.domain.OperatingSystem;
+import org.jclouds.dimensiondata.cloudcontroller.domain.OsImage;
 import org.jclouds.dimensiondata.cloudcontroller.domain.Server;
 import org.jclouds.logging.Logger;
 
@@ -37,11 +40,19 @@ import org.jclouds.logging.Logger;
  */
 @Singleton
 public class DimensionDataCloudControllerComputeServiceAdapter implements
-        ComputeServiceAdapter<Server, Hardware, OperatingSystem, Datacenter> {
+        ComputeServiceAdapter<Server, OsImage, OsImage, Datacenter> {
 
     @Resource
     @Named(COMPUTE_LOGGER)
     protected Logger logger = Logger.NULL;
+
+
+    private final DimensionDataCloudControllerApi api;
+
+    @Inject
+    public DimensionDataCloudControllerComputeServiceAdapter(DimensionDataCloudControllerApi api) {
+        this.api = checkNotNull(api, "api");
+    }
 
     @Override
     public NodeAndInitialCredentials<Server> createNodeWithGroupEncodedIntoName(String group, String name, Template template) {
@@ -49,23 +60,23 @@ public class DimensionDataCloudControllerComputeServiceAdapter implements
     }
 
     @Override
-    public Iterable<Hardware> listHardwareProfiles() {
+    public Iterable<OsImage> listHardwareProfiles() {
         return null;
     }
 
     @Override
-    public Iterable<OperatingSystem> listImages() {
-        return null;
+    public Iterable<OsImage> listImages() {
+        return api.getServerImageApi().listOsImages().concat().toList();
     }
 
     @Override
-    public OperatingSystem getImage(String id) {
+    public OsImage getImage(String id) {
         return null;
     }
 
     @Override
     public Iterable<Datacenter> listLocations() {
-        return null;
+        return api.getInfrastructureApi().listDatacenters().concat().toList();
     }
 
     @Override
@@ -95,7 +106,7 @@ public class DimensionDataCloudControllerComputeServiceAdapter implements
 
     @Override
     public Iterable<Server> listNodes() {
-        return null;
+        return api.getServerApi().listServers().concat().toList();
     }
 
     @Override

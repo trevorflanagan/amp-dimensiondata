@@ -18,18 +18,43 @@
  */
 package org.jclouds.dimensiondata.cloudcontroller.compute.functions;
 
+import static com.google.common.base.Preconditions.checkNotNull;
+import static com.google.common.base.Strings.nullToEmpty;
+
+import javax.inject.Inject;
 import javax.inject.Singleton;
 
 import org.jclouds.dimensiondata.cloudcontroller.domain.Datacenter;
 import org.jclouds.domain.Location;
+import org.jclouds.domain.LocationBuilder;
+import org.jclouds.domain.LocationScope;
+import org.jclouds.location.suppliers.all.JustProvider;
 
 import com.google.common.base.Function;
+import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.ImmutableSet;
+import com.google.common.collect.Iterables;
 
 @Singleton
 public class DatacenterToLocation implements Function<Datacenter, Location> {
 
-    @Override
-    public Location apply(Datacenter input) {
-        return null;
+    private final JustProvider provider;
+
+    // allow us to lazy discover the provider of a resource
+    @Inject
+    public DatacenterToLocation(JustProvider provider) {
+        this.provider = checkNotNull(provider, "provider");
     }
+
+    @Override
+    public Location apply(Datacenter datacenter) {
+        return new LocationBuilder().id(datacenter.id())
+                .description(datacenter.displayName())
+                .scope(LocationScope.ZONE)
+                .iso3166Codes(ImmutableSet.of(datacenter.country()))
+                .parent(Iterables.getOnlyElement(provider.get()))
+                .metadata(ImmutableMap.<String, Object>of("name", datacenter.displayName()))
+                .build();
+    }
+
 }
