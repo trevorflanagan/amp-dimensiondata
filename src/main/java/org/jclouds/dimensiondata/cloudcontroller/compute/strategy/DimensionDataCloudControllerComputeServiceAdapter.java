@@ -16,6 +16,10 @@
  */
 package org.jclouds.dimensiondata.cloudcontroller.compute.strategy;
 
+import static org.jclouds.compute.reference.ComputeServiceConstants.COMPUTE_LOGGER;
+
+import javax.annotation.Resource;
+import javax.inject.Named;
 import javax.inject.Singleton;
 
 import org.jclouds.compute.ComputeServiceAdapter;
@@ -24,6 +28,7 @@ import org.jclouds.compute.domain.Template;
 import org.jclouds.dimensiondata.cloudcontroller.domain.Datacenter;
 import org.jclouds.dimensiondata.cloudcontroller.domain.OperatingSystem;
 import org.jclouds.dimensiondata.cloudcontroller.domain.Server;
+import org.jclouds.logging.Logger;
 
 /**
  * defines the connection between the {@link org.jclouds.dimensiondata.cloudcontroller.DimensionDataCloudControllerApi} implementation and
@@ -33,6 +38,10 @@ import org.jclouds.dimensiondata.cloudcontroller.domain.Server;
 @Singleton
 public class DimensionDataCloudControllerComputeServiceAdapter implements
         ComputeServiceAdapter<Server, Hardware, OperatingSystem, Datacenter> {
+
+    @Resource
+    @Named(COMPUTE_LOGGER)
+    protected Logger logger = Logger.NULL;
 
     @Override
     public NodeAndInitialCredentials<Server> createNodeWithGroupEncodedIntoName(String group, String name, Template template) {

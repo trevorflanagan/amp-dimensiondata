@@ -18,6 +18,7 @@
  */
 package org.jclouds.dimensiondata.cloudcontroller.domain;
 
+import org.jclouds.javax.annotation.Nullable;
 import org.jclouds.json.SerializedNames;
 
 import com.google.auto.value.AutoValue;
@@ -31,7 +32,7 @@ public abstract class Disk {
     public abstract Integer scsiId();
     public abstract Integer sizeGb();
     public abstract String speed();
-    public abstract String state();
+    @Nullable public abstract String state();
 
     @SerializedNames({ "id", "scsiId", "sizeGb", "speed", "state" })
     public static Disk create(String id, Integer scsiId, Integer sizeGb, String speed, String state) {

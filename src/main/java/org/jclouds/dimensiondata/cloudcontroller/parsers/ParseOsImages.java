@@ -26,8 +26,8 @@ import javax.inject.Singleton;
 import org.jclouds.collect.IterableWithMarker;
 import org.jclouds.collect.internal.ArgsToPagedIterable;
 import org.jclouds.dimensiondata.cloudcontroller.DimensionDataCloudControllerApi;
-import org.jclouds.dimensiondata.cloudcontroller.domain.Server;
-import org.jclouds.dimensiondata.cloudcontroller.domain.Servers;
+import org.jclouds.dimensiondata.cloudcontroller.domain.OsImage;
+import org.jclouds.dimensiondata.cloudcontroller.domain.OsImages;
 import org.jclouds.dimensiondata.cloudcontroller.options.PaginationOptions;
 import org.jclouds.http.functions.ParseJson;
 import org.jclouds.json.Json;
@@ -36,14 +36,14 @@ import com.google.common.base.Function;
 import com.google.inject.TypeLiteral;
 
 @Singleton
-public class ParseServers extends ParseJson<Servers> {
+public class ParseOsImages extends ParseJson<OsImages> {
 
     @Inject
-    public ParseServers(Json json) {
-        super(json, TypeLiteral.get(Servers.class));
+    public ParseOsImages(Json json) {
+        super(json, TypeLiteral.get(OsImages.class));
     }
 
-    public static class ToPagedIterable extends ArgsToPagedIterable<Server, ToPagedIterable> {
+    public static class ToPagedIterable extends ArgsToPagedIterable<OsImage, ToPagedIterable> {
 
         private DimensionDataCloudControllerApi api;
 
@@ -53,12 +53,12 @@ public class ParseServers extends ParseJson<Servers> {
         }
 
         @Override
-        protected Function<Object, IterableWithMarker<Server>> markerToNextForArgs(List<Object> args) {
-            return new Function<Object, IterableWithMarker<Server>>() {
+        protected Function<Object, IterableWithMarker<OsImage>> markerToNextForArgs(List<Object> args) {
+            return new Function<Object, IterableWithMarker<OsImage>>() {
                 @Override
-                public IterableWithMarker<Server> apply(Object input) {
+                public IterableWithMarker<OsImage> apply(Object input) {
                     PaginationOptions paginationOptions = PaginationOptions.class.cast(input);
-                    return api.getServerApi().listServers(paginationOptions);
+                    return api.getServerImageApi().listOsImages(paginationOptions);
                 }
             };
         }
