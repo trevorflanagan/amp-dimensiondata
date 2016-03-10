@@ -37,8 +37,8 @@ public class OsImageToHardware implements Function<OsImage, Hardware> {
    public Hardware apply(final OsImage from) {
       HardwareBuilder builder = new HardwareBuilder().ids(from.id())
               .name(from.name())
-              .hypervisor("VMX")
-              .processors(ImmutableList.of(new Processor(from.cpu().coresPerSocket(), Double.parseDouble(from.cpu().speed()))))
+              .hypervisor("vmx")
+              .processors(ImmutableList.of(new Processor(from.cpu().coresPerSocket(), from.cpu().count())))
               .ram(from.memoryGb());
 
       if (from.disks() != null) {
@@ -50,7 +50,7 @@ public class OsImageToHardware implements Function<OsImage, Hardware> {
                                float volumeSize = disk.sizeGb();
                                return new VolumeImpl(
                                        disk.id(),
-                                       // TODO check other sypported types
+                                       // TODO check other supported types
                                        Volume.Type.LOCAL,
                                        volumeSize, null, true, false);
                             }

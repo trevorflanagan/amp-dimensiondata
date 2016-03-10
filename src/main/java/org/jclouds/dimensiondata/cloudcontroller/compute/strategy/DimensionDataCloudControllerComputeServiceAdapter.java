@@ -25,7 +25,6 @@ import javax.inject.Named;
 import javax.inject.Singleton;
 
 import org.jclouds.compute.ComputeServiceAdapter;
-import org.jclouds.compute.domain.Hardware;
 import org.jclouds.compute.domain.Template;
 import org.jclouds.dimensiondata.cloudcontroller.DimensionDataCloudControllerApi;
 import org.jclouds.dimensiondata.cloudcontroller.domain.Datacenter;
@@ -61,7 +60,7 @@ public class DimensionDataCloudControllerComputeServiceAdapter implements
 
     @Override
     public Iterable<OsImage> listHardwareProfiles() {
-        return null;
+        return api.getServerImageApi().listOsImages().concat().toList();
     }
 
     @Override

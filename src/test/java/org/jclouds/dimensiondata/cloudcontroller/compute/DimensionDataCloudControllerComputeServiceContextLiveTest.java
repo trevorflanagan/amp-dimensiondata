@@ -26,6 +26,7 @@ import javax.inject.Named;
 import org.jclouds.compute.RunNodesException;
 import org.jclouds.compute.domain.ComputeMetadata;
 import org.jclouds.compute.domain.ExecResponse;
+import org.jclouds.compute.domain.Hardware;
 import org.jclouds.compute.domain.Image;
 import org.jclouds.compute.domain.NodeMetadata;
 import org.jclouds.compute.domain.Template;
@@ -36,7 +37,6 @@ import org.jclouds.logging.Logger;
 import org.jclouds.ssh.SshClient;
 import org.testng.annotations.Test;
 
-
 @Test(groups = "live", testName = "DimensionDataCloudControllerComputeServiceContextLiveTest")
 public class DimensionDataCloudControllerComputeServiceContextLiveTest extends BaseComputeServiceContextLiveTest {
 
@@ -46,6 +46,13 @@ public class DimensionDataCloudControllerComputeServiceContextLiveTest extends B
 
    public DimensionDataCloudControllerComputeServiceContextLiveTest() {
       provider = "dimensiondata-cloudcontroller";
+   }
+
+   @Test
+   public void testListHardwareProfiles() {
+      for (Hardware hardware : view.getComputeService().listHardwareProfiles()) {
+         System.out.println(hardware);
+      }
    }
 
    @Test
