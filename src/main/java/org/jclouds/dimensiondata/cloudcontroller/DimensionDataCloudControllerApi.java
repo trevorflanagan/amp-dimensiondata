@@ -18,6 +18,7 @@ package org.jclouds.dimensiondata.cloudcontroller;
 
 import org.jclouds.dimensiondata.cloudcontroller.features.InfrastructureApi;
 import org.jclouds.dimensiondata.cloudcontroller.features.NetworkApi;
+import org.jclouds.dimensiondata.cloudcontroller.features.ServerApi;
 import org.jclouds.rest.annotations.Delegate;
 
 import java.io.Closeable;
@@ -29,4 +30,7 @@ public interface DimensionDataCloudControllerApi extends Closeable {
 
    @Delegate
    InfrastructureApi getInfrastructureApi();
+
+   @Delegate
+   ServerApi getServerApi();
 }

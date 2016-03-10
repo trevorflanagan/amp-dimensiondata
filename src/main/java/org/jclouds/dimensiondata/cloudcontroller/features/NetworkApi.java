@@ -24,10 +24,9 @@ import javax.ws.rs.core.MediaType;
 
 import org.jclouds.Fallbacks;
 import org.jclouds.collect.PagedIterable;
-import org.jclouds.dimensiondata.cloudcontroller.compute.functions.NetworkDomainsToPagedIterable;
 import org.jclouds.dimensiondata.cloudcontroller.domain.NetworkDomain;
 import org.jclouds.dimensiondata.cloudcontroller.domain.PaginatedCollection;
-import org.jclouds.dimensiondata.cloudcontroller.functions.ParseNetworkDomains;
+import org.jclouds.dimensiondata.cloudcontroller.parsers.ParseNetworkDomains;
 import org.jclouds.dimensiondata.cloudcontroller.options.PaginationOptions;
 import org.jclouds.rest.annotations.Fallback;
 import org.jclouds.rest.annotations.ResponseParser;
@@ -47,7 +46,7 @@ public interface NetworkApi {
     @Named("network:list")
     @GET
     @Path("/networkDomain")
-    @Transform(NetworkDomainsToPagedIterable.class)
+    @Transform(ParseNetworkDomains.ToPagedIterable.class)
     @ResponseParser(ParseNetworkDomains.class)
     @Fallback(Fallbacks.EmptyPagedIterableOnNotFoundOr404.class)
     PagedIterable<NetworkDomain> listNetworkDomains();

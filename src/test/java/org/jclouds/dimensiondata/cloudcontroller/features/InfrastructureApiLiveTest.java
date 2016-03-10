@@ -20,22 +20,31 @@ package org.jclouds.dimensiondata.cloudcontroller.features;
 
 import static org.testng.Assert.assertNotNull;
 
-import org.jclouds.dimensiondata.cloudcontroller.domain.Datacenter;
-import org.jclouds.dimensiondata.cloudcontroller.options.PaginationOptions;
-import org.testng.annotations.Test;
+import java.util.List;
 
-import com.google.common.collect.ImmutableList;
+import org.jclouds.dimensiondata.cloudcontroller.domain.Datacenter;
+import org.jclouds.dimensiondata.cloudcontroller.domain.OperatingSystem;
+import org.jclouds.dimensiondata.cloudcontroller.internal.BaseDimensionDataCloudControllerApiLiveTest;
+import org.testng.annotations.Test;
 
 @Test(groups = "live", testName = "InfrastructureApiLiveTest", singleThreaded = true)
 public class InfrastructureApiLiveTest extends BaseDimensionDataCloudControllerApiLiveTest {
 
     @Test
     public void testListDatacenters() {
-        final ImmutableList<Datacenter> datacenters = api().listDatacenters(PaginationOptions.Builder.pageSize(2)).toList();
+        List<Datacenter> datacenters = api().listDatacenters().concat().toList();
         assertNotNull(datacenters);
         for (Datacenter datacenter : datacenters) {
             assertNotNull(datacenter);
-            System.out.println(datacenter);
+        }
+    }
+
+    @Test
+    public void testListOperatingSystems() {
+        List<OperatingSystem> operatingSystems = api().listOperatingSystems("NA9").concat().toList();
+        assertNotNull(operatingSystems);
+        for (OperatingSystem operatingSystem : operatingSystems) {
+            assertNotNull(operatingSystem);
         }
     }
 

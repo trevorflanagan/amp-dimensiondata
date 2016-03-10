@@ -18,16 +18,20 @@
  */
 package org.jclouds.dimensiondata.cloudcontroller.domain;
 
-import java.beans.ConstructorProperties;
-import java.util.List;
+import org.jclouds.json.SerializedNames;
 
-/**
- * A collection of NetworkDomain
- */
-public class NetworkDomains extends PaginatedCollection<NetworkDomain> {
+import com.google.auto.value.AutoValue;
 
-    @ConstructorProperties({"networkDomain", "pageNumber", "pageCount", "totalCount", "pageSize"})
-    public NetworkDomains(List<NetworkDomain> content, Integer pageNumber, Integer pageCount, Integer totalCount, Integer pageSize) {
-        super(content, pageNumber, pageCount, totalCount, pageSize);
+@AutoValue
+public abstract class Property {
+
+    Property() {} // For AutoValue only!
+
+    public abstract String name();
+    public abstract String value();
+
+    @SerializedNames({ "name", "value" })
+    public static Property create(String name, String value) {
+        return new AutoValue_Property(name, value);
     }
 }

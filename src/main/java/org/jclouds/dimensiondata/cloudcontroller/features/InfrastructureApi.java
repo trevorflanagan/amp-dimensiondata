@@ -9,12 +9,11 @@ import javax.ws.rs.core.MediaType;
 
 import org.jclouds.Fallbacks;
 import org.jclouds.collect.PagedIterable;
-import org.jclouds.dimensiondata.cloudcontroller.compute.functions.OperatingSystemsToPagedIterable;
 import org.jclouds.dimensiondata.cloudcontroller.domain.Datacenter;
 import org.jclouds.dimensiondata.cloudcontroller.domain.OperatingSystem;
 import org.jclouds.dimensiondata.cloudcontroller.domain.PaginatedCollection;
-import org.jclouds.dimensiondata.cloudcontroller.functions.ParseDatacenters;
-import org.jclouds.dimensiondata.cloudcontroller.functions.ParseOperatingSystems;
+import org.jclouds.dimensiondata.cloudcontroller.parsers.ParseDatacenters;
+import org.jclouds.dimensiondata.cloudcontroller.parsers.ParseOperatingSystems;
 import org.jclouds.dimensiondata.cloudcontroller.options.PaginationOptions;
 import org.jclouds.http.filters.BasicAuthentication;
 import org.jclouds.rest.annotations.Fallback;
@@ -52,7 +51,7 @@ public interface InfrastructureApi {
     @Named("infrastructure:operatingSystem")
     @GET
     @Path("/operatingSystem")
-    @Transform(OperatingSystemsToPagedIterable.class)
+    @Transform(ParseOperatingSystems.ToPagedIterable.class)
     @ResponseParser(ParseOperatingSystems.class)
     @Fallback(Fallbacks.EmptyPagedIterableOnNotFoundOr404.class)
     PagedIterable<OperatingSystem> listOperatingSystems(@QueryParam("datacenterId") String datacenterId);

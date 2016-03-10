@@ -37,10 +37,15 @@ public abstract class Datacenter {
     public abstract String country();
     public abstract String vpnUrl();
     public abstract String ftpsHost();
+    public abstract Networking networking();
+    public abstract Hypervisor hypervisor();
+    public abstract Backup backup();
+    public abstract ConsoleAccess consoleAccess();
+    public abstract Monitoring monitoring();
 
-    @SerializedNames({ "id", "displayName", "type", "city", "state", "country", "vpnUrl", "ftpsHost" })
-    public static Datacenter create(String id, String displayName, String type, String city, String state, String country, String vpnUrl, String ftpsHost) {
-        return builder().id(id).displayName(displayName).type(type).city(city).state(state).country(country).vpnUrl(vpnUrl).ftpsHost(ftpsHost).build();
+    @SerializedNames({ "id", "displayName", "type", "city", "state", "country", "vpnUrl", "ftpsHost", "networking", "hypervisor", "backup", "consoleAccess", "monitoring" })
+    public static Datacenter create(String id, String displayName, String type, String city, String state, String country, String vpnUrl, String ftpsHost, Networking networking, Hypervisor hypervisor, Backup backup, ConsoleAccess consoleAccess, Monitoring monitoring) {
+        return builder().id(id).displayName(displayName).type(type).city(city).state(state).country(country).vpnUrl(vpnUrl).ftpsHost(ftpsHost).networking(networking).hypervisor(hypervisor).backup(backup).consoleAccess(consoleAccess).monitoring(monitoring).build();
     }
 
     public abstract Builder toBuilder();
@@ -55,6 +60,11 @@ public abstract class Datacenter {
         public abstract Builder country(String country);
         public abstract Builder vpnUrl(String vpnUrl);
         public abstract Builder ftpsHost(String ftpsHost);
+        public abstract Builder networking(Networking networking);
+        public abstract Builder hypervisor(Hypervisor hypervisor);
+        public abstract Builder backup(Backup backup);
+        public abstract Builder consoleAccess(ConsoleAccess consoleAccess);
+        public abstract Builder monitoring(Monitoring monitoring);
 
         public abstract Datacenter build();
     }

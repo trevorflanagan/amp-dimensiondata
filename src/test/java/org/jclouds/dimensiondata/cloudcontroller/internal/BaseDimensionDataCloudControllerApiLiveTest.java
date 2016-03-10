@@ -16,7 +16,7 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-package org.jclouds.dimensiondata.cloudcontroller.features;
+package org.jclouds.dimensiondata.cloudcontroller.internal;
 
 import java.util.Properties;
 

@@ -22,12 +22,12 @@ import java.beans.ConstructorProperties;
 import java.util.List;
 
 /**
- * A collection of NetworkDomain
+ * A collection of Server
  */
-public class NetworkDomains extends PaginatedCollection<NetworkDomain> {
+public class Servers extends PaginatedCollection<Server> {
 
-    @ConstructorProperties({"networkDomain", "pageNumber", "pageCount", "totalCount", "pageSize"})
-    public NetworkDomains(List<NetworkDomain> content, Integer pageNumber, Integer pageCount, Integer totalCount, Integer pageSize) {
+    @ConstructorProperties({"server", "pageNumber", "pageCount", "totalCount", "pageSize"})
+    public Servers(List<Server> content, Integer pageNumber, Integer pageCount, Integer totalCount, Integer pageSize) {
         super(content, pageNumber, pageCount, totalCount, pageSize);
     }
 }

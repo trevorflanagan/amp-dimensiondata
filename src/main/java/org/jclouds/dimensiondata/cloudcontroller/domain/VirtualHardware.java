@@ -18,16 +18,34 @@
  */
 package org.jclouds.dimensiondata.cloudcontroller.domain;
 
-import java.beans.ConstructorProperties;
-import java.util.List;
+import org.jclouds.json.SerializedNames;
 
-/**
- * A collection of NetworkDomain
- */
-public class NetworkDomains extends PaginatedCollection<NetworkDomain> {
+import com.google.auto.value.AutoValue;
 
-    @ConstructorProperties({"networkDomain", "pageNumber", "pageCount", "totalCount", "pageSize"})
-    public NetworkDomains(List<NetworkDomain> content, Integer pageNumber, Integer pageCount, Integer totalCount, Integer pageSize) {
-        super(content, pageNumber, pageCount, totalCount, pageSize);
+@AutoValue
+public abstract class VirtualHardware {
+
+    VirtualHardware() {}
+
+    public abstract String version();
+    public abstract Boolean upToDate();
+
+    @SerializedNames({ "version", "upToDate" })
+    public static VirtualHardware create(String version, Boolean upToDate) {
+        return builder().version(version).upToDate(upToDate).build();
+    }
+
+    public abstract Builder toBuilder();
+
+    @AutoValue.Builder
+    public abstract static class Builder {
+        public abstract Builder version(String version);
+        public abstract Builder upToDate(Boolean upToDate);
+
+        public abstract VirtualHardware build();
+    }
+
+    public static Builder builder() {
+        return new AutoValue_VirtualHardware.Builder();
     }
 }

@@ -16,7 +16,7 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-package org.jclouds.dimensiondata.cloudcontroller.functions;
+package org.jclouds.dimensiondata.cloudcontroller.parsers;
 
 import java.util.List;
 
@@ -26,8 +26,8 @@ import javax.inject.Singleton;
 import org.jclouds.collect.IterableWithMarker;
 import org.jclouds.collect.internal.ArgsToPagedIterable;
 import org.jclouds.dimensiondata.cloudcontroller.DimensionDataCloudControllerApi;
-import org.jclouds.dimensiondata.cloudcontroller.domain.Datacenter;
-import org.jclouds.dimensiondata.cloudcontroller.domain.NetworkDomains;
+import org.jclouds.dimensiondata.cloudcontroller.domain.OperatingSystem;
+import org.jclouds.dimensiondata.cloudcontroller.domain.OperatingSystems;
 import org.jclouds.dimensiondata.cloudcontroller.options.PaginationOptions;
 import org.jclouds.http.functions.ParseJson;
 import org.jclouds.json.Json;
@@ -36,31 +36,32 @@ import com.google.common.base.Function;
 import com.google.inject.TypeLiteral;
 
 @Singleton
-public class ParseNetworkDomains extends ParseJson<NetworkDomains> {
+public class ParseOperatingSystems extends ParseJson<OperatingSystems> {
 
     @Inject
-    public ParseNetworkDomains(Json json) {
-        super(json, TypeLiteral.get(NetworkDomains.class));
+    public ParseOperatingSystems(Json json) {
+        super(json, TypeLiteral.get(OperatingSystems.class));
     }
 
-    public static class ToPagedIterable extends ArgsToPagedIterable<Datacenter, ToPagedIterable> {
+    public static class ToPagedIterable extends ArgsToPagedIterable<OperatingSystem, ToPagedIterable> {
 
         private DimensionDataCloudControllerApi api;
 
-        @com.google.inject.Inject
+        @Inject
         public ToPagedIterable(DimensionDataCloudControllerApi api) {
             this.api = api;
         }
 
         @Override
-        protected Function<Object, IterableWithMarker<Datacenter>> markerToNextForArgs(List<Object> args) {
-            return new Function<Object, IterableWithMarker<Datacenter>>() {
+        protected Function<Object, IterableWithMarker<OperatingSystem>> markerToNextForArgs(List<Object> args) {
+            return new Function<Object, IterableWithMarker<OperatingSystem>>() {
                 @Override
-                public IterableWithMarker<Datacenter> apply(Object input) {
+                public IterableWithMarker<OperatingSystem> apply(Object input) {
                     PaginationOptions paginationOptions = PaginationOptions.class.cast(input);
-                    return api.getInfrastructureApi().listDatacenters(paginationOptions);
+                    return api.getInfrastructureApi().listOperatingSystems(getArgs(request).get(0).toString(), paginationOptions);
                 }
             };
         }
     }
+
 }

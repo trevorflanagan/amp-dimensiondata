@@ -16,6 +16,8 @@
  */
 package org.jclouds.dimensiondata.cloudcontroller.domain;
 
+import org.jclouds.json.SerializedNames;
+
 import com.google.auto.value.AutoValue;
 
 @AutoValue
@@ -29,6 +31,13 @@ public abstract class OperatingSystem {
     public abstract String id();
     public abstract String displayName();
     public abstract String family();
+
+    @SerializedNames({ "id", "displayName", "family" })
+    public static OperatingSystem create(String id, String displayName, String family) {
+        return builder().id(id).displayName(displayName).family(family).build();
+    }
+
+    public abstract Builder toBuilder();
 
     @AutoValue.Builder
     public abstract static class Builder {

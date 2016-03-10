@@ -16,15 +16,12 @@
  */
 package org.jclouds.dimensiondata.cloudcontroller.domain;
 
+import org.jclouds.json.SerializedNames;
+
 import com.google.auto.value.AutoValue;
 
 @AutoValue
 public abstract class NetworkDomain {
-
-    public enum NetworkDomainType {
-        ESSENTIALS,
-        ADVANCED
-    }
 
     NetworkDomain() {}
 
@@ -37,7 +34,16 @@ public abstract class NetworkDomain {
     public abstract String name();
     public abstract String description();
     public abstract String state();
-    public abstract NetworkDomainType type();
+    public abstract String type();
+    public abstract String snatIpv4Address();
+    public abstract String createTime();
+
+    @SerializedNames({ "id", "datacenterId", "name", "description", "state", "type", "snatIpv4Address", "createTime" })
+    public static NetworkDomain create(String id, String datacenterId, String name, String description, String state, String type, String snatIpv4Address, String createTime) {
+        return builder().id(id).datacenterId(datacenterId).name(name).description(description).state(state).type(type).snatIpv4Address(snatIpv4Address).createTime(createTime).build();
+    }
+
+    public abstract Builder toBuilder();
 
     @AutoValue.Builder
     public abstract static class Builder {
@@ -46,7 +52,9 @@ public abstract class NetworkDomain {
         public abstract Builder name(String name);
         public abstract Builder description(String description);
         public abstract Builder state(String state);
-        public abstract Builder type(NetworkDomainType type);
+        public abstract Builder type(String type);
+        public abstract Builder snatIpv4Address(String snatIpv4Address);
+        public abstract Builder createTime(String createTime);
 
         public abstract NetworkDomain build();
     }

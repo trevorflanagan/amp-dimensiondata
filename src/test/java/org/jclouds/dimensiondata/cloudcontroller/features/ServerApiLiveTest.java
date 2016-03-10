@@ -16,18 +16,30 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-package org.jclouds.dimensiondata.cloudcontroller.domain;
+package org.jclouds.dimensiondata.cloudcontroller.features;
 
-import java.beans.ConstructorProperties;
+import static org.testng.Assert.assertNotNull;
+
 import java.util.List;
 
-/**
- * A collection of NetworkDomain
- */
-public class NetworkDomains extends PaginatedCollection<NetworkDomain> {
+import org.jclouds.dimensiondata.cloudcontroller.domain.Server;
+import org.jclouds.dimensiondata.cloudcontroller.internal.BaseDimensionDataCloudControllerApiLiveTest;
+import org.testng.annotations.Test;
 
-    @ConstructorProperties({"networkDomain", "pageNumber", "pageCount", "totalCount", "pageSize"})
-    public NetworkDomains(List<NetworkDomain> content, Integer pageNumber, Integer pageCount, Integer totalCount, Integer pageSize) {
-        super(content, pageNumber, pageCount, totalCount, pageSize);
+@Test(groups = "live", testName = "ServerApiLiveTest", singleThreaded = true)
+public class ServerApiLiveTest extends BaseDimensionDataCloudControllerApiLiveTest {
+
+    @Test
+    public void testListServers() {
+        List<Server> servers = api().listServers().concat().toList();
+        assertNotNull(servers);
+        for (Server s : servers) {
+            assertNotNull(s);
+        }
     }
+
+    private ServerApi api() {
+        return api.getServerApi();
+    }
+
 }

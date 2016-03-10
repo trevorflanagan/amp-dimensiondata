@@ -43,6 +43,26 @@ public class PaginatedCollection<T> extends IterableWithMarker<T> {
       this.pageSize = pageSize;
    }
 
+   public Iterable<T> getResources() {
+      return resources;
+   }
+
+   public int getPageNumber() {
+      return pageNumber;
+   }
+
+   public int getPageCount() {
+      return pageCount;
+   }
+
+   public int getTotalCount() {
+      return totalCount;
+   }
+
+   public int getPageSize() {
+      return pageSize;
+   }
+
    @Override
    public Iterator<T> iterator() {
       return resources.iterator();
@@ -50,6 +70,7 @@ public class PaginatedCollection<T> extends IterableWithMarker<T> {
 
    @Override
    public Optional<Object> nextMarker() {
+      if (totalCount < pageSize) return Optional.absent();
       if (pageNumber < (totalCount/pageSize)) {
          return Optional.of(toPaginationOptions(pageNumber + 1));
       }
