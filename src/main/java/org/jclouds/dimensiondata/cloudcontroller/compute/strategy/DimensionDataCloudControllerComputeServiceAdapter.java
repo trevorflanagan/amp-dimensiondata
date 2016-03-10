@@ -32,6 +32,9 @@ import org.jclouds.dimensiondata.cloudcontroller.domain.OsImage;
 import org.jclouds.dimensiondata.cloudcontroller.domain.Server;
 import org.jclouds.logging.Logger;
 
+import com.google.common.base.Predicate;
+import com.google.common.collect.Iterables;
+
 /**
  * defines the connection between the {@link org.jclouds.dimensiondata.cloudcontroller.DimensionDataCloudControllerApi} implementation and
  * the jclouds {@link org.jclouds.compute.ComputeService}
@@ -109,7 +112,12 @@ public class DimensionDataCloudControllerComputeServiceAdapter implements
     }
 
     @Override
-    public Iterable<Server> listNodesByIds(Iterable<String> ids) {
-        return null;
+    public Iterable<Server> listNodesByIds(final Iterable<String> ids) {
+        return Iterables.filter(listNodes(), new Predicate<Server>() {
+            @Override
+            public boolean apply(final Server input) {
+                return Iterables.contains(ids, input.id());
+            }
+        });
     }
 }
