@@ -83,7 +83,7 @@ public class DimensionDataCloudControllerComputeServiceAdapter implements
 
     @Override
     public Server getNode(String id) {
-        return null;
+        return api.getServerApi().getServer(id);
     }
 
     @Override

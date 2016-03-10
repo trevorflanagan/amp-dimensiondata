@@ -4,6 +4,7 @@ import javax.inject.Named;
 import javax.ws.rs.Consumes;
 import javax.ws.rs.GET;
 import javax.ws.rs.Path;
+import javax.ws.rs.PathParam;
 import javax.ws.rs.core.MediaType;
 
 import org.jclouds.Fallbacks;
@@ -38,4 +39,9 @@ public interface ServerApi {
     @Fallback(Fallbacks.EmptyPagedIterableOnNotFoundOr404.class)
     PagedIterable<Server> listServers();
 
+    @Named("server:get")
+    @GET
+    @Path("/server/{id}")
+    @Fallback(Fallbacks.NullOnNotFoundOr404.class)
+    Server getServer(@PathParam("id") String id);
 }

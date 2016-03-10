@@ -54,6 +54,21 @@ public class ServerApiMockTest extends BaseDimensionDataCloudControllerMockTest 
         }
     }
 
+    public void testGetServer() throws Exception {
+        MockWebServer server = mockWebServer(new MockResponse().setBody(payloadFromResource("/server.json")));
+        ServerApi api = api(server);
+
+        try {
+            Server found = api.getServer("12345");
+
+            assertSent(server, "GET", "/server/server/12345");
+            assertNotNull(found);
+
+        } finally {
+            server.shutdown();
+        }
+    }
+
     private ServerApi api(MockWebServer server) {
         return api(DimensionDataCloudControllerApi.class, server.getUrl("/").toString(), new JavaUrlHttpCommandExecutorServiceModule())
                 .getServerApi();
