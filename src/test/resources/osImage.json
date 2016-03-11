@@ -1,0 +1,28 @@
+{
+  "name": "RedHat 7 64-bit 2 CPU",
+  "description": "RedHat 7.2 Enterprise (Maipo) 64-bit",
+  "operatingSystem": {
+    "id": "REDHAT764",
+    "displayName": "REDHAT7/64",
+    "family": "UNIX"
+  },
+  "cpu": {
+    "count": 2,
+    "speed": "STANDARD",
+    "coresPerSocket": 1
+  },
+  "memoryGb": 4,
+  "disk": [
+    {
+      "id": "98299851-37a3-4ebe-9cf1-090da9ae42a0",
+      "scsiId": 0,
+      "sizeGb": 20,
+      "speed": "STANDARD"
+    }
+  ],
+  "softwareLabel": [],
+  "createTime": "2016-02-10T07:18:17.000Z",
+  "id": "15c3fef6-be0e-44c7-836d-f7af10074fcc",
+  "datacenterId": "NA1",
+  "osImageKey": "T-RHEL-7-64-2-4-20"
+}

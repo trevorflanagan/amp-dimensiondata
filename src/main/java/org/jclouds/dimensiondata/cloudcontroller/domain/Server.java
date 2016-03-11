@@ -34,7 +34,7 @@ public abstract class Server {
 
     public abstract String id();
     public abstract String name();
-    public abstract String description();
+    @Nullable public abstract String description();
     public abstract String datacenterId();
     public abstract String state();
     public abstract String sourceImageId();
@@ -45,7 +45,7 @@ public abstract class Server {
     public abstract CPU cpu();
     public abstract Integer memoryGb();
     public abstract List<Disk> disks();
-    public abstract NIC nic();
+    @Nullable public abstract NIC nic();
     public abstract List<Object> softwareLabels();
     public abstract VMwareTools vmwareTools();
     @Nullable public abstract Progress progress();

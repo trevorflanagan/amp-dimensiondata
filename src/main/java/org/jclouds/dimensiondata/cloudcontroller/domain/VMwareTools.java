@@ -18,6 +18,7 @@
  */
 package org.jclouds.dimensiondata.cloudcontroller.domain;
 
+import org.jclouds.javax.annotation.Nullable;
 import org.jclouds.json.SerializedNames;
 
 import com.google.auto.value.AutoValue;
@@ -27,9 +28,9 @@ public abstract class VMwareTools {
 
     VMwareTools() {}
 
-    public abstract String versionStatus();
-    public abstract String runningStatus();
-    public abstract Integer apiVersion();
+    @Nullable public abstract String versionStatus();
+    @Nullable public abstract String runningStatus();
+    @Nullable public abstract Integer apiVersion();
 
     @SerializedNames({ "versionStatus", "runningStatus", "apiVersion" })
     public static VMwareTools create(String versionStatus, String runningStatus, Integer apiVersion) {

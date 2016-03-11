@@ -1,0 +1,27 @@
+{
+  "name": "my first VM - Ubuntu 14 64bit",
+  "description": "This is my first Ubuntu 14 64bit",
+  "imageId": "4c02126c-32fc-4b4c-9466-9824c1b5aa0f",
+  "start": true,
+  "administratorPassword": "P$$ssWwrrdGoDd!",
+  "cpu": {
+    "count": 4,
+    "coresPerSocket": 1,
+    "speed": "STANDARD"
+  },
+  "memoryGb": 4,
+  "primaryDns": "10.20.255.12",
+  "secondaryDns": "10.20.255.13",
+  "networkInfo": {
+    "networkDomainId": "690de302-bb80-49c6-b401-8c02bbefb945",
+    "primaryNic": {
+      "vlanId": "6b25b02e-d3a2-4e69-8ca7-9bab605deebd"
+    }
+  },
+  "disk": [
+    {
+      "scsiId": "0",
+      "speed": "STANDARD"
+    }
+  ]
+}

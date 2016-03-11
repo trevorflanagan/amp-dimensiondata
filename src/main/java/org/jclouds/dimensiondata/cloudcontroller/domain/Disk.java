@@ -28,9 +28,9 @@ public abstract class Disk {
 
     Disk() {}
 
-    public abstract String id();
+    @Nullable public abstract String id();
     public abstract Integer scsiId();
-    public abstract Integer sizeGb();
+    @Nullable public abstract Integer sizeGb();
     public abstract String speed();
     @Nullable public abstract String state();
 

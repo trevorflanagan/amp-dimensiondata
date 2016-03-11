@@ -22,6 +22,7 @@ import static org.testng.Assert.assertNotNull;
 import java.util.List;
 
 import org.jclouds.dimensiondata.cloudcontroller.DimensionDataCloudControllerApi;
+import org.jclouds.dimensiondata.cloudcontroller.domain.Response;
 import org.jclouds.dimensiondata.cloudcontroller.domain.Server;
 import org.jclouds.dimensiondata.cloudcontroller.internal.BaseDimensionDataCloudControllerMockTest;
 import org.jclouds.http.config.JavaUrlHttpCommandExecutorServiceModule;
@@ -62,6 +63,21 @@ public class ServerApiMockTest extends BaseDimensionDataCloudControllerMockTest 
             Server found = api.getServer("12345");
 
             assertSent(server, "GET", "/server/server/12345");
+            assertNotNull(found);
+
+        } finally {
+            server.shutdown();
+        }
+    }
+
+    public void testDeleteServer() throws Exception {
+        MockWebServer server = mockWebServer(new MockResponse().setBody(payloadFromResource("/deleteServer.json")));
+        ServerApi api = api(server);
+
+        try {
+            Response found = api.deleteServer("12345");
+
+            assertSent(server, "POST", "/server/deleteServer");
             assertNotNull(found);
 
         } finally {

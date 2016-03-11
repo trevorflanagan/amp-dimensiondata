@@ -1,0 +1,48 @@
+{
+  "name": "gui",
+  "description": "",
+  "operatingSystem": {
+    "id": "REDHAT664",
+    "displayName": "REDHAT6/64",
+    "family": "UNIX"
+  },
+  "cpu": {
+    "count": 2,
+    "speed": "STANDARD",
+    "coresPerSocket": 1
+  },
+  "memoryGb": 4,
+  "disk": [
+    {
+      "id": "0ba67812-d7b7-4c3f-b114-870fbea24d42",
+      "scsiId": 0,
+      "sizeGb": 10,
+      "speed": "STANDARD",
+      "state": "NORMAL"
+    }
+  ],
+  "nic": {
+    "id": "7c5310cd-ec36-4f76-9cc5-046f197360e3",
+    "privateIpv4": "10.230.59.11",
+    "networkId": "c5f083a2-2144-11e4-b29c-001517c4643e",
+    "networkName": "A Network Domain",
+    "state": "NORMAL"
+  },
+  "softwareLabel": [],
+  "sourceImageId": "1e44ab3f-2426-45ec-a1b5-827b2ce58836",
+  "createTime": "2016-03-10T13:05:21.000Z",
+  "deployed": true,
+  "started": true,
+  "state": "NORMAL",
+  "vmwareTools": {
+    "versionStatus": "NEED_UPGRADE",
+    "runningStatus": "RUNNING",
+    "apiVersion": 9354
+  },
+  "virtualHardware": {
+    "version": "vmx-08",
+    "upToDate": false
+  },
+  "id": "b8246ba4-847d-475b-b296-f76787a69ca8",
+  "datacenterId": "NA3"
+}

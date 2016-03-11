@@ -73,7 +73,7 @@ public class DimensionDataCloudControllerComputeServiceAdapter implements
 
     @Override
     public OsImage getImage(String id) {
-        return null;
+        return api.getServerImageApi().getOsImage(id);
     }
 
     @Override
@@ -88,22 +88,24 @@ public class DimensionDataCloudControllerComputeServiceAdapter implements
 
     @Override
     public void destroyNode(String id) {
-
+        api.getServerApi().powerOffServer(id);
+        // TODO wait for operation
+        api.getServerApi().deleteServer(id);
     }
 
     @Override
     public void rebootNode(String id) {
-
+        //TODO
     }
 
     @Override
     public void resumeNode(String id) {
-
+        //TODO
     }
 
     @Override
     public void suspendNode(String id) {
-
+        //TODO
     }
 
     @Override

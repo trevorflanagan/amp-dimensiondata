@@ -4,6 +4,7 @@ import javax.inject.Named;
 import javax.ws.rs.Consumes;
 import javax.ws.rs.GET;
 import javax.ws.rs.Path;
+import javax.ws.rs.PathParam;
 import javax.ws.rs.core.MediaType;
 
 import org.jclouds.Fallbacks;
@@ -38,4 +39,9 @@ public interface ServerImageApi {
     @Fallback(Fallbacks.EmptyPagedIterableOnNotFoundOr404.class)
     PagedIterable<OsImage> listOsImages();
 
+    @Named("image:get")
+    @GET
+    @Path("/osImage/{id}")
+    @Fallback(Fallbacks.NullOnNotFoundOr404.class)
+    OsImage getOsImage(@PathParam("id") String id);
 }

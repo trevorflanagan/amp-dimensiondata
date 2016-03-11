@@ -18,16 +18,34 @@
  */
 package org.jclouds.dimensiondata.cloudcontroller.features;
 
+import static org.jclouds.util.Predicates2.retry;
 import static org.testng.Assert.assertNotNull;
 
 import java.util.List;
 
+import org.jclouds.dimensiondata.cloudcontroller.domain.Disk;
+import org.jclouds.dimensiondata.cloudcontroller.domain.Property;
+import org.jclouds.dimensiondata.cloudcontroller.domain.Response;
 import org.jclouds.dimensiondata.cloudcontroller.domain.Server;
+import org.jclouds.dimensiondata.cloudcontroller.domain.options.NetworkInfo;
 import org.jclouds.dimensiondata.cloudcontroller.internal.BaseDimensionDataCloudControllerApiLiveTest;
+import org.jclouds.dimensiondata.cloudcontroller.predicates.ServerDeployed;
+import org.testng.Assert;
+import org.testng.annotations.AfterTest;
 import org.testng.annotations.Test;
+
+import com.google.common.base.Function;
+import com.google.common.base.Optional;
+import com.google.common.base.Predicate;
+import com.google.common.collect.FluentIterable;
+import com.google.common.collect.ImmutableList;
+
+import autovalue.shaded.com.google.common.common.collect.Lists;
 
 @Test(groups = "live", testName = "ServerApiLiveTest", singleThreaded = true)
 public class ServerApiLiveTest extends BaseDimensionDataCloudControllerApiLiveTest {
+
+    private String serverId;
 
     @Test
     public void testListServers() {
@@ -36,6 +54,65 @@ public class ServerApiLiveTest extends BaseDimensionDataCloudControllerApiLiveTe
         for (Server s : servers) {
             assertNotNull(s);
         }
+    }
+
+    @Test
+    public void testDeployAndStartServer() {
+        Boolean started = Boolean.TRUE;
+        NetworkInfo networkInfo = NetworkInfo.create(
+                "690de302-bb80-49c6-b401-8c02bbefb945",
+                NetworkInfo.NicRequest.create("6b25b02e-d3a2-4e69-8ca7-9bab605deebd", null),
+                Lists.<NetworkInfo.NicRequest> newArrayList()
+        );
+        List<Disk> disks = ImmutableList.of(
+                Disk.builder()
+                        .scsiId(0)
+                        .speed("STANDARD")
+                        .build()
+        );
+        Response response = api().deployServer(ServerApiLiveTest.class.getSimpleName(), "4c02126c-32fc-4b4c-9466-9824c1b5aa0f", started, networkInfo, disks, "P$$ssWwrrdGoDd!");
+        assertNotNull(response);
+        Optional<String> optionalResponseServerId = tryFindServerId(response);
+        if (!optionalResponseServerId.isPresent()) {
+            Assert.fail();
+        }
+        serverId = optionalResponseServerId.get();
+        boolean IsServerRunning = waitForServerStarted(serverId, 5 * 60 * 1000);
+        if (!IsServerRunning) {
+            Assert.fail();
+        }
+    }
+
+    private Optional<String> tryFindServerId(Response response) {
+        return FluentIterable.from(response.info()).firstMatch(new Predicate<Property>() {
+            @Override
+            public boolean apply(Property input) {
+                return input.name().equals("serverId");
+            }
+        }).transform(new Function<Property, String>() {
+            @Override
+            public String apply(Property input) {
+                return input.value();
+            }
+        });
+    }
+
+    @Test(dependsOnMethods = "testDeployAndStartServer")
+    public void testPowerOffServer() {
+        Response response = api().powerOffServer(serverId);
+        assertNotNull(response);
+    }
+
+    @AfterTest
+    public void testDeleteServer() {
+        if (serverId != null) {
+            Response response = api().deleteServer(serverId);
+            assertNotNull(response);
+        }
+    }
+
+    private boolean waitForServerStarted(String serverId, long timeoutMillis) {
+        return retry(new ServerDeployed(api.getServerApi()), timeoutMillis).apply(serverId);
     }
 
     private ServerApi api() {
