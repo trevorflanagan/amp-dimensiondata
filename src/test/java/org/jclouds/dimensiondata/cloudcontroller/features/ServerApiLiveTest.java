@@ -29,7 +29,7 @@ import org.jclouds.dimensiondata.cloudcontroller.domain.Response;
 import org.jclouds.dimensiondata.cloudcontroller.domain.Server;
 import org.jclouds.dimensiondata.cloudcontroller.domain.options.NetworkInfo;
 import org.jclouds.dimensiondata.cloudcontroller.internal.BaseDimensionDataCloudControllerApiLiveTest;
-import org.jclouds.dimensiondata.cloudcontroller.predicates.ServerDeployed;
+import org.jclouds.dimensiondata.cloudcontroller.predicates.ServerStatus;
 import org.testng.Assert;
 import org.testng.annotations.AfterTest;
 import org.testng.annotations.Test;
@@ -77,7 +77,7 @@ public class ServerApiLiveTest extends BaseDimensionDataCloudControllerApiLiveTe
             Assert.fail();
         }
         serverId = optionalResponseServerId.get();
-        boolean IsServerRunning = waitForServerStarted(serverId, 5 * 60 * 1000);
+        boolean IsServerRunning = waitForServerStatus(serverId, true, true, 30 * 60 * 1000);
         if (!IsServerRunning) {
             Assert.fail();
         }
@@ -99,8 +99,11 @@ public class ServerApiLiveTest extends BaseDimensionDataCloudControllerApiLiveTe
 
     @Test(dependsOnMethods = "testDeployAndStartServer")
     public void testPowerOffServer() {
-        Response response = api().powerOffServer(serverId);
-        assertNotNull(response);
+        api().powerOffServer(serverId);
+        boolean IsServerRunning = waitForServerStatus(serverId, false, true, 30 * 60 * 1000);
+        if (!IsServerRunning) {
+            Assert.fail();
+        }
     }
 
     @AfterTest
@@ -111,8 +114,8 @@ public class ServerApiLiveTest extends BaseDimensionDataCloudControllerApiLiveTe
         }
     }
 
-    private boolean waitForServerStarted(String serverId, long timeoutMillis) {
-        return retry(new ServerDeployed(api.getServerApi()), timeoutMillis).apply(serverId);
+    private boolean waitForServerStatus(String serverId, boolean started, boolean deployed, long timeoutMillis) {
+        return retry(new ServerStatus(api.getServerApi(), started, deployed), timeoutMillis).apply(serverId);
     }
 
     private ServerApi api() {

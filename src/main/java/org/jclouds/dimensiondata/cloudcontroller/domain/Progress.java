@@ -18,6 +18,7 @@
  */
 package org.jclouds.dimensiondata.cloudcontroller.domain;
 
+import org.jclouds.javax.annotation.Nullable;
 import org.jclouds.json.SerializedNames;
 
 import com.google.auto.value.AutoValue;
@@ -44,9 +45,9 @@ public abstract class Progress {
     public abstract String action();
     public abstract String requestTime();
     public abstract String userName();
-    public abstract Integer numberOfSteps();
-    public abstract String updateTime();
-    public abstract Step step();
+    @Nullable public abstract Integer numberOfSteps();
+    @Nullable public abstract String updateTime();
+    @Nullable public abstract Step step();
 
     @SerializedNames({ "action", "requestTime", "userName", "numberOfSteps", "updateTime", "step" })
     public static Progress create(String action, String requestTime, String userName, Integer numberOfSteps, String updateTime, Step step) {

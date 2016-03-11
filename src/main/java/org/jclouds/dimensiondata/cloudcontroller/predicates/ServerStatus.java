@@ -26,15 +26,19 @@ import org.jclouds.logging.Logger;
 
 import com.google.common.base.Predicate;
 
-public class ServerDeployed implements Predicate<String> {
+public class ServerStatus implements Predicate<String> {
 
    @Resource
    protected Logger logger = Logger.NULL;
 
    private final ServerApi serverApi;
+   private final boolean started;
+   private final boolean deployed;
 
-   public ServerDeployed(ServerApi serverApi) {
+   public ServerStatus(ServerApi serverApi, boolean started, boolean deployed) {
       this.serverApi = serverApi;
+      this.started = started;
+      this.deployed = deployed;
    }
 
    @Override
@@ -47,11 +51,11 @@ public class ServerDeployed implements Predicate<String> {
       // perhaps request isn't available, yet
       if (server == null) return false;
       logger.trace("%s: looking for server %s deployed: currently: %s", server, server.state());
-      return server.deployed();
+      return server.started() == started && server.deployed() == deployed;
    }
 
    @Override
    public String toString() {
-      return "requestServerDeployed()";
+      return "requestServerStatus()";
    }
 }
