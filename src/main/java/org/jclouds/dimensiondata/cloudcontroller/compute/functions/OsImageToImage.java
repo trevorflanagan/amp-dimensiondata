@@ -20,26 +20,40 @@ package org.jclouds.dimensiondata.cloudcontroller.compute.functions;
 
 import static com.google.common.collect.Iterables.get;
 
+import java.util.Set;
+
 import javax.inject.Singleton;
 
+import org.jclouds.collect.Memoized;
 import org.jclouds.compute.domain.Image;
 import org.jclouds.compute.domain.ImageBuilder;
 import org.jclouds.compute.domain.OperatingSystem;
 import org.jclouds.compute.domain.OsFamily;
 import org.jclouds.dimensiondata.cloudcontroller.domain.OsImage;
+import org.jclouds.domain.Location;
+import org.jclouds.location.predicates.LocationPredicates;
 
 import com.google.common.base.Function;
 import com.google.common.base.Splitter;
+import com.google.common.base.Supplier;
+import com.google.common.collect.FluentIterable;
+import com.google.inject.Inject;
 
 @Singleton
 public class OsImageToImage implements Function<OsImage, Image> {
-
 
     private static final String CENTOS = "CentOS";
     private static final String REDHAT = "RedHat";
     private static final String UBUNTU = "Ubuntu";
     private static final String SUSE = "SuSE";
     private static final String WINDOWS = "Win";
+
+    private final Supplier<Set<? extends Location>> locations;
+
+    @Inject
+    OsImageToImage(@Memoized final Supplier<Set<? extends org.jclouds.domain.Location>> locations) {
+        this.locations = locations;
+    }
 
     @Override
     public Image apply(OsImage from) {
@@ -58,6 +72,7 @@ public class OsImageToImage implements Function<OsImage, Image> {
                 .name(from.name())
                 .status(Image.Status.AVAILABLE)
                 .operatingSystem(os)
+                .location(FluentIterable.from(locations.get()).firstMatch(LocationPredicates.idEquals(from.datacenterId())).orNull())
                 .build();
     }
 

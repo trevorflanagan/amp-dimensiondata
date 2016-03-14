@@ -38,8 +38,6 @@ import static org.jclouds.reflect.Reflection2.typeToken;
 @AutoService(ApiMetadata.class)
 public class DimensionDataCloudControllerApiMetadata extends BaseHttpApiMetadata<DimensionDataCloudControllerApi> {
 
-    public static final String DIMENSIONDATA_ORG_ID = "dimensiondata.org-id";
-
    @Override
    public Builder toBuilder() {
       return new Builder().fromApiMetadata(this);
@@ -58,7 +56,6 @@ public class DimensionDataCloudControllerApiMetadata extends BaseHttpApiMetadata
       properties.setProperty(Constants.PROPERTY_CONNECTION_TIMEOUT, "1200000"); // 15 minutes
       properties.setProperty(ComputeServiceProperties.IMAGE_LOGIN_USER, "root:password");
       properties.setProperty(TEMPLATE, "osFamily=UBUNTU,os64Bit=true");
-      properties.setProperty(DIMENSIONDATA_ORG_ID, "");
       return properties;
    }
 

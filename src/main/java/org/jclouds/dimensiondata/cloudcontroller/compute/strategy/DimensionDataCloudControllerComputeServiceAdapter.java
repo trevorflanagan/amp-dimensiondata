@@ -19,6 +19,8 @@ package org.jclouds.dimensiondata.cloudcontroller.compute.strategy;
 import static com.google.common.base.Preconditions.checkNotNull;
 import static org.jclouds.compute.reference.ComputeServiceConstants.COMPUTE_LOGGER;
 
+import java.util.List;
+
 import javax.annotation.Resource;
 import javax.inject.Inject;
 import javax.inject.Named;
@@ -27,13 +29,23 @@ import javax.inject.Singleton;
 import org.jclouds.compute.ComputeServiceAdapter;
 import org.jclouds.compute.domain.Template;
 import org.jclouds.dimensiondata.cloudcontroller.DimensionDataCloudControllerApi;
+import org.jclouds.dimensiondata.cloudcontroller.compute.options.DimensionDataCloudControllerTemplateOptions;
 import org.jclouds.dimensiondata.cloudcontroller.domain.Datacenter;
+import org.jclouds.dimensiondata.cloudcontroller.domain.Disk;
 import org.jclouds.dimensiondata.cloudcontroller.domain.OsImage;
+import org.jclouds.dimensiondata.cloudcontroller.domain.Response;
 import org.jclouds.dimensiondata.cloudcontroller.domain.Server;
+import org.jclouds.dimensiondata.cloudcontroller.domain.options.NetworkInfo;
+import org.jclouds.dimensiondata.cloudcontroller.utils.DimensionDataCloudControllerUtils;
+import org.jclouds.domain.LoginCredentials;
 import org.jclouds.logging.Logger;
 
+import com.google.common.base.Optional;
 import com.google.common.base.Predicate;
+import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Iterables;
+
+import autovalue.shaded.com.google.common.common.collect.Lists;
 
 /**
  * defines the connection between the {@link org.jclouds.dimensiondata.cloudcontroller.DimensionDataCloudControllerApi} implementation and
@@ -58,7 +70,63 @@ public class DimensionDataCloudControllerComputeServiceAdapter implements
 
     @Override
     public NodeAndInitialCredentials<Server> createNodeWithGroupEncodedIntoName(String group, String name, Template template) {
-        return null;
+        checkNotNull(template, "template was null");
+        checkNotNull(template.getOptions(), "template options was null");
+
+        String imageId = checkNotNull(template.getImage().getId(), "template image id must not be null");
+        String locationId = checkNotNull(template.getLocation().getId(), "template location id must not be null");
+        final String hardwareId = checkNotNull(template.getHardware().getId(), "template image id must not be null");
+
+        DimensionDataCloudControllerTemplateOptions templateOptions = DimensionDataCloudControllerTemplateOptions.class.cast(template.getOptions());
+
+
+        NetworkInfo networkInfo = NetworkInfo.create(
+                "690de302-bb80-49c6-b401-8c02bbefb945",
+                NetworkInfo.NicRequest.create("6b25b02e-d3a2-4e69-8ca7-9bab605deebd", null),
+                Lists.<NetworkInfo.NicRequest> newArrayList()
+        );
+        List<Disk> disks = ImmutableList.of(
+                Disk.builder()
+                        .scsiId(0)
+                        .speed("STANDARD")
+                        .build()
+        );
+
+        Response response = api.getServerApi().deployServer(name, imageId, Boolean.TRUE, networkInfo, disks, "P$$ssWwrrdGoDd!");
+        Optional<String> optionalResponseServerId = DimensionDataCloudControllerUtils.tryFindServerId(response);
+        if (!optionalResponseServerId.isPresent()) {
+        }
+        String serverId = optionalResponseServerId.get();
+        boolean IsServerRunning = DimensionDataCloudControllerUtils.waitForServerStatus(api.getServerApi(), serverId, true, true, 30 * 60 * 1000);
+        if (!IsServerRunning) {
+            logger.warn("");
+        }
+
+        // Infer the login credentials from the VM, defaulting to "root" user
+        LoginCredentials defaultCredentials = LoginCredentials.builder().build(); // VCloudDirectorComputeUtils.getCredentialsFrom(vm);
+        LoginCredentials.Builder credsBuilder;
+        if (defaultCredentials == null) {
+            credsBuilder = LoginCredentials.builder().user("root");
+        } else {
+            credsBuilder = defaultCredentials.toBuilder();
+            if (defaultCredentials.getUser() == null) {
+                credsBuilder.user("root");
+            }
+        }
+        // If login overrides are supplied in TemplateOptions, always prefer those.
+        String overriddenLoginUser = template.getOptions().getLoginUser();
+        String overriddenLoginPassword = template.getOptions().getLoginPassword();
+        String overriddenLoginPrivateKey = template.getOptions().getLoginPrivateKey();
+        if (overriddenLoginUser != null) {
+            credsBuilder.user(overriddenLoginUser);
+        }
+        if (overriddenLoginPassword != null) {
+            credsBuilder.password(overriddenLoginPassword);
+        }
+        if (overriddenLoginPrivateKey != null) {
+            credsBuilder.privateKey(overriddenLoginPrivateKey);
+        }
+        return new NodeAndInitialCredentials<Server>(api.getServerApi().getServer(serverId), serverId, credsBuilder.build());
     }
 
     @Override
@@ -78,7 +146,12 @@ public class DimensionDataCloudControllerComputeServiceAdapter implements
 
     @Override
     public Iterable<Datacenter> listLocations() {
-        return api.getInfrastructureApi().listDatacenters().concat().toList();
+        return api.getInfrastructureApi().listDatacenters().concat().filter(new Predicate<Datacenter>() {
+            @Override
+            public boolean apply(Datacenter input) {
+                return input.type().equalsIgnoreCase("MCP 2.0");
+            }
+        }).toList();
     }
 
     @Override

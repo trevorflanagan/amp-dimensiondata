@@ -38,8 +38,6 @@ import org.jclouds.location.predicates.LocationPredicates;
 import com.google.common.base.Function;
 import com.google.common.base.Supplier;
 import com.google.common.collect.ImmutableSet;
-import com.google.common.collect.Iterables;
-import com.google.common.collect.Lists;
 
 @Singleton
 public class ServerToNodeMetadata implements Function<Server, NodeMetadata> {
@@ -87,7 +85,7 @@ public class ServerToNodeMetadata implements Function<Server, NodeMetadata> {
             builder.status(NodeMetadata.Status.UNRECOGNIZED);
         }
 
-        if (from.nic().privateIpv4() != null)
+        if (from.nic() != null && from.nic().privateIpv4() != null)
             builder.privateAddresses(ImmutableSet.of(from.nic().privateIpv4()));
         // TODO
         /*
