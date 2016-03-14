@@ -17,13 +17,11 @@
 package org.jclouds.dimensiondata.cloudcontroller.features;
 
 import static org.testng.Assert.assertEquals;
-import static org.testng.Assert.assertNotNull;
-
-import java.util.List;
 
 import org.jclouds.dimensiondata.cloudcontroller.DimensionDataCloudControllerApi;
-import org.jclouds.dimensiondata.cloudcontroller.domain.NetworkDomain;
 import org.jclouds.dimensiondata.cloudcontroller.internal.BaseDimensionDataCloudControllerMockTest;
+import org.jclouds.dimensiondata.cloudcontroller.parse.NetworkDomainsParseTest;
+import org.jclouds.dimensiondata.cloudcontroller.parse.VlansParseTest;
 import org.jclouds.http.config.JavaUrlHttpCommandExecutorServiceModule;
 import org.testng.annotations.Test;
 
@@ -41,14 +39,20 @@ public class NetworkApiMockTest extends BaseDimensionDataCloudControllerMockTest
         NetworkApi api = api(server);
 
         try {
-            List<NetworkDomain> networkDomains = api.listNetworkDomains().concat().toList();
-
+            assertEquals(api.listNetworkDomains().concat().toList(), new NetworkDomainsParseTest().expected().toList());
             assertSent(server, "GET", "/network/networkDomain");
-            assertEquals(networkDomains.size(), 1);
-            for (NetworkDomain networkDomain : networkDomains) {
-                assertNotNull(networkDomain);
-            }
+        } finally {
+            server.shutdown();
+        }
+    }
 
+    public void testLisVlans() throws Exception {
+        MockWebServer server = mockWebServer(new MockResponse().setBody(payloadFromResource("/vlans.json")));
+        NetworkApi api = api(server);
+
+        try {
+            assertEquals(api.listVlans("12345").concat().toList(), new VlansParseTest().expected().toList());
+            assertSent(server, "GET", "/network/vlan?networkDomainId=12345");
         } finally {
             server.shutdown();
         }

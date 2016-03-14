@@ -16,6 +16,7 @@
  */
 package org.jclouds.dimensiondata.cloudcontroller.domain;
 
+import org.jclouds.javax.annotation.Nullable;
 import org.jclouds.json.SerializedNames;
 
 import com.google.auto.value.AutoValue;
@@ -30,13 +31,13 @@ public abstract class NetworkDomain {
     }
 
     public abstract String id();
-    public abstract String datacenterId();
+    @Nullable public abstract String datacenterId();
     public abstract String name();
-    public abstract String description();
-    public abstract String state();
-    public abstract String type();
-    public abstract String snatIpv4Address();
-    public abstract String createTime();
+    @Nullable public abstract String description();
+    @Nullable public abstract String state();
+    @Nullable public abstract String type();
+    @Nullable public abstract String snatIpv4Address();
+    @Nullable public abstract String createTime();
 
     @SerializedNames({ "id", "datacenterId", "name", "description", "state", "type", "snatIpv4Address", "createTime" })
     public static NetworkDomain create(String id, String datacenterId, String name, String description, String state, String type, String snatIpv4Address, String createTime) {

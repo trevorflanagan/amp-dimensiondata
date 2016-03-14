@@ -16,6 +16,7 @@
  */
 package org.jclouds.dimensiondata.cloudcontroller.compute.strategy;
 
+import static com.google.common.base.Objects.firstNonNull;
 import static com.google.common.base.Preconditions.checkNotNull;
 import static org.jclouds.compute.reference.ComputeServiceConstants.COMPUTE_LOGGER;
 
@@ -32,6 +33,7 @@ import org.jclouds.dimensiondata.cloudcontroller.DimensionDataCloudControllerApi
 import org.jclouds.dimensiondata.cloudcontroller.compute.options.DimensionDataCloudControllerTemplateOptions;
 import org.jclouds.dimensiondata.cloudcontroller.domain.Datacenter;
 import org.jclouds.dimensiondata.cloudcontroller.domain.Disk;
+import org.jclouds.dimensiondata.cloudcontroller.domain.NetworkDomain;
 import org.jclouds.dimensiondata.cloudcontroller.domain.OsImage;
 import org.jclouds.dimensiondata.cloudcontroller.domain.Response;
 import org.jclouds.dimensiondata.cloudcontroller.domain.Server;
@@ -56,10 +58,11 @@ import autovalue.shaded.com.google.common.common.collect.Lists;
 public class DimensionDataCloudControllerComputeServiceAdapter implements
         ComputeServiceAdapter<Server, OsImage, OsImage, Datacenter> {
 
+    private static final String DEFAULT_LOGIN_PASSWORD = "P$$ssWwrrdGoDd!";
+
     @Resource
     @Named(COMPUTE_LOGGER)
     protected Logger logger = Logger.NULL;
-
 
     private final DimensionDataCloudControllerApi api;
 
@@ -70,21 +73,33 @@ public class DimensionDataCloudControllerComputeServiceAdapter implements
 
     @Override
     public NodeAndInitialCredentials<Server> createNodeWithGroupEncodedIntoName(String group, String name, Template template) {
-        checkNotNull(template, "template was null");
-        checkNotNull(template.getOptions(), "template options was null");
+
+        // Infer the login credentials from the VM, defaulting to "root" user
+        LoginCredentials.Builder credsBuilder = LoginCredentials.builder().user("root");
+        // If login overrides are supplied in TemplateOptions, always prefer those.
+        String overriddenLoginPassword = template.getOptions().getLoginPassword();
+        if (overriddenLoginPassword != null) {
+            credsBuilder.password(overriddenLoginPassword);
+        }
 
         String imageId = checkNotNull(template.getImage().getId(), "template image id must not be null");
-        String locationId = checkNotNull(template.getLocation().getId(), "template location id must not be null");
-        final String hardwareId = checkNotNull(template.getHardware().getId(), "template image id must not be null");
+        final String locationId = checkNotNull(template.getLocation().getId(), "template location id must not be null");
+        final String hardwareId = checkNotNull(template.getHardware().getId(), "template hardware id must not be null");
 
-        DimensionDataCloudControllerTemplateOptions templateOptions = DimensionDataCloudControllerTemplateOptions.class.cast(template.getOptions());
+        // TODO createNetworkInfo
+        List<NetworkDomain> filterdNetworkDomainsPerDatacenter = api.getNetworkApi().listNetworkDomains().concat().filter(new Predicate<NetworkDomain>() {
+                                                                     @Override
+                                                                     public boolean apply(NetworkDomain input) {
+                                                                         return input.datacenterId().equalsIgnoreCase(locationId);
+                                                                     }
+                                                                 }).toList();
 
 
-        NetworkInfo networkInfo = NetworkInfo.create(
-                "690de302-bb80-49c6-b401-8c02bbefb945",
-                NetworkInfo.NicRequest.create("6b25b02e-d3a2-4e69-8ca7-9bab605deebd", null),
-                Lists.<NetworkInfo.NicRequest> newArrayList()
-        );
+                NetworkInfo networkInfo = NetworkInfo.create(
+                        "690de302-bb80-49c6-b401-8c02bbefb945",
+                        NetworkInfo.NicRequest.create("6b25b02e-d3a2-4e69-8ca7-9bab605deebd", null),
+                        Lists.<NetworkInfo.NicRequest>newArrayList()
+                );
         List<Disk> disks = ImmutableList.of(
                 Disk.builder()
                         .scsiId(0)
@@ -92,7 +107,7 @@ public class DimensionDataCloudControllerComputeServiceAdapter implements
                         .build()
         );
 
-        Response response = api.getServerApi().deployServer(name, imageId, Boolean.TRUE, networkInfo, disks, "P$$ssWwrrdGoDd!");
+        Response response = api.getServerApi().deployServer(name, imageId, Boolean.TRUE, networkInfo, disks, overriddenLoginPassword);
         Optional<String> optionalResponseServerId = DimensionDataCloudControllerUtils.tryFindServerId(response);
         if (!optionalResponseServerId.isPresent()) {
         }
@@ -102,30 +117,6 @@ public class DimensionDataCloudControllerComputeServiceAdapter implements
             logger.warn("");
         }
 
-        // Infer the login credentials from the VM, defaulting to "root" user
-        LoginCredentials defaultCredentials = LoginCredentials.builder().build(); // VCloudDirectorComputeUtils.getCredentialsFrom(vm);
-        LoginCredentials.Builder credsBuilder;
-        if (defaultCredentials == null) {
-            credsBuilder = LoginCredentials.builder().user("root");
-        } else {
-            credsBuilder = defaultCredentials.toBuilder();
-            if (defaultCredentials.getUser() == null) {
-                credsBuilder.user("root");
-            }
-        }
-        // If login overrides are supplied in TemplateOptions, always prefer those.
-        String overriddenLoginUser = template.getOptions().getLoginUser();
-        String overriddenLoginPassword = template.getOptions().getLoginPassword();
-        String overriddenLoginPrivateKey = template.getOptions().getLoginPrivateKey();
-        if (overriddenLoginUser != null) {
-            credsBuilder.user(overriddenLoginUser);
-        }
-        if (overriddenLoginPassword != null) {
-            credsBuilder.password(overriddenLoginPassword);
-        }
-        if (overriddenLoginPrivateKey != null) {
-            credsBuilder.privateKey(overriddenLoginPrivateKey);
-        }
         return new NodeAndInitialCredentials<Server>(api.getServerApi().getServer(serverId), serverId, credsBuilder.build());
     }
 

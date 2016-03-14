@@ -20,14 +20,18 @@ import javax.inject.Named;
 import javax.ws.rs.Consumes;
 import javax.ws.rs.GET;
 import javax.ws.rs.Path;
+import javax.ws.rs.QueryParam;
 import javax.ws.rs.core.MediaType;
 
 import org.jclouds.Fallbacks;
 import org.jclouds.collect.PagedIterable;
 import org.jclouds.dimensiondata.cloudcontroller.domain.NetworkDomain;
+import org.jclouds.dimensiondata.cloudcontroller.domain.OperatingSystem;
 import org.jclouds.dimensiondata.cloudcontroller.domain.PaginatedCollection;
+import org.jclouds.dimensiondata.cloudcontroller.domain.Vlan;
 import org.jclouds.dimensiondata.cloudcontroller.parsers.ParseNetworkDomains;
 import org.jclouds.dimensiondata.cloudcontroller.options.PaginationOptions;
+import org.jclouds.dimensiondata.cloudcontroller.parsers.ParseVlans;
 import org.jclouds.rest.annotations.Fallback;
 import org.jclouds.rest.annotations.ResponseParser;
 import org.jclouds.rest.annotations.Transform;
@@ -50,4 +54,19 @@ public interface NetworkApi {
     @ResponseParser(ParseNetworkDomains.class)
     @Fallback(Fallbacks.EmptyPagedIterableOnNotFoundOr404.class)
     PagedIterable<NetworkDomain> listNetworkDomains();
+
+    @Named("network:vlan")
+    @GET
+    @Path("/vlan")
+    @ResponseParser(ParseVlans.class)
+    @Fallback(Fallbacks.EmptyIterableWithMarkerOnNotFoundOr404.class)
+    PaginatedCollection<Vlan> listVlans(@QueryParam("networkDomainId") String networkDomainId, PaginationOptions options);
+
+    @Named("network:vlan")
+    @GET
+    @Path("/vlan")
+    @Transform(ParseVlans.ToPagedIterable.class)
+    @ResponseParser(ParseVlans.class)
+    @Fallback(Fallbacks.EmptyPagedIterableOnNotFoundOr404.class)
+    PagedIterable<Vlan> listVlans(@QueryParam("networkDomainId") String networkDomainId);
 }
