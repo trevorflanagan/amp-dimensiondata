@@ -106,4 +106,10 @@ public interface ServerApi {
     @MapBinder(BindToJsonPayload.class)
     Response powerOffServer(@PayloadParam("id") String id);
 
+    @Named("server:rebootServer")
+    @POST
+    @Path("/rebootServer")
+    @Produces(MediaType.APPLICATION_JSON)
+    @MapBinder(BindToJsonPayload.class)
+    Response rebootServerServer(@PayloadParam("id") String id);
 }

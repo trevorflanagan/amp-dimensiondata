@@ -16,8 +16,8 @@
  */
 package org.jclouds.dimensiondata.cloudcontroller.compute.strategy;
 
-import static com.google.common.base.Objects.firstNonNull;
 import static com.google.common.base.Preconditions.checkNotNull;
+import static java.lang.String.format;
 import static org.jclouds.compute.reference.ComputeServiceConstants.COMPUTE_LOGGER;
 
 import java.util.List;
@@ -29,8 +29,9 @@ import javax.inject.Singleton;
 
 import org.jclouds.compute.ComputeServiceAdapter;
 import org.jclouds.compute.domain.Template;
+import org.jclouds.compute.reference.ComputeServiceConstants;
+import org.jclouds.compute.reference.ComputeServiceConstants.Timeouts;
 import org.jclouds.dimensiondata.cloudcontroller.DimensionDataCloudControllerApi;
-import org.jclouds.dimensiondata.cloudcontroller.compute.options.DimensionDataCloudControllerTemplateOptions;
 import org.jclouds.dimensiondata.cloudcontroller.domain.Datacenter;
 import org.jclouds.dimensiondata.cloudcontroller.domain.Disk;
 import org.jclouds.dimensiondata.cloudcontroller.domain.NetworkDomain;
@@ -59,23 +60,26 @@ public class DimensionDataCloudControllerComputeServiceAdapter implements
         ComputeServiceAdapter<Server, OsImage, OsImage, Datacenter> {
 
     private static final String DEFAULT_LOGIN_PASSWORD = "P$$ssWwrrdGoDd!";
+    private static final String DEFAULT_LOGIN_USER = "root";
 
     @Resource
     @Named(COMPUTE_LOGGER)
     protected Logger logger = Logger.NULL;
 
     private final DimensionDataCloudControllerApi api;
+    private final Timeouts timeouts;
 
     @Inject
-    public DimensionDataCloudControllerComputeServiceAdapter(DimensionDataCloudControllerApi api) {
+    public DimensionDataCloudControllerComputeServiceAdapter(DimensionDataCloudControllerApi api, Timeouts timeouts) {
         this.api = checkNotNull(api, "api");
+        this.timeouts = timeouts;
     }
 
     @Override
     public NodeAndInitialCredentials<Server> createNodeWithGroupEncodedIntoName(String group, String name, Template template) {
 
         // Infer the login credentials from the VM, defaulting to "root" user
-        LoginCredentials.Builder credsBuilder = LoginCredentials.builder().user("root");
+        LoginCredentials.Builder credsBuilder = LoginCredentials.builder().user(DEFAULT_LOGIN_USER).password(DEFAULT_LOGIN_PASSWORD);
         // If login overrides are supplied in TemplateOptions, always prefer those.
         String overriddenLoginPassword = template.getOptions().getLoginPassword();
         if (overriddenLoginPassword != null) {
@@ -87,15 +91,17 @@ public class DimensionDataCloudControllerComputeServiceAdapter implements
         final String hardwareId = checkNotNull(template.getHardware().getId(), "template hardware id must not be null");
 
         // TODO createNetworkInfo
-        List<NetworkDomain> filterdNetworkDomainsPerDatacenter = api.getNetworkApi().listNetworkDomains().concat().filter(new Predicate<NetworkDomain>() {
-                                                                     @Override
-                                                                     public boolean apply(NetworkDomain input) {
-                                                                         return input.datacenterId().equalsIgnoreCase(locationId);
-                                                                     }
-                                                                 }).toList();
+        List<NetworkDomain> filterdNetworkDomainsPerDatacenter = api.getNetworkApi().listNetworkDomains().concat()
+                .filter(new Predicate<NetworkDomain>() {
+                    @Override
+                    public boolean apply(NetworkDomain input) {
+                        return input.datacenterId().equalsIgnoreCase(locationId);
+                    }
+                }).toList();
 
 
-                NetworkInfo networkInfo = NetworkInfo.create(
+        // TODO getOrCreateNetworkDomain with vlan?
+        NetworkInfo networkInfo = NetworkInfo.create(
                         "690de302-bb80-49c6-b401-8c02bbefb945",
                         NetworkInfo.NicRequest.create("6b25b02e-d3a2-4e69-8ca7-9bab605deebd", null),
                         Lists.<NetworkInfo.NicRequest>newArrayList()
@@ -112,9 +118,11 @@ public class DimensionDataCloudControllerComputeServiceAdapter implements
         if (!optionalResponseServerId.isPresent()) {
         }
         String serverId = optionalResponseServerId.get();
-        boolean IsServerRunning = DimensionDataCloudControllerUtils.waitForServerStatus(api.getServerApi(), serverId, true, true, 30 * 60 * 1000);
+        boolean IsServerRunning = DimensionDataCloudControllerUtils.waitForServerStatus(api.getServerApi(), serverId, true, true, timeouts.nodeRunning);
         if (!IsServerRunning) {
-            logger.warn("");
+            final String message = format("server(%s, %s) not ready within %d ms.", name, serverId, timeouts.nodeRunning);
+            logger.warn(message);
+            throw new IllegalStateException(message);
         }
 
         return new NodeAndInitialCredentials<Server>(api.getServerApi().getServer(serverId), serverId, credsBuilder.build());
@@ -152,24 +160,39 @@ public class DimensionDataCloudControllerComputeServiceAdapter implements
 
     @Override
     public void destroyNode(String id) {
-        api.getServerApi().powerOffServer(id);
-        // TODO wait for operation
-        api.getServerApi().deleteServer(id);
+        Response powerOffResponse = api.getServerApi().powerOffServer(id);
+        if (!powerOffResponse.error().isEmpty()) {
+            final String message = format("Cannot stop server %s.", id);
+            logger.error(message);
+            throw new IllegalStateException(message);
+        }
+        boolean IsServerTerminated = DimensionDataCloudControllerUtils.waitForServerStatus(api.getServerApi(), id, false, true, timeouts.nodeTerminated);
+        if (!IsServerTerminated) {
+            final String message = format("server(%s) not terminated within %d ms.", id, timeouts.nodeTerminated);
+            logger.warn(message);
+            throw new IllegalStateException(message);
+        }
+        Response deleteServerResponse = api.getServerApi().deleteServer(id);
+        if (!deleteServerResponse.error().isEmpty()) {
+            final String message = format("Cannot delete server %s.", id);
+            logger.error(message);
+            throw new IllegalStateException(message);
+        }
     }
 
     @Override
     public void rebootNode(String id) {
-        //TODO
+        api.getServerApi().rebootServerServer(id);
     }
 
     @Override
     public void resumeNode(String id) {
-        //TODO
+        throw new UnsupportedOperationException("resume not supported");
     }
 
     @Override
     public void suspendNode(String id) {
-        //TODO
+        throw new UnsupportedOperationException("suspend not supported");
     }
 
     @Override
