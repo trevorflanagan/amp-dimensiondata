@@ -19,6 +19,7 @@
 package org.jclouds.dimensiondata.cloudcontroller.features;
 
 import static org.testng.Assert.assertNotNull;
+import static org.testng.Assert.assertNull;
 
 import java.util.List;
 
@@ -29,11 +30,9 @@ import org.jclouds.dimensiondata.cloudcontroller.domain.Server;
 import org.jclouds.dimensiondata.cloudcontroller.domain.NetworkInfo;
 import org.jclouds.dimensiondata.cloudcontroller.internal.BaseDimensionDataCloudControllerApiLiveTest;
 import org.jclouds.dimensiondata.cloudcontroller.utils.DimensionDataCloudControllerUtils;
-import org.testng.Assert;
 import org.testng.annotations.AfterTest;
 import org.testng.annotations.Test;
 
-import com.google.common.base.Optional;
 import com.google.common.collect.ImmutableList;
 
 import autovalue.shaded.com.google.common.common.collect.Lists;
@@ -68,24 +67,17 @@ public class ServerApiLiveTest extends BaseDimensionDataCloudControllerApiLiveTe
         );
         Response response = api().deployServer(ServerApiLiveTest.class.getSimpleName(), "4c02126c-32fc-4b4c-9466-9824c1b5aa0f", started, networkInfo, disks, "P$$ssWwrrdGoDd!");
         assertNotNull(response);
-        Optional<String> optionalResponseServerId = DimensionDataCloudControllerUtils.tryFindServerId(response);
-        if (!optionalResponseServerId.isPresent()) {
-            Assert.fail();
-        }
-        serverId = optionalResponseServerId.get();
-        boolean IsServerRunning = DimensionDataCloudControllerUtils.waitForServerStatus(api(), serverId, true, true, 30 * 60 * 1000);
-        if (!IsServerRunning) {
-            Assert.fail();
-        }
+        serverId = DimensionDataCloudControllerUtils.tryFindServerId(response);
+        assertNotNull(serverId);
+        DimensionDataCloudControllerUtils.waitForServerStatus(api(), serverId, true, true, 30 * 60 * 1000, "Error");
     }
 
     @Test(dependsOnMethods = "testDeployAndStartServer")
     public void testPowerOffServer() {
-        api().powerOffServer(serverId);
-        boolean IsServerRunning = DimensionDataCloudControllerUtils.waitForServerStatus(api(), serverId, false, true, 30 * 60 * 1000);
-        if (!IsServerRunning) {
-            Assert.fail();
-        }
+        Response response = api().powerOffServer(serverId);
+        DimensionDataCloudControllerUtils.waitForServerStatus(api(), serverId, false, true, 30 * 60 * 1000, "Error");
+        serverId = DimensionDataCloudControllerUtils.tryFindServerId(response);
+        assertNull(serverId);
     }
 
     @AfterTest

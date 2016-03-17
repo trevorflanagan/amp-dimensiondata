@@ -21,6 +21,7 @@ import static java.lang.String.format;
 import static org.jclouds.compute.reference.ComputeServiceConstants.COMPUTE_LOGGER;
 
 import java.util.List;
+import java.util.Set;
 import java.util.concurrent.TimeUnit;
 
 import javax.annotation.Resource;
@@ -39,23 +40,28 @@ import org.jclouds.dimensiondata.cloudcontroller.domain.Disk;
 import org.jclouds.dimensiondata.cloudcontroller.domain.NIC;
 import org.jclouds.dimensiondata.cloudcontroller.domain.NatRule;
 import org.jclouds.dimensiondata.cloudcontroller.domain.NetworkDomain;
+import org.jclouds.dimensiondata.cloudcontroller.domain.NetworkInfo;
 import org.jclouds.dimensiondata.cloudcontroller.domain.OsImage;
 import org.jclouds.dimensiondata.cloudcontroller.domain.PublicIpBlock;
 import org.jclouds.dimensiondata.cloudcontroller.domain.Response;
 import org.jclouds.dimensiondata.cloudcontroller.domain.Vlan;
 import org.jclouds.dimensiondata.cloudcontroller.domain.internal.ServerWithExternalIp;
 import org.jclouds.dimensiondata.cloudcontroller.domain.options.CreateServerOptions;
-import org.jclouds.dimensiondata.cloudcontroller.domain.NetworkInfo;
 import org.jclouds.dimensiondata.cloudcontroller.utils.DimensionDataCloudControllerUtils;
 import org.jclouds.domain.LoginCredentials;
 import org.jclouds.logging.Logger;
 
+import com.google.common.base.Function;
 import com.google.common.base.Objects;
 import com.google.common.base.Optional;
 import com.google.common.base.Predicate;
 import com.google.common.base.Predicates;
+import com.google.common.collect.FluentIterable;
+import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Lists;
+
+import autovalue.shaded.com.google.common.common.collect.Sets;
 
 /**
  * defines the connection between the {@link org.jclouds.dimensiondata.cloudcontroller.DimensionDataCloudControllerApi} implementation and
@@ -85,7 +91,6 @@ public class DimensionDataCloudControllerComputeServiceAdapter implements
 
     @Override
     public NodeAndInitialCredentials<ServerWithExternalIp> createNodeWithGroupEncodedIntoName(String group, String name, Template template) {
-
         // Infer the login credentials from the VM, defaulting to "root" user
         LoginCredentials.Builder credsBuilder = LoginCredentials.builder().user(DEFAULT_LOGIN_USER).password(DEFAULT_LOGIN_PASSWORD);
         // If login overrides are supplied in TemplateOptions, always prefer those.
@@ -110,9 +115,7 @@ public class DimensionDataCloudControllerComputeServiceAdapter implements
 
         NetworkInfo networkInfo = NetworkInfo.create(
                 foundNetworkDomain.id(),
-                NIC.builder()
-                        .vlanId(vlan.id())
-                        .build(), // (vlan.id(), null),
+                NIC.builder().vlanId(vlan.id()).build(),
                 // TODO allow additional NICs
                 Lists.<NIC>newArrayList()
         );
@@ -127,59 +130,22 @@ public class DimensionDataCloudControllerComputeServiceAdapter implements
                 .memoryGb(template.getHardware().getRam())
                 .build();
 
-
         Response response = api.getServerApi().deployServer(name, imageId, Boolean.TRUE, networkInfo, disks, overriddenLoginPassword, createServerOptions);
-        Optional<String> optionalResponseServerId = DimensionDataCloudControllerUtils.tryFindServerId(response);
-        if (!optionalResponseServerId.isPresent()) {
-            // TODO
-        }
-        String serverId = optionalResponseServerId.get();
-        boolean IsServerRunning = DimensionDataCloudControllerUtils.waitForServerStatus(api.getServerApi(), serverId, true, true, timeouts.nodeRunning);
-        if (!IsServerRunning) {
-            final String message = format("server(%s, %s) not ready within %d ms.", name, serverId, timeouts.nodeRunning);
-            throw new IllegalStateException(message);
-        }
+        String serverId = DimensionDataCloudControllerUtils.tryFindServerId(response);
 
-        // TODO getOrAllocatePublicIPv4AddressBlock ?
-        Optional<PublicIpBlock> optionalPublicIpBlock = api.getNetworkApi().listPublicIPv4AddressBlocks(foundNetworkDomain.id()).concat().firstMatch(Predicates.<PublicIpBlock>notNull());
+        String message = format("server(%s) is not ready within %d ms.", serverId, timeouts.nodeRunning);
+        DimensionDataCloudControllerUtils.waitForServerStatus(api.getServerApi(), serverId, true, true, timeouts.nodeRunning, message);
 
-        if (!optionalPublicIpBlock.isPresent()) {
-            // TODO
-        }
+        String externalIp = tryFindExternalIp(api, foundNetworkDomain.id());
 
-        // TODO checkNatRules in use
-
-        ServerWithExternalIp.Builder serverWithExternalIpBuilder = ServerWithExternalIp.builder().server(api.getServerApi().getServer(serverId));
-
-        // TODO getExternalIp
-        String externalIp = optionalPublicIpBlock.get().baseIp();
-        // TODO getOrCreateNatRule ?
-        Response createNatRuleOperation = api.getNetworkApi().createNatRule(foundNetworkDomain.id(), api.getServerApi().getServer(serverId).networkInfo().primaryNic().privateIpv4(), externalIp); // TODO
+        ServerWithExternalIp serverWithExternalIp = ServerWithExternalIp.builder().server(api.getServerApi().getServer(serverId)).externalIp(externalIp).build();
+        Response createNatRuleOperation = api.getNetworkApi().createNatRule(foundNetworkDomain.id(), api.getServerApi().getServer(serverId).networkInfo().primaryNic().privateIpv4(), externalIp);
         if (!createNatRuleOperation.error().isEmpty()) {
-            // TODO
-        } else {
-            serverWithExternalIpBuilder.externalIp(externalIp);
-        }
-        return new NodeAndInitialCredentials<ServerWithExternalIp>(serverWithExternalIpBuilder.build(), serverId, credsBuilder.build());
-    }
-
-    private Vlan tryGetVlan(String networkDomainId) {
-        Optional<Vlan> vlanOptional = api.getNetworkApi().listVlans(networkDomainId).concat().firstMatch(Predicates.<Vlan>notNull());
-        if (!vlanOptional.isPresent()) {
+            // TODO rollback
             throw new IllegalStateException();
         }
-        return vlanOptional.get();
-    }
 
-    private NetworkDomain tryFindNetworkDomain(Predicate<NetworkDomain> networkDomainPredicate) {
-        Optional<NetworkDomain> optionalNetworkDomain = api.getNetworkApi().listNetworkDomains().concat()
-                .filter(networkDomainPredicate)
-                .firstMatch(Predicates.notNull());
-
-        if (!optionalNetworkDomain.isPresent()) {
-            throw new IllegalStateException();
-        }
-        return optionalNetworkDomain.get();
+        return new NodeAndInitialCredentials<ServerWithExternalIp>(serverWithExternalIp, serverId, credsBuilder.build());
     }
 
     @Override
@@ -228,28 +194,23 @@ public class DimensionDataCloudControllerComputeServiceAdapter implements
             api.getNetworkApi().deleteNatRule(optionalNatRule.get().id());
         }
 
-        // poweroff the vm
+        // power off the vm
         Response powerOffResponse = api.getServerApi().powerOffServer(id);
         if (!powerOffResponse.error().isEmpty()) {
             final String message = format("Cannot power off the server %s.", id);
             throw new IllegalStateException(message);
         }
-        boolean IsServerTerminated = DimensionDataCloudControllerUtils.waitForServerStatus(api.getServerApi(), id, false, true, timeouts.nodeTerminated);
-        if (!IsServerTerminated) {
-            final String message = format("server(%s) not terminated within %d ms.", id, timeouts.nodeTerminated);
-            throw new IllegalStateException(message);
-        }
+        String message = format("server(%s) not terminated within %d ms.", id, timeouts.nodeTerminated);
+        DimensionDataCloudControllerUtils.waitForServerStatus(api.getServerApi(), id, false, true, timeouts.nodeTerminated, message);
+
         // delete the vm
+        message = format("Cannot delete server %s.", id);
         Response deleteServerResponse = api.getServerApi().deleteServer(id);
-
-        boolean IsServerDeleted = DimensionDataCloudControllerUtils.waitForServerStatus(api.getServerApi(), id, false, false, TimeUnit.MINUTES.toMillis(10));
-        if (!IsServerDeleted || !deleteServerResponse.error().isEmpty()) {
-            final String message = format("Cannot delete server %s.", id);
+        if (!deleteServerResponse.error().isEmpty()) {
             throw new IllegalStateException(message);
         }
 
-
-
+        DimensionDataCloudControllerUtils.waitForServerStatus(api.getServerApi(), id, false, false, TimeUnit.MINUTES.toMillis(10), message);
     }
 
     @Override
@@ -280,5 +241,77 @@ public class DimensionDataCloudControllerComputeServiceAdapter implements
                 return Iterables.contains(ids, input.server().id());
             }
         });
+    }
+
+    private String tryFindExternalIp(DimensionDataCloudControllerApi api, String networkDomainId) {
+        // check nat rule in use
+        Set<String> externalIpInUse = api.getNetworkApi().listNatRules(networkDomainId).concat().transform(new Function<NatRule, String>() {
+            @Override
+            public String apply(NatRule input) {
+                return input.externalIp();
+            }
+        }).toSet();
+
+        Set<String> availablePublicIpInAllBlocks = getAvailablePublicIPv4InAllBlocks(api, networkDomainId);
+
+        Sets.SetView<String> difference = Sets.difference(availablePublicIpInAllBlocks, externalIpInUse);
+        if (difference.isEmpty()) {
+            throw new IllegalStateException();
+        }
+        return Iterables.get(difference, 0);
+    }
+
+    private Set<String> getAvailablePublicIPv4InAllBlocks(DimensionDataCloudControllerApi api, String networkDomainId) {
+        ImmutableList<PublicIpBlock> publicIpBlocks = api.getNetworkApi().listPublicIPv4AddressBlocks(networkDomainId).concat().toList();
+        if (publicIpBlocks.isEmpty()) {
+            // TODO createPublicIPv4AddressBlock
+            throw new IllegalStateException();
+        }
+
+        return FluentIterable.from(publicIpBlocks)
+                .transformAndConcat(new Function<PublicIpBlock, Iterable<String>>() {
+                    @Override
+                    public Iterable<String> apply(PublicIpBlock input) {
+                        List<String> ipAddresses = Lists.newArrayList();
+                        String ipAddress = input.baseIp();
+                        for (int i = 0; i < input.size(); i++) {
+                            ipAddresses.add(ipAddress);
+                            ipAddress = getNextIPV4Address(ipAddress);
+                        }
+                        return ipAddresses;
+                    }
+                })
+                .toSet();
+    }
+
+    private Vlan tryGetVlan(String networkDomainId) {
+        Optional<Vlan> vlanOptional = api.getNetworkApi().listVlans(networkDomainId).concat().firstMatch(Predicates.<Vlan>notNull());
+        if (!vlanOptional.isPresent()) {
+            throw new IllegalStateException();
+        }
+        return vlanOptional.get();
+    }
+
+    private NetworkDomain tryFindNetworkDomain(Predicate<NetworkDomain> networkDomainPredicate) {
+        Optional<NetworkDomain> optionalNetworkDomain = api.getNetworkApi().listNetworkDomains().concat()
+                .filter(networkDomainPredicate)
+                .firstMatch(Predicates.notNull());
+
+        if (!optionalNetworkDomain.isPresent()) {
+            throw new IllegalStateException();
+        }
+        return optionalNetworkDomain.get();
+    }
+
+    private static String getNextIPV4Address(String ip) {
+        String[] nums = ip.split("\\.");
+        int i = (Integer.parseInt(nums[0]) << 24 | Integer.parseInt(nums[2]) << 8
+                |  Integer.parseInt(nums[1]) << 16 | Integer.parseInt(nums[3])) + 1;
+
+        // If you wish to skip over .255 addresses.
+        if ((byte) i == -1) i++;
+
+        return String.format("%d.%d.%d.%d", i >>> 24 & 0xFF, i >> 16 & 0xFF,
+                i >>   8 & 0xFF, i >>  0 & 0xFF);
     }
 }
