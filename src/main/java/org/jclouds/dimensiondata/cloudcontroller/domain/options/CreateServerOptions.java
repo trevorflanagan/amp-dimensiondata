@@ -25,7 +25,9 @@ import javax.inject.Inject;
 
 import org.jclouds.dimensiondata.cloudcontroller.domain.CPU;
 import org.jclouds.dimensiondata.cloudcontroller.domain.Disk;
+import org.jclouds.dimensiondata.cloudcontroller.domain.NetworkInfo;
 import org.jclouds.http.HttpRequest;
+import org.jclouds.javax.annotation.Nullable;
 import org.jclouds.json.SerializedNames;
 import org.jclouds.rest.MapBinder;
 import org.jclouds.rest.binders.BindToJsonPayload;
@@ -40,17 +42,15 @@ public class CreateServerOptions implements MapBinder {
    @Inject private BindToJsonPayload jsonBinder;
 
    private final String description;
-   private final String administratorPassword;
    private final CPU cpu;
    private final Integer memoryGb;
    private final String primaryDns;
    private final String secondaryDns;
    private final String microsoftTimeZone;
 
-   private CreateServerOptions(String description, String administratorPassword, CPU cpu, Integer memoryGb,
+   private CreateServerOptions(String description, CPU cpu, Integer memoryGb,
                                String primaryDns, String secondaryDns, String microsoftTimeZone) {
       this.description = description;
-      this.administratorPassword = administratorPassword;
       this.cpu = cpu;
       this.memoryGb = memoryGb;
       this.primaryDns = primaryDns;
@@ -66,13 +66,13 @@ public class CreateServerOptions implements MapBinder {
       abstract Boolean start();
       abstract NetworkInfo networkInfo();
       abstract List<Disk> disks();
-      abstract String description();
       abstract String administratorPassword();
-      abstract CPU cpu();
-      abstract Integer memoryGb();
-      abstract String primaryDns();
-      abstract String secondaryDns();
-      abstract String microsoftTimeZone();
+      @Nullable abstract String description();
+      @Nullable abstract CPU cpu();
+      @Nullable abstract Integer memoryGb();
+      @Nullable abstract String primaryDns();
+      @Nullable abstract String secondaryDns();
+      @Nullable abstract String microsoftTimeZone();
 
       @SerializedNames({"name", "imageId", "start", "networkInfo", "disk", "administratorPassword", "description", "cpu", "memoryGb", "primaryDns", "secondaryDns", "microsoftTimeZone" })
       static ServerRequest create(String name, String imageId, Boolean start, NetworkInfo networkInfo, List<Disk> disks,
@@ -108,10 +108,6 @@ public class CreateServerOptions implements MapBinder {
       return description;
    }
 
-   public String getAdministratorPassword() {
-      return administratorPassword;
-   }
-
    public CPU getCpu() {
       return cpu;
    }
@@ -138,7 +134,6 @@ public class CreateServerOptions implements MapBinder {
 
    public static class Builder {
       private String description;
-      private String administratorPassword;
       private CPU cpu;
       private Integer memoryGb;
       private String primaryDns;
@@ -147,11 +142,6 @@ public class CreateServerOptions implements MapBinder {
 
       public Builder description(String description) {
          this.description = description;
-         return this;
-      }
-
-      public Builder administratorPassword(String administratorPassword) {
-         this.administratorPassword = administratorPassword;
          return this;
       }
 
@@ -181,7 +171,7 @@ public class CreateServerOptions implements MapBinder {
       }
 
       public CreateServerOptions build() {
-         return new CreateServerOptions(description, administratorPassword, cpu, memoryGb, primaryDns, secondaryDns, microsoftTimeZone);
+         return new CreateServerOptions(description, cpu, memoryGb, primaryDns, secondaryDns, microsoftTimeZone);
       }
    }
 }

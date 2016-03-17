@@ -16,15 +16,38 @@
  */
 package org.jclouds.dimensiondata.cloudcontroller.domain;
 
+import static com.google.common.base.Preconditions.checkNotNull;
+
 import java.util.List;
 
 import org.jclouds.javax.annotation.Nullable;
 import org.jclouds.json.SerializedNames;
 
 import com.google.auto.value.AutoValue;
+import com.google.common.base.CaseFormat;
 
 @AutoValue
 public abstract class Server {
+
+    public enum State {
+        NORMAL,
+        PENDING_DELETE,
+        DELETED,
+        UNRECOGNIZED;
+
+        @Override
+        public String toString() {
+            return CaseFormat.UPPER_UNDERSCORE.to(CaseFormat.UPPER_CAMEL, name());
+        }
+
+        public static State fromValue(String state) {
+            try {
+                return valueOf(CaseFormat.UPPER_CAMEL.to(CaseFormat.UPPER_UNDERSCORE, checkNotNull(state, "state")));
+            } catch (IllegalArgumentException e) {
+                return UNRECOGNIZED;
+            }
+        }
+    }
 
     Server() {}
 
@@ -36,7 +59,7 @@ public abstract class Server {
     public abstract String name();
     @Nullable public abstract String description();
     public abstract String datacenterId();
-    public abstract String state();
+    public abstract State state();
     public abstract String sourceImageId();
     public abstract String createTime();
     public abstract Boolean started();
@@ -45,20 +68,20 @@ public abstract class Server {
     public abstract CPU cpu();
     public abstract Integer memoryGb();
     public abstract List<Disk> disks();
-    @Nullable public abstract NIC nic();
+    @Nullable public abstract NetworkInfo networkInfo();
     public abstract List<Object> softwareLabels();
     public abstract VMwareTools vmwareTools();
     @Nullable public abstract Progress progress();
     @Nullable public abstract VirtualHardware virtualHardware();
 
     @SerializedNames({ "id", "name", "description", "datacenterId", "state", "sourceImageId", "createTime", "started", "deployed",
-            "operatingSystem", "cpu", "memoryGb", "disk", "nic", "softwareLabel", "vmwareTools", "progress", "virtualHardware" })
-    public static Server create(String id, String name,  String description, String datacenterId, String state, String sourceImageId,
+            "operatingSystem", "cpu", "memoryGb", "disk", "networkInfo", "softwareLabel", "vmwareTools", "progress", "virtualHardware" })
+    public static Server create(String id, String name,  String description, String datacenterId, State state, String sourceImageId,
                                 String createTime, Boolean started, Boolean deployed, OperatingSystem operatingSystem,
-                                CPU cpu, Integer memoryGb, List<Disk> disks, NIC nic, List<Object> softwareLabels, VMwareTools vmwareTools, Progress progress, VirtualHardware virtualHardware
+                                CPU cpu, Integer memoryGb, List<Disk> disks, NetworkInfo networkInfo, List<Object> softwareLabels, VMwareTools vmwareTools, Progress progress, VirtualHardware virtualHardware
     ) {
         return builder()
-                .id(id).name(name).datacenterId(datacenterId).description(description).state(state).sourceImageId(sourceImageId).createTime(createTime).started(started).deployed(deployed).operatingSystem(operatingSystem).cpu(cpu).memoryGb(memoryGb).disks(disks).nic(nic).softwareLabels(softwareLabels).vmwareTools(vmwareTools)
+                .id(id).name(name).datacenterId(datacenterId).description(description).state(state).sourceImageId(sourceImageId).createTime(createTime).started(started).deployed(deployed).operatingSystem(operatingSystem).cpu(cpu).memoryGb(memoryGb).disks(disks).networkInfo(networkInfo).softwareLabels(softwareLabels).vmwareTools(vmwareTools)
                 .progress(progress).virtualHardware(virtualHardware)
                 .build();
     }
@@ -71,7 +94,7 @@ public abstract class Server {
         public abstract Builder name(String name);
         public abstract Builder description(String description);
         public abstract Builder datacenterId(String datacenterId);
-        public abstract Builder state(String state);
+        public abstract Builder state(State state);
         public abstract Builder sourceImageId(String sourceImageId);
         public abstract Builder createTime(String createTime);
         public abstract Builder started(Boolean started);
@@ -80,7 +103,7 @@ public abstract class Server {
         public abstract Builder cpu(CPU cpu);
         public abstract Builder memoryGb(Integer memoryGb);
         public abstract Builder disks(List<Disk> disks);
-        public abstract Builder nic(NIC nic);
+        public abstract Builder networkInfo(NetworkInfo networkInfo);
         public abstract Builder softwareLabels(List<Object> softwareLabels);
         public abstract Builder vmwareTools(VMwareTools vmwareTools);
         public abstract Builder progress(Progress progress);

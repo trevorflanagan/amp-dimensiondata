@@ -35,7 +35,11 @@ import org.jclouds.compute.reference.ComputeServiceConstants;
 import org.jclouds.domain.Location;
 import org.jclouds.logging.Logger;
 import org.jclouds.ssh.SshClient;
+import org.jclouds.sshj.config.SshjSshClientModule;
 import org.testng.annotations.Test;
+
+import com.google.common.collect.ImmutableSet;
+import com.google.inject.Module;
 
 @Test(groups = "live", testName = "DimensionDataCloudControllerComputeServiceContextLiveTest")
 public class DimensionDataCloudControllerComputeServiceContextLiveTest extends BaseComputeServiceContextLiveTest {
@@ -85,13 +89,20 @@ public class DimensionDataCloudControllerComputeServiceContextLiveTest extends B
       Set<? extends NodeMetadata> nodes = view.getComputeService().createNodesInGroup(name, numNodes, template);
       assertEquals(numNodes, nodes.size(), "wrong number of nodes");
       for (NodeMetadata node : nodes) {
-         logger.debug("Created Node: %s", node);
-         SshClient client = view.utils().sshForNode().apply(node);
-         client.connect();
-         ExecResponse hello = client.exec("mount");
-         logger.debug(hello.getOutput().trim());
-         view.getComputeService().destroyNode(node.getId());
+         try {
+            SshClient client = view.utils().sshForNode().apply(node);
+            client.connect();
+            ExecResponse hello = client.exec("echo hello");
+            assertEquals(hello.getOutput().trim(), "hello");
+         } finally {
+            view.getComputeService().destroyNode(node.getId());
+         }
       }
+   }
+
+   @Override
+   protected Iterable<Module> setupModules() {
+      return ImmutableSet.<Module>of(getLoggingModule(), new SshjSshClientModule());
    }
 
 }

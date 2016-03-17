@@ -25,27 +25,27 @@ import org.jclouds.compute.options.TemplateOptions;
 import org.jclouds.dimensiondata.cloudcontroller.compute.functions.DatacenterToLocation;
 import org.jclouds.dimensiondata.cloudcontroller.compute.functions.OsImageToHardware;
 import org.jclouds.dimensiondata.cloudcontroller.compute.functions.OsImageToImage;
-import org.jclouds.dimensiondata.cloudcontroller.compute.functions.ServerToNodeMetadata;
+import org.jclouds.dimensiondata.cloudcontroller.compute.functions.ServerWithNatRuleToNodeMetadata;
 import org.jclouds.dimensiondata.cloudcontroller.compute.options.DimensionDataCloudControllerTemplateOptions;
 import org.jclouds.dimensiondata.cloudcontroller.compute.strategy.DimensionDataCloudControllerComputeServiceAdapter;
 import org.jclouds.dimensiondata.cloudcontroller.domain.Datacenter;
 import org.jclouds.dimensiondata.cloudcontroller.domain.OsImage;
-import org.jclouds.dimensiondata.cloudcontroller.domain.Server;
+import org.jclouds.dimensiondata.cloudcontroller.domain.internal.ServerWithExternalIp;
 import org.jclouds.domain.Location;
 
 import com.google.common.base.Function;
 import com.google.inject.TypeLiteral;
 
 public class DimensionDataCloudControllerComputeServiceContextModule extends
-        ComputeServiceAdapterContextModule<Server, OsImage, OsImage, Datacenter> {
+        ComputeServiceAdapterContextModule<ServerWithExternalIp, OsImage, OsImage, Datacenter> {
 
     @Override
     protected void configure() {
         super.configure();
-        bind(new TypeLiteral<ComputeServiceAdapter<Server, OsImage, OsImage, Datacenter>>() {
+        bind(new TypeLiteral<ComputeServiceAdapter<ServerWithExternalIp, OsImage, OsImage, Datacenter>>() {
         }).to(DimensionDataCloudControllerComputeServiceAdapter.class);
-        bind(new TypeLiteral<Function<Server, NodeMetadata>>() {
-        }).to(ServerToNodeMetadata.class);
+        bind(new TypeLiteral<Function<ServerWithExternalIp, NodeMetadata>>() {
+        }).to(ServerWithNatRuleToNodeMetadata.class);
         bind(new TypeLiteral<Function<OsImage, Image>>() {
         }).to(OsImageToImage.class);
         bind(new TypeLiteral<Function<OsImage, Hardware>>() {
@@ -54,7 +54,7 @@ public class DimensionDataCloudControllerComputeServiceContextModule extends
         }).to(DatacenterToLocation.class);
         bind(TemplateOptions.class).to(DimensionDataCloudControllerTemplateOptions.class);
         // to have the compute service adapter override default locations
-        install(new LocationsFromComputeServiceAdapterModule<Server, OsImage, OsImage, Datacenter>() {
+        install(new LocationsFromComputeServiceAdapterModule<ServerWithExternalIp, OsImage, OsImage, Datacenter>() {
         });
 
     }

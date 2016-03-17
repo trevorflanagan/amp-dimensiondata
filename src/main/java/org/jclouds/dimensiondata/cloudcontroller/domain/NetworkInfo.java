@@ -16,11 +16,10 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-package org.jclouds.dimensiondata.cloudcontroller.domain.options;
+package org.jclouds.dimensiondata.cloudcontroller.domain;
 
 import java.util.List;
 
-import org.jclouds.javax.annotation.Nullable;
 import org.jclouds.json.SerializedNames;
 
 import com.google.auto.value.AutoValue;
@@ -28,27 +27,29 @@ import com.google.auto.value.AutoValue;
 @AutoValue
 public abstract class NetworkInfo {
 
-    @AutoValue
-    public abstract static class NicRequest {
-        @Nullable public abstract String vlanId();
-        @Nullable public abstract String privateIpv4();
-
-        @SerializedNames({ "vlanId", "privateIpv4" })
-        public static NicRequest create(String vlanId, String privateIpv4) {
-            return new AutoValue_NetworkInfo_NicRequest(vlanId, privateIpv4);
-        }
-
-        NicRequest() {}
+    public static Builder builder() {
+        return new AutoValue_NetworkInfo.Builder();
     }
 
     NetworkInfo() {} // For AutoValue only!
 
     public abstract String networkDomainId();
-    public abstract NicRequest primaryNic();
-    public abstract List<NicRequest> additionalNic();
+    public abstract NIC primaryNic();
+    public abstract List<NIC> additionalNic();
 
     @SerializedNames({ "networkDomainId", "primaryNic", "additionalNic" })
-    public static NetworkInfo create(String networkDomainId, NicRequest primaryNic, List<NicRequest> additionalNic) {
-        return new AutoValue_NetworkInfo(networkDomainId, primaryNic, additionalNic);
+    public static NetworkInfo create(String networkDomainId, NIC primaryNic, List<NIC> additionalNic) {
+        return builder().networkDomainId(networkDomainId).primaryNic(primaryNic).additionalNic(additionalNic).build();
+    }
+
+    public abstract Builder toBuilder();
+
+    @AutoValue.Builder
+    public abstract static class Builder {
+        public abstract Builder networkDomainId(String networkDomainId);
+        public abstract Builder primaryNic(NIC primaryNic);
+        public abstract Builder additionalNic(List<NIC> additionalNic);
+
+        public abstract NetworkInfo build();
     }
 }

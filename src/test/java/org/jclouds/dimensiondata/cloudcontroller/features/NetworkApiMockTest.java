@@ -21,6 +21,7 @@ import static org.testng.Assert.assertEquals;
 import org.jclouds.dimensiondata.cloudcontroller.DimensionDataCloudControllerApi;
 import org.jclouds.dimensiondata.cloudcontroller.internal.BaseDimensionDataCloudControllerMockTest;
 import org.jclouds.dimensiondata.cloudcontroller.parse.NetworkDomainsParseTest;
+import org.jclouds.dimensiondata.cloudcontroller.parse.PublicIpBlocksParseTest;
 import org.jclouds.dimensiondata.cloudcontroller.parse.VlansParseTest;
 import org.jclouds.http.config.JavaUrlHttpCommandExecutorServiceModule;
 import org.testng.annotations.Test;
@@ -53,6 +54,18 @@ public class NetworkApiMockTest extends BaseDimensionDataCloudControllerMockTest
         try {
             assertEquals(api.listVlans("12345").concat().toList(), new VlansParseTest().expected().toList());
             assertSent(server, "GET", "/network/vlan?networkDomainId=12345");
+        } finally {
+            server.shutdown();
+        }
+    }
+
+    public void testListPublicIPv4AddressBlock() throws Exception {
+        MockWebServer server = mockWebServer(new MockResponse().setBody(payloadFromResource("/publicIpBlocks.json")));
+        NetworkApi api = api(server);
+
+        try {
+            assertEquals(api.listPublicIPv4AddressBlocks("12345").concat().toList(), new PublicIpBlocksParseTest().expected().toList());
+            assertSent(server, "GET", "/network/publicIpBlock?networkDomainId=12345");
         } finally {
             server.shutdown();
         }

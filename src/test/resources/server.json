@@ -1,9 +1,8 @@
 {
-  "name": "gui",
-  "description": "",
+  "name": "node-9a6",
   "operatingSystem": {
-    "id": "REDHAT664",
-    "displayName": "REDHAT6/64",
+    "id": "UBUNTU1464",
+    "displayName": "UBUNTU14/64",
     "family": "UNIX"
   },
   "cpu": {
@@ -14,23 +13,28 @@
   "memoryGb": 4,
   "disk": [
     {
-      "id": "0ba67812-d7b7-4c3f-b114-870fbea24d42",
+      "id": "4a22f947-9ddc-48de-aabe-54f95d331cdc",
       "scsiId": 0,
       "sizeGb": 10,
       "speed": "STANDARD",
       "state": "NORMAL"
     }
   ],
-  "nic": {
-    "id": "7c5310cd-ec36-4f76-9cc5-046f197360e3",
-    "privateIpv4": "10.230.59.11",
-    "networkId": "c5f083a2-2144-11e4-b29c-001517c4643e",
-    "networkName": "A Network Domain",
-    "state": "NORMAL"
+  "networkInfo": {
+    "primaryNic": {
+      "id": "980a9fdd-4ea2-478b-85b4-f016349f1738",
+      "privateIpv4": "10.0.0.8",
+      "ipv6": "2607:f480:111:1575:c47:7479:2af8:3f1a",
+      "vlanId": "6b25b02e-d3a2-4e69-8ca7-9bab605deebd",
+      "vlanName": "vlan1",
+      "state": "NORMAL"
+    },
+    "additionalNic": [],
+    "networkDomainId": "690de302-bb80-49c6-b401-8c02bbefb945"
   },
   "softwareLabel": [],
-  "sourceImageId": "1e44ab3f-2426-45ec-a1b5-827b2ce58836",
-  "createTime": "2016-03-10T13:05:21.000Z",
+  "sourceImageId": "4c02126c-32fc-4b4c-9466-9824c1b5aa0f",
+  "createTime": "2016-03-16T11:48:39.000Z",
   "deployed": true,
   "started": true,
   "state": "NORMAL",
@@ -43,6 +47,6 @@
     "version": "vmx-08",
     "upToDate": false
   },
-  "id": "b8246ba4-847d-475b-b296-f76787a69ca8",
-  "datacenterId": "NA3"
+  "id": "5ba45018-7ced-4a04-9085-93daab230968",
+  "datacenterId": "NA9"
 }

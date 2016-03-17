@@ -23,9 +23,10 @@ import static org.testng.Assert.assertNotNull;
 import java.util.List;
 
 import org.jclouds.dimensiondata.cloudcontroller.domain.Disk;
+import org.jclouds.dimensiondata.cloudcontroller.domain.NIC;
 import org.jclouds.dimensiondata.cloudcontroller.domain.Response;
 import org.jclouds.dimensiondata.cloudcontroller.domain.Server;
-import org.jclouds.dimensiondata.cloudcontroller.domain.options.NetworkInfo;
+import org.jclouds.dimensiondata.cloudcontroller.domain.NetworkInfo;
 import org.jclouds.dimensiondata.cloudcontroller.internal.BaseDimensionDataCloudControllerApiLiveTest;
 import org.jclouds.dimensiondata.cloudcontroller.utils.DimensionDataCloudControllerUtils;
 import org.testng.Assert;
@@ -56,8 +57,8 @@ public class ServerApiLiveTest extends BaseDimensionDataCloudControllerApiLiveTe
         Boolean started = Boolean.TRUE;
         NetworkInfo networkInfo = NetworkInfo.create(
                 "690de302-bb80-49c6-b401-8c02bbefb945",
-                NetworkInfo.NicRequest.create("6b25b02e-d3a2-4e69-8ca7-9bab605deebd", null),
-                Lists.<NetworkInfo.NicRequest> newArrayList()
+                NIC.builder().build(), //create("6b25b02e-d3a2-4e69-8ca7-9bab605deebd", null),
+                Lists.<NIC> newArrayList()
         );
         List<Disk> disks = ImmutableList.of(
                 Disk.builder()

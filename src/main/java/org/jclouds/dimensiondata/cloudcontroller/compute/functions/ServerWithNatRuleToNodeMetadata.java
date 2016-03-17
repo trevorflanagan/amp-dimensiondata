@@ -19,28 +19,35 @@ package org.jclouds.dimensiondata.cloudcontroller.compute.functions;
 import static com.google.common.base.Preconditions.checkNotNull;
 import static com.google.common.collect.FluentIterable.from;
 
-import java.util.List;
+import java.util.Map;
 import java.util.Set;
 
 import javax.inject.Inject;
 import javax.inject.Singleton;
 
 import org.jclouds.collect.Memoized;
-import org.jclouds.compute.domain.Image;
 import org.jclouds.compute.domain.NodeMetadata;
 import org.jclouds.compute.domain.NodeMetadataBuilder;
 import org.jclouds.compute.functions.GroupNamingConvention;
 import org.jclouds.dimensiondata.cloudcontroller.domain.Server;
+import org.jclouds.dimensiondata.cloudcontroller.domain.internal.ServerWithExternalIp;
 import org.jclouds.domain.Location;
-import org.jclouds.domain.LoginCredentials;
 import org.jclouds.location.predicates.LocationPredicates;
 
 import com.google.common.base.Function;
 import com.google.common.base.Supplier;
+import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 
 @Singleton
-public class ServerToNodeMetadata implements Function<Server, NodeMetadata> {
+public class ServerWithNatRuleToNodeMetadata implements Function<ServerWithExternalIp, NodeMetadata> {
+
+    public static final Map<Server.State, NodeMetadata.Status> serverStateToNodeStatus = ImmutableMap
+            .<Server.State, NodeMetadata.Status> builder()
+            .put(Server.State.PENDING_DELETE, NodeMetadata.Status.PENDING)
+            .put(Server.State.DELETED, NodeMetadata.Status.TERMINATED)
+            .put(Server.State.NORMAL, NodeMetadata.Status.RUNNING)
+            .put(Server.State.UNRECOGNIZED, NodeMetadata.Status.UNRECOGNIZED).build();
 
     private final Supplier<Set<? extends Location>> locations;
     private final GroupNamingConvention nodeNamingConvention;
@@ -49,7 +56,7 @@ public class ServerToNodeMetadata implements Function<Server, NodeMetadata> {
 
 
     @Inject
-    ServerToNodeMetadata(@Memoized Supplier<Set<? extends Location>> locations,
+    ServerWithNatRuleToNodeMetadata(@Memoized Supplier<Set<? extends Location>> locations,
                                GroupNamingConvention.Factory namingConvention, OsImageToImage osImageToImage,
                                OsImageToHardware osImageToHardware) {
         this.nodeNamingConvention = checkNotNull(namingConvention, "namingConvention").createWithoutPrefix();
@@ -59,17 +66,18 @@ public class ServerToNodeMetadata implements Function<Server, NodeMetadata> {
     }
 
     @Override
-    public NodeMetadata apply(Server from) {
+    public NodeMetadata apply(ServerWithExternalIp from) {
         NodeMetadataBuilder builder = new NodeMetadataBuilder();
-        builder.ids(from.id());
-        builder.name(from.name());
+        Server server = from.server();
+        builder.ids(server.id());
+        builder.name(server.name());
         // TODO
         //builder.hostname(from.getFullyQualifiedDomainName());
-        if (from.datacenterId() != null) {
+        if (server.datacenterId() != null) {
             builder.location(from(locations.get()).firstMatch(
-                    LocationPredicates.idEquals(from.datacenterId())).orNull());
+                    LocationPredicates.idEquals(server.datacenterId())).orNull());
         }
-        builder.group(nodeNamingConvention.groupInUniqueNameOrNull(from.name()));
+        builder.group(nodeNamingConvention.groupInUniqueNameOrNull(server.name()));
         // TODO
         /*
         builder.hardware(osImageToHardware.apply(from));
@@ -79,19 +87,20 @@ public class ServerToNodeMetadata implements Function<Server, NodeMetadata> {
             builder.operatingSystem(image.getOperatingSystem());
         }
         */
-        if (from.started()) {
-            builder.status(NodeMetadata.Status.RUNNING);
-        } else {
-            builder.status(NodeMetadata.Status.UNRECOGNIZED);
+
+        if (server.state() != null) {
+            builder.status(serverStateToNodeStatus.get(server.state()));
         }
 
-        if (from.nic() != null && from.nic().privateIpv4() != null)
-            builder.privateAddresses(ImmutableSet.of(from.nic().privateIpv4()));
+        String privateAddress = null;
+        if (server.networkInfo() != null && server.networkInfo().primaryNic() != null && server.networkInfo().primaryNic().privateIpv4() != null) {
+            privateAddress = server.networkInfo().primaryNic().privateIpv4();
+            builder.privateAddresses(ImmutableSet.of(privateAddress));
+        }
         // TODO
-        /*
-        if (from.getPrimaryBackendIpAddress() != null)
-            builder.publicAddresses(ImmutableSet.of(from.getPrimaryIpAddress()));
-        */
+        if (privateAddress != null && from.externalIp() != null) {
+            builder.publicAddresses(ImmutableSet.of(from.externalIp()));
+        }
         // TODO credentials
 
 

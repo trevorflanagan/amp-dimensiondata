@@ -17,7 +17,6 @@
 package org.jclouds.dimensiondata.cloudcontroller.internal;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.jclouds.Constants.PROPERTY_API_VERSION;
 import static org.jclouds.Constants.PROPERTY_CREDENTIAL;
 import static org.jclouds.Constants.PROPERTY_IDENTITY;
 import static org.jclouds.util.Strings2.toStringAndClose;

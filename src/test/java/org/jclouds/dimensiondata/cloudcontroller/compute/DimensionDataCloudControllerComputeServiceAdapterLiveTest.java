@@ -23,7 +23,6 @@ import com.google.inject.Injector;
 import com.google.inject.Module;
 import org.jclouds.compute.ComputeServiceAdapter.NodeAndInitialCredentials;
 import org.jclouds.compute.domain.ExecResponse;
-import org.jclouds.compute.domain.Hardware;
 import org.jclouds.compute.domain.Template;
 import org.jclouds.compute.domain.TemplateBuilder;
 import org.jclouds.compute.functions.DefaultCredentialsFromImageOrOverridingCredentials;
@@ -33,6 +32,7 @@ import org.jclouds.dimensiondata.cloudcontroller.compute.strategy.DimensionDataC
 import org.jclouds.dimensiondata.cloudcontroller.domain.Datacenter;
 import org.jclouds.dimensiondata.cloudcontroller.domain.OsImage;
 import org.jclouds.dimensiondata.cloudcontroller.domain.Server;
+import org.jclouds.dimensiondata.cloudcontroller.domain.internal.ServerWithExternalIp;
 import org.jclouds.dimensiondata.cloudcontroller.internal.BaseDimensionDataCloudControllerApiLiveTest;
 import org.jclouds.domain.LoginCredentials;
 import org.jclouds.ssh.SshClient;
@@ -54,7 +54,7 @@ public class DimensionDataCloudControllerComputeServiceAdapterLiveTest extends B
    private DimensionDataCloudControllerComputeServiceAdapter adapter;
    private TemplateBuilder templateBuilder;
    private Factory sshFactory;
-   private NodeAndInitialCredentials<Server> guest;
+   private NodeAndInitialCredentials<ServerWithExternalIp> guest;
 
    @Override
    protected DimensionDataCloudControllerApi create(Properties props, Iterable<Module> modules) {
@@ -100,7 +100,7 @@ public class DimensionDataCloudControllerComputeServiceAdapterLiveTest extends B
    }
 
    protected void doConnectViaSsh(Server guest, LoginCredentials creds) {
-      SshClient ssh = sshFactory.create(HostAndPort.fromParts(guest.nic().privateIpv4(), 22), creds);
+      SshClient ssh = sshFactory.create(HostAndPort.fromParts(guest.networkInfo().primaryNic().privateIpv4(), 22), creds);
       try {
          ssh.connect();
          ExecResponse hello = ssh.exec("echo hello");

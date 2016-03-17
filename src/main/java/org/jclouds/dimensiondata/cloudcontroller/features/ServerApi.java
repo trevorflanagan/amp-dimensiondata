@@ -36,7 +36,7 @@ import org.jclouds.dimensiondata.cloudcontroller.domain.PaginatedCollection;
 import org.jclouds.dimensiondata.cloudcontroller.domain.Response;
 import org.jclouds.dimensiondata.cloudcontroller.domain.Server;
 import org.jclouds.dimensiondata.cloudcontroller.domain.options.CreateServerOptions;
-import org.jclouds.dimensiondata.cloudcontroller.domain.options.NetworkInfo;
+import org.jclouds.dimensiondata.cloudcontroller.domain.NetworkInfo;
 import org.jclouds.dimensiondata.cloudcontroller.options.PaginationOptions;
 import org.jclouds.dimensiondata.cloudcontroller.parsers.ParseServers;
 import org.jclouds.http.filters.BasicAuthentication;

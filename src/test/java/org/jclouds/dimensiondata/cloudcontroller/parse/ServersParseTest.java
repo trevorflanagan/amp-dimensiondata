@@ -18,6 +18,8 @@
  */
 package org.jclouds.dimensiondata.cloudcontroller.parse;
 
+import static org.jclouds.dimensiondata.cloudcontroller.domain.Server.*;
+
 import java.util.List;
 
 import javax.ws.rs.Consumes;
@@ -31,13 +33,13 @@ import org.jclouds.dimensiondata.cloudcontroller.domain.Server;
 import org.jclouds.dimensiondata.cloudcontroller.domain.Servers;
 import org.jclouds.dimensiondata.cloudcontroller.domain.VMwareTools;
 import org.jclouds.dimensiondata.cloudcontroller.domain.VirtualHardware;
+import org.jclouds.dimensiondata.cloudcontroller.domain.NetworkInfo;
 import org.jclouds.dimensiondata.cloudcontroller.internal.BaseDimensionDataCloudControllerParseTest;
 import org.testng.annotations.Test;
 
 import com.google.common.collect.ImmutableList;
 
 import autovalue.shaded.com.google.common.common.collect.Lists;
-
 
 @Test(groups = "unit")
 public class ServersParseTest extends BaseDimensionDataCloudControllerParseTest<Servers> {
@@ -51,7 +53,7 @@ public class ServersParseTest extends BaseDimensionDataCloudControllerParseTest<
     @Consumes(MediaType.APPLICATION_JSON)
     public Servers expected() {
         List<Server> servers = ImmutableList.of(
-                Server.builder()
+                builder()
                         .id("b8246ba4-847d-475b-b296-f76787a69ca8")
                         .name("gui")
                         .description("")
@@ -76,19 +78,24 @@ public class ServersParseTest extends BaseDimensionDataCloudControllerParseTest<
                                         .build()
                                 )
                         )
-                        .nic(NIC.builder()
-                                .id("7c5310cd-ec36-4f76-9cc5-046f197360e3")
-                                .privateIpv4("10.230.59.11")
-                                .networkId("c5f083a2-2144-11e4-b29c-001517c4643e")
-                                .networkName("A Network Domain")
-                                .state("NORMAL")
+                        .networkInfo(NetworkInfo.builder()
+                                .networkDomainId("690de302-bb80-49c6-b401-8c02bbefb945")
+                                .primaryNic(NIC.builder()
+                                        .id("980a9fdd-4ea2-478b-85b4-f016349f1738")
+                                        .privateIpv4("10.0.0.8")
+                                        .ipv6("2607:f480:111:1575:c47:7479:2af8:3f1a")
+                                        .vlanId("6b25b02e-d3a2-4e69-8ca7-9bab605deebd")
+                                        .vlanName("vlan1")
+                                        .state("NORMAL")
+                                        .build())
+                                .additionalNic(Lists.<NIC>newArrayList())
                                 .build())
                         .softwareLabels(Lists.newArrayList())
                         .sourceImageId("1e44ab3f-2426-45ec-a1b5-827b2ce58836")
                         .createTime("2016-03-10T13:05:21.000Z")
                         .deployed(true)
                         .started(true)
-                        .state("NORMAL")
+                        .state(State.NORMAL)
                         .vmwareTools(VMwareTools.create(
                                 "NEED_UPGRADE",
                                 "RUNNING",
@@ -98,7 +105,7 @@ public class ServersParseTest extends BaseDimensionDataCloudControllerParseTest<
                                 "vmx-08",
                                 false
                         ))
-                        .datacenterId("NA3")
+                        .datacenterId("NA9")
                         .build()
         );
         return new Servers(servers, 1, 5, 5, 250);

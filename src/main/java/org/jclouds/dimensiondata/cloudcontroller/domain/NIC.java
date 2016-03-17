@@ -18,6 +18,7 @@
  */
 package org.jclouds.dimensiondata.cloudcontroller.domain;
 
+import org.jclouds.javax.annotation.Nullable;
 import org.jclouds.json.SerializedNames;
 
 import com.google.auto.value.AutoValue;
@@ -27,15 +28,16 @@ public abstract class NIC {
 
     NIC() {}
 
-    public abstract String id();
-    public abstract String privateIpv4();
-    public abstract String networkId();
-    public abstract String networkName();
-    public abstract String state();
+    @Nullable public abstract String id();
+    @Nullable public abstract String privateIpv4();
+    @Nullable public abstract String ipv6();
+    public abstract String vlanId();
+    @Nullable public abstract String vlanName();
+    @Nullable public abstract String state();
 
-    @SerializedNames({ "id", "privateIpv4", "networkId", "networkName", "state" })
-    public static NIC create(String id, String privateIpv4, String networkId, String networkName, String state) {
-        return builder().id(id).privateIpv4(privateIpv4).networkId(networkId).networkName(networkName).state(state).build();
+    @SerializedNames({ "id", "privateIpv4", "ipv6", "vlanId", "vlanName", "state" })
+    public static NIC create(String id, String privateIpv4, String ipv6, String vlanId, String vlanName, String state) {
+        return builder().id(id).privateIpv4(privateIpv4).ipv6(ipv6).vlanId(vlanId).vlanName(vlanName).state(state).build();
     }
 
     public abstract Builder toBuilder();
@@ -44,8 +46,9 @@ public abstract class NIC {
     public abstract static class Builder {
         public abstract Builder id(String id);
         public abstract Builder privateIpv4(String privateIpv4);
-        public abstract Builder networkId(String networkId);
-        public abstract Builder networkName(String networkName);
+        public abstract Builder ipv6(String ipv6);
+        public abstract Builder vlanId(String vlanId);
+        public abstract Builder vlanName(String vlanName);
         public abstract Builder state(String state);
 
         public abstract NIC build();
