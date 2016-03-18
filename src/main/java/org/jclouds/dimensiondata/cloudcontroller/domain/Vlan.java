@@ -23,20 +23,6 @@ import com.google.auto.value.AutoValue;
 @AutoValue
 public abstract class Vlan {
 
-    @AutoValue
-    public abstract static class IpRange {
-
-        IpRange() {} // For AutoValue only!
-
-        public abstract String address();
-        public abstract Integer prefixSize();
-
-        @SerializedNames({ "address", "prefixSize" })
-        public static IpRange create(String address, Integer prefixSize) {
-            return new AutoValue_Vlan_IpRange(address, prefixSize);
-        }
-    }
-
     Vlan() {}
 
     public static Builder builder() {

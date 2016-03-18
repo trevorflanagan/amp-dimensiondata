@@ -32,8 +32,10 @@ import org.jclouds.compute.domain.NodeMetadata;
 import org.jclouds.compute.domain.Template;
 import org.jclouds.compute.internal.BaseComputeServiceContextLiveTest;
 import org.jclouds.compute.reference.ComputeServiceConstants;
+import org.jclouds.dimensiondata.cloudcontroller.compute.options.DimensionDataCloudControllerTemplateOptions;
 import org.jclouds.domain.Location;
 import org.jclouds.logging.Logger;
+import org.jclouds.scriptbuilder.statements.login.AdminAccess;
 import org.jclouds.ssh.SshClient;
 import org.jclouds.sshj.config.SshjSshClientModule;
 import org.testng.annotations.Test;
@@ -84,7 +86,11 @@ public class DimensionDataCloudControllerComputeServiceContextLiveTest extends B
    public void testLaunchClusterWithDomainName() throws RunNodesException {
       int numNodes = 1;
       final String name = "node";
+
       Template template = view.getComputeService().templateBuilder().build();
+      DimensionDataCloudControllerTemplateOptions options = template.getOptions().as(DimensionDataCloudControllerTemplateOptions.class);
+      options.inboundPorts(22, 8080, 8081, 8082)
+              .runScript(AdminAccess.standard());
 
       Set<? extends NodeMetadata> nodes = view.getComputeService().createNodesInGroup(name, numNodes, template);
       assertEquals(numNodes, nodes.size(), "wrong number of nodes");

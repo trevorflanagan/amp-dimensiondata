@@ -18,10 +18,14 @@
  */
 package org.jclouds.dimensiondata.cloudcontroller.features;
 
+import static org.testng.Assert.assertEquals;
+import static org.testng.Assert.assertFalse;
 import static org.testng.Assert.assertNotNull;
 import static org.testng.Assert.assertNull;
+import static org.testng.Assert.assertTrue;
 
 import java.util.List;
+import java.util.concurrent.TimeUnit;
 
 import org.jclouds.dimensiondata.cloudcontroller.domain.Disk;
 import org.jclouds.dimensiondata.cloudcontroller.domain.NIC;
@@ -56,7 +60,9 @@ public class ServerApiLiveTest extends BaseDimensionDataCloudControllerApiLiveTe
         Boolean started = Boolean.TRUE;
         NetworkInfo networkInfo = NetworkInfo.create(
                 "690de302-bb80-49c6-b401-8c02bbefb945",
-                NIC.builder().build(), //create("6b25b02e-d3a2-4e69-8ca7-9bab605deebd", null),
+                NIC.builder()
+                        .vlanId("6b25b02e-d3a2-4e69-8ca7-9bab605deebd")
+                        .build(),
                 Lists.<NIC> newArrayList()
         );
         List<Disk> disks = ImmutableList.of(
@@ -76,15 +82,15 @@ public class ServerApiLiveTest extends BaseDimensionDataCloudControllerApiLiveTe
     public void testPowerOffServer() {
         Response response = api().powerOffServer(serverId);
         DimensionDataCloudControllerUtils.waitForServerStatus(api(), serverId, false, true, 30 * 60 * 1000, "Error");
-        serverId = DimensionDataCloudControllerUtils.tryFindServerId(response);
-        assertNull(serverId);
+        assertFalse(api().getServer(serverId).started());
+        assertTrue(response.error().isEmpty());
     }
 
     @AfterTest
     public void testDeleteServer() {
         if (serverId != null) {
             Response response = api().deleteServer(serverId);
-            assertNotNull(response);
+            assertTrue(response.error().isEmpty());
         }
     }
 

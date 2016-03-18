@@ -27,12 +27,16 @@ import javax.ws.rs.core.MediaType;
 
 import org.jclouds.Fallbacks;
 import org.jclouds.collect.PagedIterable;
+import org.jclouds.dimensiondata.cloudcontroller.domain.FirewallRule;
+import org.jclouds.dimensiondata.cloudcontroller.domain.FirewallRuleTarget;
 import org.jclouds.dimensiondata.cloudcontroller.domain.NatRule;
 import org.jclouds.dimensiondata.cloudcontroller.domain.NetworkDomain;
 import org.jclouds.dimensiondata.cloudcontroller.domain.PaginatedCollection;
+import org.jclouds.dimensiondata.cloudcontroller.domain.Placement;
 import org.jclouds.dimensiondata.cloudcontroller.domain.PublicIpBlock;
 import org.jclouds.dimensiondata.cloudcontroller.domain.Response;
 import org.jclouds.dimensiondata.cloudcontroller.domain.Vlan;
+import org.jclouds.dimensiondata.cloudcontroller.parsers.ParseFirewallRules;
 import org.jclouds.dimensiondata.cloudcontroller.parsers.ParseNatRules;
 import org.jclouds.dimensiondata.cloudcontroller.parsers.ParseNetworkDomains;
 import org.jclouds.dimensiondata.cloudcontroller.options.PaginationOptions;
@@ -82,6 +86,13 @@ public interface NetworkApi {
     @Fallback(Fallbacks.EmptyPagedIterableOnNotFoundOr404.class)
     PagedIterable<Vlan> listVlans(@QueryParam("networkDomainId") String networkDomainId);
 
+    @Named("network:addPublicIpBlock")
+    @POST
+    @Path("/addPublicIpBlock")
+    @Produces(MediaType.APPLICATION_JSON)
+    @MapBinder(BindToJsonPayload.class)
+    Response addPublicIpBlock(@PayloadParam("networkDomainId") String networkDomainId);
+
     @Named("network:publicIpBlock")
     @GET
     @Path("/publicIpBlock")
@@ -103,7 +114,7 @@ public interface NetworkApi {
     @Produces(MediaType.APPLICATION_JSON)
     @MapBinder(BindToJsonPayload.class)
     Response createNatRule(@PayloadParam("networkDomainId") String networkDomainId, @PayloadParam("internalIp") String internalIp,
-                          @PayloadParam("externalIp") String externalIp);
+                           @PayloadParam("externalIp") String externalIp);
 
     @Named("network:natRule")
     @GET
@@ -126,4 +137,37 @@ public interface NetworkApi {
     @Produces(MediaType.APPLICATION_JSON)
     @MapBinder(BindToJsonPayload.class)
     Response deleteNatRule(@PayloadParam("id") String natRuleId);
+
+    @Named("network:createFirewallRule")
+    @POST
+    @Path("/createFirewallRule")
+    @Produces(MediaType.APPLICATION_JSON)
+    @MapBinder(BindToJsonPayload.class)
+    Response createFirewallRule(@PayloadParam("networkDomainId") String networkDomainId, @PayloadParam("name") String name,
+                                @PayloadParam("action") String action, @PayloadParam("ipVersion") String ipVersion,
+                                @PayloadParam("protocol") String protocol, @PayloadParam("source") FirewallRuleTarget source,
+                                @PayloadParam("destination") FirewallRuleTarget destination, @PayloadParam("enabled") Boolean enabled,
+                                @PayloadParam("placement") Placement placement);
+
+    @Named("network:listFirewallRules")
+    @GET
+    @Path("/firewallRule")
+    @ResponseParser(ParseFirewallRules.class)
+    @Fallback(Fallbacks.EmptyIterableWithMarkerOnNotFoundOr404.class)
+    PaginatedCollection<FirewallRule> listFirewallRules(@QueryParam("networkDomainId") String networkDomainId, PaginationOptions options);
+
+    @Named("network:listFirewallRules")
+    @GET
+    @Path("/firewallRule")
+    @Transform(ParseFirewallRules.ToPagedIterable.class)
+    @ResponseParser(ParseFirewallRules.class)
+    @Fallback(Fallbacks.EmptyPagedIterableOnNotFoundOr404.class)
+    PagedIterable<FirewallRule> listFirewallRules(@QueryParam("networkDomainId") String networkDomainId);
+
+    @Named("network:deleteFirewallRule")
+    @POST
+    @Path("/deleteFirewallRule")
+    @Produces(MediaType.APPLICATION_JSON)
+    @MapBinder(BindToJsonPayload.class)
+    Response deleteFirewallRule(@PayloadParam("id") String natRuleId);
 }

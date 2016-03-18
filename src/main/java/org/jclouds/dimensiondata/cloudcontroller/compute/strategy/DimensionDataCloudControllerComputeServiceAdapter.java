@@ -20,9 +20,10 @@ import static com.google.common.base.Preconditions.checkNotNull;
 import static java.lang.String.format;
 import static org.jclouds.compute.reference.ComputeServiceConstants.COMPUTE_LOGGER;
 
+import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Set;
-import java.util.concurrent.TimeUnit;
 
 import javax.annotation.Resource;
 import javax.inject.Inject;
@@ -35,13 +36,18 @@ import org.jclouds.compute.domain.Template;
 import org.jclouds.compute.reference.ComputeServiceConstants.Timeouts;
 import org.jclouds.dimensiondata.cloudcontroller.DimensionDataCloudControllerApi;
 import org.jclouds.dimensiondata.cloudcontroller.compute.functions.ServerToServetWithExternalIp;
+import org.jclouds.dimensiondata.cloudcontroller.compute.options.DimensionDataCloudControllerTemplateOptions;
 import org.jclouds.dimensiondata.cloudcontroller.domain.Datacenter;
 import org.jclouds.dimensiondata.cloudcontroller.domain.Disk;
+import org.jclouds.dimensiondata.cloudcontroller.domain.FirewallRuleTarget;
+import org.jclouds.dimensiondata.cloudcontroller.domain.FirewallRuleTarget.Port;
+import org.jclouds.dimensiondata.cloudcontroller.domain.IpRange;
 import org.jclouds.dimensiondata.cloudcontroller.domain.NIC;
 import org.jclouds.dimensiondata.cloudcontroller.domain.NatRule;
 import org.jclouds.dimensiondata.cloudcontroller.domain.NetworkDomain;
 import org.jclouds.dimensiondata.cloudcontroller.domain.NetworkInfo;
 import org.jclouds.dimensiondata.cloudcontroller.domain.OsImage;
+import org.jclouds.dimensiondata.cloudcontroller.domain.Placement;
 import org.jclouds.dimensiondata.cloudcontroller.domain.PublicIpBlock;
 import org.jclouds.dimensiondata.cloudcontroller.domain.Response;
 import org.jclouds.dimensiondata.cloudcontroller.domain.Vlan;
@@ -56,6 +62,7 @@ import com.google.common.base.Objects;
 import com.google.common.base.Optional;
 import com.google.common.base.Predicate;
 import com.google.common.base.Predicates;
+import com.google.common.base.Splitter;
 import com.google.common.collect.FluentIterable;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Iterables;
@@ -75,6 +82,7 @@ public class DimensionDataCloudControllerComputeServiceAdapter implements
     private static final String DEFAULT_LOGIN_PASSWORD = "P$$ssWwrrdGoDd!";
     private static final String DEFAULT_LOGIN_USER = "root";
     public static final String DEFAULT_DATACENTER_TYPE = "MCP 2.0";
+    public static final String JCLOUDS_FW_RULE_PATTERN = "jclouds-fw-rule_%s_port-%s";
 
     @Resource
     @Named(COMPUTE_LOGGER)
@@ -103,6 +111,9 @@ public class DimensionDataCloudControllerComputeServiceAdapter implements
         final String locationId = checkNotNull(template.getLocation().getId(), "template location id must not be null");
         final Hardware hardware = checkNotNull(template.getHardware(), "template hardware must not be null");
 
+        DimensionDataCloudControllerTemplateOptions templateOptions = DimensionDataCloudControllerTemplateOptions.class.cast(template.getOptions());
+        List<Port> ports = simplifyPorts(templateOptions.getInboundPorts());
+
         // TODO getOrCreateNetworkDomain with vlan? if yes, move to subclass of CreateNodesWithGroupEncodedIntoNameThenAddToSet
         NetworkDomain foundNetworkDomain = tryFindNetworkDomain(new Predicate<NetworkDomain>() {
             @Override
@@ -110,7 +121,6 @@ public class DimensionDataCloudControllerComputeServiceAdapter implements
                 return input.datacenterId().equalsIgnoreCase(locationId);
             }
         });
-
         Vlan vlan = tryGetVlan(foundNetworkDomain.id());
 
         NetworkInfo networkInfo = NetworkInfo.create(
@@ -137,12 +147,37 @@ public class DimensionDataCloudControllerComputeServiceAdapter implements
         DimensionDataCloudControllerUtils.waitForServerStatus(api.getServerApi(), serverId, true, true, timeouts.nodeRunning, message);
 
         String externalIp = tryFindExternalIp(api, foundNetworkDomain.id());
-
         ServerWithExternalIp serverWithExternalIp = ServerWithExternalIp.builder().server(api.getServerApi().getServer(serverId)).externalIp(externalIp).build();
-        Response createNatRuleOperation = api.getNetworkApi().createNatRule(foundNetworkDomain.id(), api.getServerApi().getServer(serverId).networkInfo().primaryNic().privateIpv4(), externalIp);
+        String internalIp = api.getServerApi().getServer(serverId).networkInfo().primaryNic().privateIpv4();
+        Response createNatRuleOperation = api.getNetworkApi().createNatRule(foundNetworkDomain.id(), internalIp, externalIp);
         if (!createNatRuleOperation.error().isEmpty()) {
-            // TODO rollback
-            throw new IllegalStateException();
+            // rollback
+            api.getServerApi().deleteServer(serverId);
+            throw new IllegalStateException(String.format("Cannot create a NAT rule for internalIp %s (server %s) using externalIp %s", internalIp, serverId, externalIp));
+        }
+        // set firewall policies
+        for (Port destinationPort : ports) {
+            Response createFirewallRuleOperation = api.getNetworkApi().createFirewallRule(
+                    foundNetworkDomain.id(),
+                    String.format(JCLOUDS_FW_RULE_PATTERN, name, destinationPort.end() == null ? destinationPort.begin() : destinationPort.begin() + "_" + destinationPort.end()),
+                    "ACCEPT_DECISIVELY",
+                    "IPV4",
+                    "TCP",
+                    FirewallRuleTarget.builder()
+                            .ip(IpRange.create("ANY", null))
+                            .build(),
+                    FirewallRuleTarget.builder()
+                            .ip(IpRange.create(internalIp, null))
+                            .port(destinationPort)
+                            .build(),
+                    Boolean.TRUE,
+                    Placement.builder().position("LAST").build());
+            if (!createFirewallRuleOperation.error().isEmpty()) {
+                // rollback
+                // TODO delete all the firewall rules?
+                api.getServerApi().deleteServer(serverId);
+                throw new IllegalStateException(String.format("Cannot create a firewall rule %s for (server %s) using externalIp %s", destinationPort.begin(), serverId, externalIp));
+            }
         }
 
         return new NodeAndInitialCredentials<ServerWithExternalIp>(serverWithExternalIp, serverId, credsBuilder.build());
@@ -209,8 +244,6 @@ public class DimensionDataCloudControllerComputeServiceAdapter implements
         if (!deleteServerResponse.error().isEmpty()) {
             throw new IllegalStateException(message);
         }
-
-        DimensionDataCloudControllerUtils.waitForServerStatus(api.getServerApi(), id, false, false, TimeUnit.MINUTES.toMillis(10), message);
     }
 
     @Override
@@ -245,14 +278,16 @@ public class DimensionDataCloudControllerComputeServiceAdapter implements
 
     private String tryFindExternalIp(DimensionDataCloudControllerApi api, String networkDomainId) {
         // check nat rule in use
-        Set<String> externalIpInUse = api.getNetworkApi().listNatRules(networkDomainId).concat().transform(new Function<NatRule, String>() {
+        Set<String> externalIpInUse = api.getNetworkApi().listNatRules(networkDomainId).concat()
+                .transform(new Function<NatRule, String>() {
             @Override
             public String apply(NatRule input) {
                 return input.externalIp();
             }
-        }).toSet();
+        })
+                .toSet();
 
-        Set<String> availablePublicIpInAllBlocks = getAvailablePublicIPv4InAllBlocks(api, networkDomainId);
+        Set<String> availablePublicIpInAllBlocks = getAvailableOrCreatePublicIPv4InAllBlocks(api, networkDomainId);
 
         Sets.SetView<String> difference = Sets.difference(availablePublicIpInAllBlocks, externalIpInUse);
         if (difference.isEmpty()) {
@@ -261,7 +296,7 @@ public class DimensionDataCloudControllerComputeServiceAdapter implements
         return Iterables.get(difference, 0);
     }
 
-    private Set<String> getAvailablePublicIPv4InAllBlocks(DimensionDataCloudControllerApi api, String networkDomainId) {
+    private Set<String> getAvailableOrCreatePublicIPv4InAllBlocks(DimensionDataCloudControllerApi api, String networkDomainId) {
         ImmutableList<PublicIpBlock> publicIpBlocks = api.getNetworkApi().listPublicIPv4AddressBlocks(networkDomainId).concat().toList();
         if (publicIpBlocks.isEmpty()) {
             // TODO createPublicIPv4AddressBlock
@@ -313,5 +348,42 @@ public class DimensionDataCloudControllerComputeServiceAdapter implements
 
         return String.format("%d.%d.%d.%d", i >>> 24 & 0xFF, i >> 16 & 0xFF,
                 i >>   8 & 0xFF, i >>  0 & 0xFF);
+    }
+
+    // Helper function for simplifying an array of ports to a list of ranges FirewallOptions expects.
+    public static List<Port> simplifyPorts(int[] ports){
+        if ((ports == null) || (ports.length == 0)) {
+            return null;
+        }
+        ArrayList<Port> output = Lists.newArrayList();
+        Arrays.sort(ports);
+
+        int range_start = ports[0];
+        int range_end = ports[0];
+        for (int i = 1; i < ports.length; i++) {
+            if ((ports[i - 1] == ports[i] - 1) || (ports[i - 1] == ports[i])){
+                // Range continues.
+                range_end = ports[i];
+            }
+            else {
+                // Range ends.
+                output.add(formatRange(range_start, range_end));
+                range_start = ports[i];
+                range_end = ports[i];
+            }
+        }
+        // Make sure we get the last range.
+        output.add(formatRange(range_start, range_end));
+        return output;
+    }
+
+    // Helper function for simplifyPorts. Formats port range strings.
+    private static Port formatRange(int start, int finish){
+        if (start == finish){
+            return Port.create(start, null); //Integer.toString(start);
+        }
+        else {
+            return Port.create(start, finish);//String.format("%s:%s", Integer.toString(start), Integer.toString(finish));
+        }
     }
 }

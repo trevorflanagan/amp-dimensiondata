@@ -23,50 +23,47 @@ import java.util.List;
 import javax.ws.rs.Consumes;
 import javax.ws.rs.core.MediaType;
 
+import org.jclouds.dimensiondata.cloudcontroller.domain.FirewallRule;
+import org.jclouds.dimensiondata.cloudcontroller.domain.FirewallRuleTarget;
+import org.jclouds.dimensiondata.cloudcontroller.domain.FirewallRules;
 import org.jclouds.dimensiondata.cloudcontroller.domain.IpRange;
-import org.jclouds.dimensiondata.cloudcontroller.domain.NetworkDomain;
-import org.jclouds.dimensiondata.cloudcontroller.domain.Vlan;
-import org.jclouds.dimensiondata.cloudcontroller.domain.Vlans;
 import org.jclouds.dimensiondata.cloudcontroller.internal.BaseDimensionDataCloudControllerParseTest;
 import org.testng.annotations.Test;
 
 import com.google.common.collect.ImmutableList;
 
 @Test(groups = "unit")
-public class VlansParseTest extends BaseDimensionDataCloudControllerParseTest<Vlans> {
+public class FirewallRulesParseTest extends BaseDimensionDataCloudControllerParseTest<FirewallRules> {
 
     @Override
     public String resource() {
-        return "/vlans.json";
+        return "/firewallRules.json";
     }
 
     @Override
     @Consumes(MediaType.APPLICATION_JSON)
-    public Vlans expected() {
-        List<Vlan> vlans = ImmutableList.of(
-                Vlan.builder()
-                        .networkDomain(NetworkDomain.builder()
-                                .id("690de302-bb80-49c6-b401-8c02bbefb945")
-                                .name("test")
-                                .build())
-                        .id("6b25b02e-d3a2-4e69-8ca7-9bab605deebd")
-                        .name("vlan1")
-                        .description("")
-                        .privateIpv4Range(IpRange.create(
-                                "10.0.0.0",
-                                24
-                        ))
-                        .ipv6Range(IpRange.create(
-                                "2607:f480:111:1575:0:0:0:0",
-                                64
-                        ))
-                        .ipv4GatewayAddress("10.0.0.1")
-                        .ipv6GatewayAddress("2607:f480:111:1575:0:0:0:1")
-                        .createTime("2016-03-11T10:41:19.000Z")
+    public FirewallRules expected() {
+        List<FirewallRule> firewallRules = ImmutableList.of(
+                FirewallRule.builder()
+                        .id("1aa3d0ce-d95d-4296-8338-9717e0d37ff9")
+                        .name("CCDEFAULT.BlockOutboundMailIPv6Secure")
                         .state("NORMAL")
+                        .action("DROP")
+                        .ipVersion("IPV6")
+                        .protocol("TCP")
+                        .source(FirewallRuleTarget.builder()
+                                .ip(IpRange.create("ANY", null))
+                                .build())
+                        .destination(FirewallRuleTarget.builder()
+                                .ip(IpRange.create("ANY", null))
+                                .port(FirewallRuleTarget.Port.create(587, null))
+                                .build())
+                        .ruleType("DEFAULT_RULE")
+                        .networkDomainId("484174a2-ae74-4658-9e56-50fc90e086cf")
+                        .enabled(Boolean.TRUE)
                         .datacenterId("NA9")
                         .build()
         );
-        return new Vlans(vlans, 1, 5, 5, 250);
+        return new FirewallRules(firewallRules, 1, 2, 2, 250);
     }
 }
