@@ -62,7 +62,6 @@ import com.google.common.base.Objects;
 import com.google.common.base.Optional;
 import com.google.common.base.Predicate;
 import com.google.common.base.Predicates;
-import com.google.common.base.Splitter;
 import com.google.common.collect.FluentIterable;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Iterables;
@@ -82,7 +81,7 @@ public class DimensionDataCloudControllerComputeServiceAdapter implements
     private static final String DEFAULT_LOGIN_PASSWORD = "P$$ssWwrrdGoDd!";
     private static final String DEFAULT_LOGIN_USER = "root";
     public static final String DEFAULT_DATACENTER_TYPE = "MCP 2.0";
-    public static final String JCLOUDS_FW_RULE_PATTERN = "jclouds-fw-rule_%s_port-%s";
+    public static final String JCLOUDS_FW_RULE_PATTERN = "jclouds%s%s";
 
     @Resource
     @Named(COMPUTE_LOGGER)
@@ -159,7 +158,7 @@ public class DimensionDataCloudControllerComputeServiceAdapter implements
         for (Port destinationPort : ports) {
             Response createFirewallRuleOperation = api.getNetworkApi().createFirewallRule(
                     foundNetworkDomain.id(),
-                    String.format(JCLOUDS_FW_RULE_PATTERN, name, destinationPort.end() == null ? destinationPort.begin() : destinationPort.begin() + "_" + destinationPort.end()),
+                    String.format(JCLOUDS_FW_RULE_PATTERN, name, destinationPort.end() == null ? destinationPort.begin() : destinationPort.begin() + "" + destinationPort.end()),
                     "ACCEPT_DECISIVELY",
                     "IPV4",
                     "TCP",
@@ -287,7 +286,7 @@ public class DimensionDataCloudControllerComputeServiceAdapter implements
         })
                 .toSet();
 
-        Set<String> availablePublicIpInAllBlocks = getAvailableOrCreatePublicIPv4InAllBlocks(api, networkDomainId);
+        Set<String> availablePublicIpInAllBlocks = getAvailableOrAddPublicIPv4InAllBlocks(api, networkDomainId);
 
         Sets.SetView<String> difference = Sets.difference(availablePublicIpInAllBlocks, externalIpInUse);
         if (difference.isEmpty()) {
@@ -296,11 +295,15 @@ public class DimensionDataCloudControllerComputeServiceAdapter implements
         return Iterables.get(difference, 0);
     }
 
-    private Set<String> getAvailableOrCreatePublicIPv4InAllBlocks(DimensionDataCloudControllerApi api, String networkDomainId) {
-        ImmutableList<PublicIpBlock> publicIpBlocks = api.getNetworkApi().listPublicIPv4AddressBlocks(networkDomainId).concat().toList();
+    private Set<String> getAvailableOrAddPublicIPv4InAllBlocks(DimensionDataCloudControllerApi api, String networkDomainId) {
+        List<PublicIpBlock> publicIpBlocks = api.getNetworkApi().listPublicIPv4AddressBlocks(networkDomainId).concat().toList();
         if (publicIpBlocks.isEmpty()) {
-            // TODO createPublicIPv4AddressBlock
-            throw new IllegalStateException();
+            // addPublicIPv4AddressBlock
+            Response response = api.getNetworkApi().addPublicIpBlock(networkDomainId);
+            if (!response.error().isEmpty()) {
+                throw new IllegalStateException("Cannot add a publicIpBlock to networkDomainId: " + networkDomainId);
+            }
+            publicIpBlocks = api.getNetworkApi().listPublicIPv4AddressBlocks(networkDomainId).concat().toList();
         }
 
         return FluentIterable.from(publicIpBlocks)
