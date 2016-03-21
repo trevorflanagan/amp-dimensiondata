@@ -22,12 +22,14 @@ import org.jclouds.compute.domain.Hardware;
 import org.jclouds.compute.domain.Image;
 import org.jclouds.compute.domain.NodeMetadata;
 import org.jclouds.compute.options.TemplateOptions;
+import org.jclouds.compute.strategy.CreateNodesInGroupThenAddToSet;
 import org.jclouds.dimensiondata.cloudcontroller.compute.functions.DatacenterToLocation;
 import org.jclouds.dimensiondata.cloudcontroller.compute.functions.OsImageToHardware;
 import org.jclouds.dimensiondata.cloudcontroller.compute.functions.OsImageToImage;
 import org.jclouds.dimensiondata.cloudcontroller.compute.functions.ServerWithNatRuleToNodeMetadata;
 import org.jclouds.dimensiondata.cloudcontroller.compute.options.DimensionDataCloudControllerTemplateOptions;
-import org.jclouds.dimensiondata.cloudcontroller.compute.strategy.DimensionDataCloudControllerComputeServiceAdapter;
+import org.jclouds.dimensiondata.cloudcontroller.compute.DimensionDataCloudControllerComputeServiceAdapter;
+import org.jclouds.dimensiondata.cloudcontroller.compute.strategy.GetOrCreateNetworkDomainThenCreateNodes;
 import org.jclouds.dimensiondata.cloudcontroller.domain.Datacenter;
 import org.jclouds.dimensiondata.cloudcontroller.domain.OsImage;
 import org.jclouds.dimensiondata.cloudcontroller.domain.internal.ServerWithExternalIp;
@@ -53,6 +55,8 @@ public class DimensionDataCloudControllerComputeServiceContextModule extends
         bind(new TypeLiteral<Function<Datacenter, Location>>() {
         }).to(DatacenterToLocation.class);
         bind(TemplateOptions.class).to(DimensionDataCloudControllerTemplateOptions.class);
+        bind(CreateNodesInGroupThenAddToSet.class).to(GetOrCreateNetworkDomainThenCreateNodes.class);
+
         // to have the compute service adapter override default locations
         install(new LocationsFromComputeServiceAdapterModule<ServerWithExternalIp, OsImage, OsImage, Datacenter>() {
         });

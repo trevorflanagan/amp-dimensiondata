@@ -22,21 +22,24 @@ import static org.jclouds.util.Predicates2.retry;
 
 import org.jclouds.dimensiondata.cloudcontroller.domain.Property;
 import org.jclouds.dimensiondata.cloudcontroller.domain.Response;
+import org.jclouds.dimensiondata.cloudcontroller.domain.Vlan;
+import org.jclouds.dimensiondata.cloudcontroller.features.NetworkApi;
 import org.jclouds.dimensiondata.cloudcontroller.features.ServerApi;
 import org.jclouds.dimensiondata.cloudcontroller.predicates.ServerStatus;
 
 import com.google.common.base.Function;
 import com.google.common.base.Optional;
 import com.google.common.base.Predicate;
+import com.google.common.base.Predicates;
 import com.google.common.collect.FluentIterable;
 
 public class DimensionDataCloudControllerUtils {
 
-    public static String tryFindServerId(Response response) {
+    public static String tryFindPropertyValue(Response response, final String propertyName) {
         Optional<String> optionalServerId = FluentIterable.from(response.info()).firstMatch(new Predicate<Property>() {
             @Override
             public boolean apply(Property input) {
-                return input.name().equals("serverId");
+                return input.name().equals(propertyName);
             }
         }).transform(new Function<Property, String>() {
             @Override
@@ -49,6 +52,10 @@ public class DimensionDataCloudControllerUtils {
             throw new IllegalStateException();
         }
         return optionalServerId.get();
+    }
+
+    public static Optional<Vlan> tryGetVlan(NetworkApi api, String networkDomainId) {
+        return api.listVlans(networkDomainId).concat().firstMatch(Predicates.<Vlan>notNull());
     }
 
     public static void waitForServerStatus(ServerApi api, String serverId, boolean started, boolean deployed, long timeoutMillis, String message) {

@@ -73,7 +73,7 @@ public class ServerApiLiveTest extends BaseDimensionDataCloudControllerApiLiveTe
         );
         Response response = api().deployServer(ServerApiLiveTest.class.getSimpleName(), "4c02126c-32fc-4b4c-9466-9824c1b5aa0f", started, networkInfo, disks, "P$$ssWwrrdGoDd!");
         assertNotNull(response);
-        serverId = DimensionDataCloudControllerUtils.tryFindServerId(response);
+        serverId = DimensionDataCloudControllerUtils.tryFindPropertyValue(response, "serverId");
         assertNotNull(serverId);
         DimensionDataCloudControllerUtils.waitForServerStatus(api(), serverId, true, true, 30 * 60 * 1000, "Error");
     }

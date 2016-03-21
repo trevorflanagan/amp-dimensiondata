@@ -14,7 +14,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.jclouds.dimensiondata.cloudcontroller.compute.strategy;
+package org.jclouds.dimensiondata.cloudcontroller.compute;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 import static java.lang.String.format;
@@ -62,8 +62,6 @@ import com.google.common.base.Objects;
 import com.google.common.base.Optional;
 import com.google.common.base.Predicate;
 import com.google.common.base.Predicates;
-import com.google.common.collect.FluentIterable;
-import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Lists;
 
@@ -81,7 +79,7 @@ public class DimensionDataCloudControllerComputeServiceAdapter implements
     private static final String DEFAULT_LOGIN_PASSWORD = "P$$ssWwrrdGoDd!";
     private static final String DEFAULT_LOGIN_USER = "root";
     public static final String DEFAULT_DATACENTER_TYPE = "MCP 2.0";
-    public static final String JCLOUDS_FW_RULE_PATTERN = "jclouds%s%s";
+    public static final String JCLOUDS_FW_RULE_PATTERN = "jclouds.%s.%s";
 
     @Resource
     @Named(COMPUTE_LOGGER)
@@ -113,18 +111,28 @@ public class DimensionDataCloudControllerComputeServiceAdapter implements
         DimensionDataCloudControllerTemplateOptions templateOptions = DimensionDataCloudControllerTemplateOptions.class.cast(template.getOptions());
         List<Port> ports = simplifyPorts(templateOptions.getInboundPorts());
 
-        // TODO getOrCreateNetworkDomain with vlan? if yes, move to subclass of CreateNodesWithGroupEncodedIntoNameThenAddToSet
+        /*
+        // TODO getOrCreateNetworkDomain with foundVlan? if yes, move to subclass of CreateNodesWithGroupEncodedIntoNameThenAddToSet
         NetworkDomain foundNetworkDomain = tryFindNetworkDomain(new Predicate<NetworkDomain>() {
             @Override
             public boolean apply(NetworkDomain input) {
                 return input.datacenterId().equalsIgnoreCase(locationId);
             }
         });
-        Vlan vlan = tryGetVlan(foundNetworkDomain.id());
+        Optional<Vlan> vlanOptional = DimensionDataCloudControllerUtils.tryGetVlan(api.getNetworkApi(), foundNetworkDomain.id());
+        if (!vlanOptional.isPresent()) {
+            throw new IllegalStateException();
+        }
+        */
+
+
+        String vlanId = templateOptions.getVlanId();
+        Vlan foundVlan = api.getNetworkApi().getVlan(vlanId);
+        NetworkDomain foundNetworkDomain = foundVlan.networkDomain();
 
         NetworkInfo networkInfo = NetworkInfo.create(
-                foundNetworkDomain.id(),
-                NIC.builder().vlanId(vlan.id()).build(),
+                foundVlan.networkDomain().id(),
+                NIC.builder().vlanId(vlanId).build(),
                 // TODO allow additional NICs
                 Lists.<NIC>newArrayList()
         );
@@ -140,7 +148,7 @@ public class DimensionDataCloudControllerComputeServiceAdapter implements
                 .build();
 
         Response response = api.getServerApi().deployServer(name, imageId, Boolean.TRUE, networkInfo, disks, overriddenLoginPassword, createServerOptions);
-        String serverId = DimensionDataCloudControllerUtils.tryFindServerId(response);
+        String serverId = DimensionDataCloudControllerUtils.tryFindPropertyValue(response, "serverId");
 
         String message = format("server(%s) is not ready within %d ms.", serverId, timeouts.nodeRunning);
         DimensionDataCloudControllerUtils.waitForServerStatus(api.getServerApi(), serverId, true, true, timeouts.nodeRunning, message);
@@ -158,7 +166,7 @@ public class DimensionDataCloudControllerComputeServiceAdapter implements
         for (Port destinationPort : ports) {
             Response createFirewallRuleOperation = api.getNetworkApi().createFirewallRule(
                     foundNetworkDomain.id(),
-                    String.format(JCLOUDS_FW_RULE_PATTERN, name, destinationPort.end() == null ? destinationPort.begin() : destinationPort.begin() + "" + destinationPort.end()),
+                    generateFirewallName(serverId, destinationPort),
                     "ACCEPT_DECISIVELY",
                     "IPV4",
                     "TCP",
@@ -166,7 +174,7 @@ public class DimensionDataCloudControllerComputeServiceAdapter implements
                             .ip(IpRange.create("ANY", null))
                             .build(),
                     FirewallRuleTarget.builder()
-                            .ip(IpRange.create(internalIp, null))
+                            .ip(IpRange.create(externalIp, null))
                             .port(destinationPort)
                             .build(),
                     Boolean.TRUE,
@@ -180,6 +188,10 @@ public class DimensionDataCloudControllerComputeServiceAdapter implements
         }
 
         return new NodeAndInitialCredentials<ServerWithExternalIp>(serverWithExternalIp, serverId, credsBuilder.build());
+    }
+
+    private String generateFirewallName(String serverId, Port destinationPort) {
+        return String.format(JCLOUDS_FW_RULE_PATTERN, serverId.replaceAll("-", "_"), destinationPort.end() == null ? destinationPort.begin() : destinationPort.begin() + "." + destinationPort.end());
     }
 
     @Override
@@ -209,7 +221,7 @@ public class DimensionDataCloudControllerComputeServiceAdapter implements
 
     @Override
     public ServerWithExternalIp getNode(String id) {
-        return new ServerToServetWithExternalIp().apply(api.getServerApi().getServer(id));
+        return new ServerToServetWithExternalIp(api).apply(api.getServerApi().getServer(id));
     }
 
     @Override
@@ -262,7 +274,7 @@ public class DimensionDataCloudControllerComputeServiceAdapter implements
 
     @Override
     public Iterable<ServerWithExternalIp> listNodes() {
-        return api.getServerApi().listServers().concat().transform(new ServerToServetWithExternalIp()).toList();
+        return api.getServerApi().listServers().concat().transform(new ServerToServetWithExternalIp(api)).toList();
     }
 
     @Override
@@ -275,59 +287,53 @@ public class DimensionDataCloudControllerComputeServiceAdapter implements
         });
     }
 
-    private String tryFindExternalIp(DimensionDataCloudControllerApi api, String networkDomainId) {
+    private String tryFindExternalIp(DimensionDataCloudControllerApi api, final String networkDomainId) {
         // check nat rule in use
-        Set<String> externalIpInUse = api.getNetworkApi().listNatRules(networkDomainId).concat()
-                .transform(new Function<NatRule, String>() {
-            @Override
-            public String apply(NatRule input) {
-                return input.externalIp();
-            }
-        })
-                .toSet();
-
-        Set<String> availablePublicIpInAllBlocks = getAvailableOrAddPublicIPv4InAllBlocks(api, networkDomainId);
-
-        Sets.SetView<String> difference = Sets.difference(availablePublicIpInAllBlocks, externalIpInUse);
-        if (difference.isEmpty()) {
-            throw new IllegalStateException();
-        }
-        return Iterables.get(difference, 0);
+        final Set<String> publicIpAddressesInUse = getExternalIPv4AddressesInUse(api, networkDomainId);
+        return getOrAddPublicIPv4Address(api, publicIpAddressesInUse, networkDomainId);
     }
 
-    private Set<String> getAvailableOrAddPublicIPv4InAllBlocks(DimensionDataCloudControllerApi api, String networkDomainId) {
-        List<PublicIpBlock> publicIpBlocks = api.getNetworkApi().listPublicIPv4AddressBlocks(networkDomainId).concat().toList();
-        if (publicIpBlocks.isEmpty()) {
-            // addPublicIPv4AddressBlock
-            Response response = api.getNetworkApi().addPublicIpBlock(networkDomainId);
-            if (!response.error().isEmpty()) {
-                throw new IllegalStateException("Cannot add a publicIpBlock to networkDomainId: " + networkDomainId);
-            }
-            publicIpBlocks = api.getNetworkApi().listPublicIPv4AddressBlocks(networkDomainId).concat().toList();
-        }
+    private Set<String> getExternalIPv4AddressesInUse(DimensionDataCloudControllerApi api, final String networkDomainId) {
+        return api.getNetworkApi().listNatRules(networkDomainId).concat()
+                    .filter(new Predicate<NatRule>() {
+                        @Override
+                        public boolean apply(NatRule natRule) {
+                            return natRule.networkDomainId().equalsIgnoreCase(networkDomainId);
+                        }
+                    })
+                    .transform(new Function<NatRule, String>() {
+                        @Override
+                        public String apply(NatRule natRule) {
+                            return natRule.externalIp();
+                        }
+                    })
+                    .toSet();
+    }
 
-        return FluentIterable.from(publicIpBlocks)
+    private String getOrAddPublicIPv4Address(final DimensionDataCloudControllerApi api, final Set<String> publicIpAddressesInUse, final String networkDomainId) {
+        Optional<String> optionalPublicIPv4Address = api.getNetworkApi().listPublicIPv4AddressBlocks(networkDomainId).concat()
                 .transformAndConcat(new Function<PublicIpBlock, Iterable<String>>() {
                     @Override
-                    public Iterable<String> apply(PublicIpBlock input) {
-                        List<String> ipAddresses = Lists.newArrayList();
-                        String ipAddress = input.baseIp();
-                        for (int i = 0; i < input.size(); i++) {
-                            ipAddresses.add(ipAddress);
-                            ipAddress = getNextIPV4Address(ipAddress);
-                        }
-                        return ipAddresses;
+                    public Iterable<String> apply(PublicIpBlock publicIpBlock) {
+                        return generateAllPublicIPv4Addresses(publicIpBlock);
                     }
                 })
-                .toSet();
-    }
+                .filter(new Predicate<String>() {
+                    @Override
+                    public boolean apply(String publicIpAddress) {
+                        // first publicIpBlock with an available externalIp
+                        return !publicIpAddressesInUse.contains(publicIpAddress);
+                    }
+                }).first();
 
-    private Vlan tryGetVlan(String networkDomainId) {
-        Optional<Vlan> vlanOptional = api.getNetworkApi().listVlans(networkDomainId).concat().firstMatch(Predicates.<Vlan>notNull());
-        if (!vlanOptional.isPresent()) {
-            throw new IllegalStateException();
+        if (optionalPublicIPv4Address.isPresent()) return optionalPublicIPv4Address.get();
+
+        // addPublicIPv4AddressBlock
+        Response response = api.getNetworkApi().addPublicIpBlock(networkDomainId);
+        if (!response.error().isEmpty()) {
+           throw new IllegalStateException("Cannot add a publicIpBlock to networkDomainId: " + networkDomainId);
         }
-        return vlanOptional.get();
+         return api.getNetworkApi().getPublicIPv4AddressBlock(DimensionDataCloudControllerUtils.tryFindPropertyValue(response, "ipBlockId")).baseIp();
     }
 
     private NetworkDomain tryFindNetworkDomain(Predicate<NetworkDomain> networkDomainPredicate) {
@@ -388,5 +394,15 @@ public class DimensionDataCloudControllerComputeServiceAdapter implements
         else {
             return Port.create(start, finish);//String.format("%s:%s", Integer.toString(start), Integer.toString(finish));
         }
+    }
+
+    private Set<String> generateAllPublicIPv4Addresses(PublicIpBlock publicIpBlock) {
+        Set<String> ipAddresses = Sets.newHashSet();
+        String ipAddress = publicIpBlock.baseIp();
+        for (int i = 0; i < publicIpBlock.size(); i++) {
+            ipAddresses.add(ipAddress);
+            ipAddress = getNextIPV4Address(ipAddress);
+        }
+        return ipAddresses;
     }
 }

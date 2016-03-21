@@ -18,18 +18,52 @@
  */
 package org.jclouds.dimensiondata.cloudcontroller.compute.functions;
 
+import static com.google.common.base.Preconditions.checkNotNull;
+import static org.jclouds.compute.reference.ComputeServiceConstants.COMPUTE_LOGGER;
+
+import javax.annotation.Resource;
+import javax.inject.Inject;
+import javax.inject.Named;
+
+import org.jclouds.dimensiondata.cloudcontroller.DimensionDataCloudControllerApi;
+import org.jclouds.dimensiondata.cloudcontroller.domain.NatRule;
 import org.jclouds.dimensiondata.cloudcontroller.domain.Server;
 import org.jclouds.dimensiondata.cloudcontroller.domain.internal.ServerWithExternalIp;
+import org.jclouds.logging.Logger;
 
 import com.google.common.base.Function;
+import com.google.common.base.Predicate;
 
 public class ServerToServetWithExternalIp implements Function<Server, ServerWithExternalIp> {
+
+    @Resource
+    @Named(COMPUTE_LOGGER)
+    protected Logger logger = Logger.NULL;
+
+    private final DimensionDataCloudControllerApi api;
+
+    @Inject
+    public ServerToServetWithExternalIp(DimensionDataCloudControllerApi api) {
+        this.api = checkNotNull(api, "api");
+    }
+
     @Override
     public ServerWithExternalIp apply(Server input) {
         if (input == null) return null;
-        return ServerWithExternalIp.builder()
-                .server(input)
-                // TODO .natRule()
-                .build();
+
+        NatRule natRule = api.getNetworkApi().listNatRules(input.networkInfo().networkDomainId()).concat()
+                .firstMatch(new Predicate<NatRule>() {
+                    @Override
+                    public boolean apply(NatRule input) {
+                        return input.internalIp().equalsIgnoreCase(input.internalIp());
+                    }
+                })
+                .orNull();
+
+        ServerWithExternalIp.Builder builder = ServerWithExternalIp.builder().server(input);
+                if (natRule != null) {
+                    builder.externalIp(natRule.externalIp());
+                }
+        return builder.build();
     }
 }

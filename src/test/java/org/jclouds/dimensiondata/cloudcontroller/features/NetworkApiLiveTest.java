@@ -22,8 +22,9 @@ import static org.testng.Assert.assertNotNull;
 
 import java.util.List;
 
+import org.jclouds.dimensiondata.cloudcontroller.domain.FirewallRule;
+import org.jclouds.dimensiondata.cloudcontroller.domain.NatRule;
 import org.jclouds.dimensiondata.cloudcontroller.domain.NetworkDomain;
-import org.jclouds.dimensiondata.cloudcontroller.domain.Vlan;
 import org.jclouds.dimensiondata.cloudcontroller.internal.BaseDimensionDataCloudControllerApiLiveTest;
 import org.testng.annotations.Test;
 
@@ -31,15 +32,15 @@ import org.testng.annotations.Test;
 public class NetworkApiLiveTest extends BaseDimensionDataCloudControllerApiLiveTest {
 
     @Test
-    public void testListNetworkDomains() {
+    public void testExploreNetworkDomains() {
         List<NetworkDomain> networkDomains = api().listNetworkDomains().concat().toList();
         assertNotNull(networkDomains);
-    }
-
-    @Test
-    public void testListVlans() {
-        List<Vlan> vlans = api().listVlans("12345").concat().toList();
-        assertNotNull(vlans);
+        for (NetworkDomain networkDomain : networkDomains) {
+            List<NatRule> natRules = api().listNatRules(networkDomain.id()).concat().toList();
+            assertNotNull(natRules);
+            List<FirewallRule> firewallRules =api().listFirewallRules(networkDomain.id()).concat().toList();
+            assertNotNull(firewallRules);
+        }
     }
 
     private NetworkApi api() {

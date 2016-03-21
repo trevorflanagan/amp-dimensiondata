@@ -21,11 +21,13 @@ import javax.ws.rs.Consumes;
 import javax.ws.rs.GET;
 import javax.ws.rs.POST;
 import javax.ws.rs.Path;
+import javax.ws.rs.PathParam;
 import javax.ws.rs.Produces;
 import javax.ws.rs.QueryParam;
 import javax.ws.rs.core.MediaType;
 
 import org.jclouds.Fallbacks;
+import org.jclouds.Fallbacks.NullOnNotFoundOr404;
 import org.jclouds.collect.PagedIterable;
 import org.jclouds.dimensiondata.cloudcontroller.domain.FirewallRule;
 import org.jclouds.dimensiondata.cloudcontroller.domain.FirewallRuleTarget;
@@ -35,6 +37,7 @@ import org.jclouds.dimensiondata.cloudcontroller.domain.PaginatedCollection;
 import org.jclouds.dimensiondata.cloudcontroller.domain.Placement;
 import org.jclouds.dimensiondata.cloudcontroller.domain.PublicIpBlock;
 import org.jclouds.dimensiondata.cloudcontroller.domain.Response;
+import org.jclouds.dimensiondata.cloudcontroller.domain.Server;
 import org.jclouds.dimensiondata.cloudcontroller.domain.Vlan;
 import org.jclouds.dimensiondata.cloudcontroller.parsers.ParseFirewallRules;
 import org.jclouds.dimensiondata.cloudcontroller.parsers.ParseNatRules;
@@ -56,6 +59,21 @@ import org.jclouds.rest.binders.BindToJsonPayload;
 @Path("/network")
 public interface NetworkApi {
 
+
+    @Named("network:deployNetworkDomain")
+    @POST
+    @Path("/deployNetworkDomain")
+    @Produces(MediaType.APPLICATION_JSON)
+    @MapBinder(BindToJsonPayload.class)
+    Response deployNetworkDomain(@PayloadParam("datacenterId") String datacenterId, @PayloadParam("name") String name,
+                                 @PayloadParam("description") String description, @PayloadParam("type") String type);
+
+    @Named("server:getNetworkDomain")
+    @GET
+    @Path("/networkDomain/{id}")
+    @Fallback(NullOnNotFoundOr404.class)
+    NetworkDomain getNetworkDomain(@PathParam("id") String networkDomainId);
+
     @Named("network:list")
     @GET
     @Path("/networkDomain")
@@ -70,6 +88,21 @@ public interface NetworkApi {
     @ResponseParser(ParseNetworkDomains.class)
     @Fallback(Fallbacks.EmptyPagedIterableOnNotFoundOr404.class)
     PagedIterable<NetworkDomain> listNetworkDomains();
+
+    @Named("network:deployVlan")
+    @POST
+    @Path("/deployVlan")
+    @Produces(MediaType.APPLICATION_JSON)
+    @MapBinder(BindToJsonPayload.class)
+    Response deployVlan(@PayloadParam("networkDomainId") String networkDomainId, @PayloadParam("name") String name,
+                        @PayloadParam("description") String description, @PayloadParam("privateIpv4BaseAddress") String privateIpv4BaseAddress,
+                        @PayloadParam("privateIpv4PrefixSize") Integer privateIpv4PrefixSize);
+
+    @Named("server:getVlan")
+    @GET
+    @Path("/vlan/{id}")
+    @Fallback(NullOnNotFoundOr404.class)
+    Vlan getVlan(@PathParam("id") String vlanId);
 
     @Named("network:vlan")
     @GET
@@ -108,6 +141,12 @@ public interface NetworkApi {
     @Fallback(Fallbacks.EmptyPagedIterableOnNotFoundOr404.class)
     PagedIterable<PublicIpBlock> listPublicIPv4AddressBlocks(@QueryParam("networkDomainId") String networkDomainId);
 
+    @Named("server:getPublicIpBlock")
+    @GET
+    @Path("/publicIpBlock/{id}")
+    @Fallback(NullOnNotFoundOr404.class)
+    PublicIpBlock getPublicIPv4AddressBlock(@PathParam("id") String publicIPv4AddressBlockId);
+
     @Named("network:createNatRule")
     @POST
     @Path("/createNatRule")
@@ -130,6 +169,12 @@ public interface NetworkApi {
     @ResponseParser(ParseNatRules.class)
     @Fallback(Fallbacks.EmptyPagedIterableOnNotFoundOr404.class)
     PagedIterable<NatRule> listNatRules(@QueryParam("networkDomainId") String networkDomainId);
+
+    @Named("server:getNatRule")
+    @GET
+    @Path("/natRule/{id}")
+    @Fallback(NullOnNotFoundOr404.class)
+    NatRule getNatRule(@PathParam("id") String natRuleId);
 
     @Named("network:deleteNatRule")
     @POST
