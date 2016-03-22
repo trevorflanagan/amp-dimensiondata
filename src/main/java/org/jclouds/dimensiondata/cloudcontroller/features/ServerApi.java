@@ -1,24 +1,20 @@
 /*
- * Licensed to the Apache Software Foundation (ASF) under one
- * or more contributor license agreements.  See the NOTICE file
- * distributed with this work for additional information
- * regarding copyright ownership.  The ASF licenses this file
- * to you under the Apache License, Version 2.0 (the
- * "License"); you may not use this file except in compliance
- * with the License.  You may obtain a copy of the License at
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
  *
  *     http://www.apache.org/licenses/LICENSE-2.0
  *
- * Unless required by applicable law or agreed to in writing,
- * software distributed under the License is distributed on an
- * "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
- * KIND, either express or implied.  See the License for the
- * specific language governing permissions and limitations
- * under the License.
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
  */
 package org.jclouds.dimensiondata.cloudcontroller.features;
-
-import static org.jclouds.Fallbacks.*;
 
 import java.util.List;
 
@@ -59,7 +55,7 @@ public interface ServerApi {
     @GET
     @Path("/server")
     @ResponseParser(ParseServers.class)
-    @Fallback(EmptyIterableWithMarkerOnNotFoundOr404.class)
+    @Fallback(Fallbacks.EmptyIterableWithMarkerOnNotFoundOr404.class)
     PaginatedCollection<Server> listServers(PaginationOptions options);
 
     @Named("server:list")
@@ -67,13 +63,13 @@ public interface ServerApi {
     @Path("/server")
     @Transform(ParseServers.ToPagedIterable.class)
     @ResponseParser(ParseServers.class)
-    @Fallback(EmptyPagedIterableOnNotFoundOr404.class)
+    @Fallback(Fallbacks.EmptyPagedIterableOnNotFoundOr404.class)
     PagedIterable<Server> listServers();
 
     @Named("server:get")
     @GET
     @Path("/server/{id}")
-    @Fallback(NullOnNotFoundOr404.class)
+    @Fallback(Fallbacks.NullOnNotFoundOr404.class)
     Server getServer(@PathParam("id") String id);
 
     @Named("server:deploy")
@@ -98,7 +94,7 @@ public interface ServerApi {
     @POST
     @Path("/deleteServer")
     @Produces(MediaType.APPLICATION_JSON)
-    @Fallback(TrueOnNotFoundOr404.class)
+    @Fallback(Fallbacks.TrueOnNotFoundOr404.class)
     @MapBinder(BindToJsonPayload.class)
     Response deleteServer(@PayloadParam("id") String id);
 

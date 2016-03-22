@@ -42,19 +42,16 @@ import org.jclouds.dimensiondata.cloudcontroller.compute.functions.ServerToServe
 import org.jclouds.dimensiondata.cloudcontroller.compute.options.DimensionDataCloudControllerTemplateOptions;
 import org.jclouds.dimensiondata.cloudcontroller.domain.Datacenter;
 import org.jclouds.dimensiondata.cloudcontroller.domain.Disk;
-import org.jclouds.dimensiondata.cloudcontroller.domain.FirewallRule;
 import org.jclouds.dimensiondata.cloudcontroller.domain.FirewallRuleTarget;
 import org.jclouds.dimensiondata.cloudcontroller.domain.FirewallRuleTarget.Port;
 import org.jclouds.dimensiondata.cloudcontroller.domain.IpRange;
 import org.jclouds.dimensiondata.cloudcontroller.domain.NIC;
 import org.jclouds.dimensiondata.cloudcontroller.domain.NatRule;
-import org.jclouds.dimensiondata.cloudcontroller.domain.NetworkDomain;
 import org.jclouds.dimensiondata.cloudcontroller.domain.NetworkInfo;
 import org.jclouds.dimensiondata.cloudcontroller.domain.OsImage;
 import org.jclouds.dimensiondata.cloudcontroller.domain.Placement;
 import org.jclouds.dimensiondata.cloudcontroller.domain.PublicIpBlock;
 import org.jclouds.dimensiondata.cloudcontroller.domain.Response;
-import org.jclouds.dimensiondata.cloudcontroller.domain.Vlan;
 import org.jclouds.dimensiondata.cloudcontroller.domain.internal.ServerWithExternalIp;
 import org.jclouds.dimensiondata.cloudcontroller.domain.options.CreateServerOptions;
 import org.jclouds.dimensiondata.cloudcontroller.utils.DimensionDataCloudControllerUtils;
@@ -65,11 +62,9 @@ import com.google.common.base.Function;
 import com.google.common.base.Objects;
 import com.google.common.base.Optional;
 import com.google.common.base.Predicate;
-import com.google.common.base.Predicates;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Lists;
-
-import autovalue.shaded.com.google.common.common.collect.Sets;
+import com.google.common.collect.Sets;
 
 /**
  * defines the connection between the {@link org.jclouds.dimensiondata.cloudcontroller.DimensionDataCloudControllerApi} implementation and
@@ -345,10 +340,10 @@ public class DimensionDataCloudControllerComputeServiceAdapter implements
     // Helper function for simplifyPorts. Formats port range strings.
     private static Port formatRange(int start, int finish){
         if (start == finish){
-            return Port.create(start, null); //Integer.toString(start);
+            return Port.create(start, null);
         }
         else {
-            return Port.create(start, finish);//String.format("%s:%s", Integer.toString(start), Integer.toString(finish));
+            return Port.create(start, finish);
         }
     }
 

@@ -37,7 +37,6 @@ import org.jclouds.dimensiondata.cloudcontroller.domain.PaginatedCollection;
 import org.jclouds.dimensiondata.cloudcontroller.domain.Placement;
 import org.jclouds.dimensiondata.cloudcontroller.domain.PublicIpBlock;
 import org.jclouds.dimensiondata.cloudcontroller.domain.Response;
-import org.jclouds.dimensiondata.cloudcontroller.domain.Server;
 import org.jclouds.dimensiondata.cloudcontroller.domain.Vlan;
 import org.jclouds.dimensiondata.cloudcontroller.parsers.ParseFirewallRules;
 import org.jclouds.dimensiondata.cloudcontroller.parsers.ParseNatRules;
