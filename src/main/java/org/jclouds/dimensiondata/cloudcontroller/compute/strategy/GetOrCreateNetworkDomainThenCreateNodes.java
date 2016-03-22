@@ -16,6 +16,7 @@
  */
 package org.jclouds.dimensiondata.cloudcontroller.compute.strategy;
 
+import static com.google.common.base.Objects.firstNonNull;
 import static com.google.common.collect.Iterables.tryFind;
 import static java.lang.String.format;
 import static org.jclouds.util.Predicates2.retry;
@@ -59,7 +60,7 @@ public class GetOrCreateNetworkDomainThenCreateNodes
 
     private static final String DEFAULT_NETWORK_DOMAIN_NAME = "JCLOUDS_NETWORK_DOMAIN";
     private static final String DEFAULT_VLAN_NAME = "JCLOUDS_VLAN";
-    private static final String DEFAULT_PRIVATE_IPV4_BASE_ADDRESS = "10.0.3.0";
+    private static final String DEFAULT_PRIVATE_IPV4_BASE_ADDRESS = "10.0.0.0";
     private static final Integer DEFAULT_PRIVATE_IPV4_PREFIX_SIZE = 24;
 
     private final DimensionDataCloudControllerApi api;
@@ -86,26 +87,34 @@ public class GetOrCreateNetworkDomainThenCreateNodes
             final Multimap<NodeMetadata, CustomizationResponse> customizationResponses) {
 
         final DimensionDataCloudControllerTemplateOptions templateOptions = template.getOptions().as(DimensionDataCloudControllerTemplateOptions.class);
-        if (templateOptions.getVlanId() == null) {
-            String location = template.getLocation().getId();
-            Vlan vlan = tryFindExistingVlanOrCreate(api, location);
-            templateOptions.vlanId(vlan.id());
+
+        String networkDomainName = firstNonNull(templateOptions.getNetworkDomainName(), DEFAULT_NETWORK_DOMAIN_NAME);
+        String vlanName = firstNonNull(templateOptions.getVlanName(), DEFAULT_VLAN_NAME);
+        String defaultPrivateIPv4BaseAddress = firstNonNull(templateOptions.getDefaultPrivateIPv4BaseAddress(), DEFAULT_PRIVATE_IPV4_BASE_ADDRESS);
+        Integer defaultPrivateIPv4PrefixSize = firstNonNull(templateOptions.getDefaultPrivateIPv4PrefixSize(), DEFAULT_PRIVATE_IPV4_PREFIX_SIZE);
+        String location = template.getLocation().getId();
+
+        // If networkDomain and vlanId overrides are supplied in TemplateOptions, always prefer those.
+        if (templateOptions.getNetworkDomainId() == null && templateOptions.getVlanId() == null) {
+            String networkDomainId = tryFindExistingNetworkDomainOrCreate(api, location, networkDomainName);
+            templateOptions.networkDomainId(networkDomainId);
+            String vlanId = tryFindExistingVlanOrCreate(api, templateOptions.getNetworkDomainId(), vlanName, defaultPrivateIPv4BaseAddress, defaultPrivateIPv4PrefixSize);
+            templateOptions.vlanId(vlanId);
         }
+
         return super.execute(group, count, template, goodNodes, badNodes, customizationResponses);
     }
 
-    private Vlan tryFindExistingVlanOrCreate(
-            final DimensionDataCloudControllerApi api, final String location) {
-
+    private String tryFindExistingNetworkDomainOrCreate(final DimensionDataCloudControllerApi api, final String location, final String networkDomainName) {
         List<NetworkDomain> networkDomains = api.getNetworkApi().listNetworkDomains().concat().toList();
         logger.debug("Looking for a suitable existing network domain in datacenter %s ...", location);
 
         Predicate<NetworkDomain> networkDomainPredicate = new Predicate<NetworkDomain>() {
-                    @Override
-                    public boolean apply(NetworkDomain networkDomain) {
-                        return networkDomain.datacenterId().equalsIgnoreCase(location) &&
-                                networkDomain.name().equals(DEFAULT_NETWORK_DOMAIN_NAME);
-                    }
+            @Override
+            public boolean apply(NetworkDomain networkDomain) {
+                return networkDomain.datacenterId().equalsIgnoreCase(location) &&
+                        networkDomain.name().equals(networkDomainName);
+            }
         };
 
         Optional<NetworkDomain> networkDomainOptional = tryFind(networkDomains, networkDomainPredicate);
@@ -113,11 +122,10 @@ public class GetOrCreateNetworkDomainThenCreateNodes
         String networkDomainId;
         if (networkDomainOptional.isPresent()) {
             logger.debug("Found a suitable existing network domain {}", networkDomainOptional.get());
-            networkDomainId = networkDomainOptional.get().id();
+            return networkDomainOptional.get().id();
         } else {
-            // create network domain
-            logger.debug("Creating a network domain '%s' in location '%s' ...", DEFAULT_NETWORK_DOMAIN_NAME, location);
-            Response deployNetworkDomainResponse = api.getNetworkApi().deployNetworkDomain(location, DEFAULT_NETWORK_DOMAIN_NAME, "network domain created by jclouds", "ESSENTIALS");
+            logger.debug("Creating a network domain '%s' in location '%s' ...", networkDomainName, location);
+            Response deployNetworkDomainResponse = api.getNetworkApi().deployNetworkDomain(location, networkDomainName, "network domain created by jclouds", "ESSENTIALS");
 
             networkDomainId = DimensionDataCloudControllerUtils.tryFindPropertyValue(deployNetworkDomainResponse, "networkDomainId");
             String message = format("networkDomain(%s) is not ready within %d ms.", networkDomainId, timeouts.nodeRunning);
@@ -125,23 +133,27 @@ public class GetOrCreateNetworkDomainThenCreateNodes
             if (!isNetworkDomainReady) {
                 throw new IllegalStateException(message);
             }
+            return networkDomainId;
         }
-        // create vlan in network domain
+    }
+
+    private String tryFindExistingVlanOrCreate(final DimensionDataCloudControllerApi api, final String networkDomainId,
+                                             final String vlanName, final String defaultPrivateIPv4BaseAddress,
+                                             final Integer defaultPrivateIPv4PrefixSize) {
         Optional<Vlan> optionalVlan = DimensionDataCloudControllerUtils.tryGetVlan(api.getNetworkApi(), networkDomainId);
-        logger.debug("Found a suitable existing network domain {}", networkDomainOptional.get());
         if (optionalVlan.isPresent()) {
-            return optionalVlan.get();
+            logger.debug("Found a suitable existing vlan %s", optionalVlan.get());
+            return optionalVlan.get().id();
         } else {
-            // TODO use templateOptions
-            logger.debug("Creating a vlan %s in network domain '%s' ...", DEFAULT_VLAN_NAME, DEFAULT_NETWORK_DOMAIN_NAME);
-            Response deployVlanResponse = api.getNetworkApi().deployVlan(networkDomainId, DEFAULT_VLAN_NAME, "vlan created by jclouds", DEFAULT_PRIVATE_IPV4_BASE_ADDRESS, DEFAULT_PRIVATE_IPV4_PREFIX_SIZE);
+            logger.debug("Creating a vlan %s in network domain '%s' ...", vlanName, networkDomainId);
+            Response deployVlanResponse = api.getNetworkApi().deployVlan(networkDomainId, vlanName, "vlan created by jclouds", defaultPrivateIPv4BaseAddress, defaultPrivateIPv4PrefixSize);
             String vlanId = DimensionDataCloudControllerUtils.tryFindPropertyValue(deployVlanResponse, "vlanId");
             String message = format("vlan(%s) is not ready within %d ms.", vlanId, timeouts.nodeRunning);
             boolean isVlanReady = retry(new VlanStatus(api.getNetworkApi()), timeouts.nodeRunning).apply(vlanId);
             if (!isVlanReady) {
                 throw new IllegalStateException(message);
             }
-            return api.getNetworkApi().getVlan(vlanId);
+            return vlanId;
         }
     }
 

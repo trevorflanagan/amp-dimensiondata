@@ -19,17 +19,20 @@
 package org.jclouds.dimensiondata.cloudcontroller.compute.options;
 
 import java.util.Map;
+import java.util.Objects;
 
 import org.jclouds.compute.options.TemplateOptions;
 import org.jclouds.domain.LoginCredentials;
 import org.jclouds.javax.annotation.Nullable;
 import org.jclouds.scriptbuilder.domain.Statement;
 
-import com.google.common.base.Objects;
-
 public class DimensionDataCloudControllerTemplateOptions extends TemplateOptions implements Cloneable {
     protected String networkDomainId;
     protected String vlanId;
+    protected String networkDomainName;
+    protected String vlanName;
+    protected String defaultPrivateIPv4BaseAddress;
+    protected Integer defaultPrivateIPv4PrefixSize;
 
     @Override
     public DimensionDataCloudControllerTemplateOptions clone() {
@@ -45,6 +48,10 @@ public class DimensionDataCloudControllerTemplateOptions extends TemplateOptions
             final DimensionDataCloudControllerTemplateOptions eTo = DimensionDataCloudControllerTemplateOptions.class.cast(to);
             eTo.networkDomainId(networkDomainId);
             eTo.vlanId(vlanId);
+            eTo.networkDomainName(networkDomainName);
+            eTo.vlanName(vlanName);
+            eTo.defaultPrivateIPv4BaseAddress(defaultPrivateIPv4BaseAddress);
+            eTo.defaultPrivateIPv4PrefixSize(defaultPrivateIPv4PrefixSize);
         }
     }
 
@@ -53,29 +60,54 @@ public class DimensionDataCloudControllerTemplateOptions extends TemplateOptions
         if (this == o) return true;
         if (!(o instanceof DimensionDataCloudControllerTemplateOptions)) return false;
         if (!super.equals(o)) return false;
-
         DimensionDataCloudControllerTemplateOptions that = (DimensionDataCloudControllerTemplateOptions) o;
-
-        if (networkDomainId != null ? !networkDomainId.equals(that.networkDomainId) : that.networkDomainId != null) return false;
-        if (vlanId != null ? !vlanId.equals(that.vlanId) : that.vlanId != null) return false;
-
-        return true;
+        return Objects.equals(networkDomainId, that.networkDomainId) &&
+                Objects.equals(vlanId, that.vlanId) &&
+                Objects.equals(networkDomainName, that.networkDomainName) &&
+                Objects.equals(vlanName, that.vlanName) &&
+                Objects.equals(defaultPrivateIPv4BaseAddress, that.defaultPrivateIPv4BaseAddress) &&
+                Objects.equals(defaultPrivateIPv4PrefixSize, that.defaultPrivateIPv4PrefixSize);
     }
 
     @Override
     public int hashCode() {
-        int result = super.hashCode();
-        result = 31 * result + (networkDomainId != null ? networkDomainId.hashCode() : 0);
-        result = 31 * result + (vlanId != null ? vlanId.hashCode() : 0);
-        return result;
+        return Objects.hash(super.hashCode(), networkDomainId, vlanId, networkDomainName, vlanName, defaultPrivateIPv4BaseAddress, defaultPrivateIPv4PrefixSize);
     }
 
     @Override
     public String toString() {
-        return Objects.toStringHelper(this)
-                .add("networkDomainId", networkDomainId)
-                .add("vlanId", vlanId)
-                .toString();
+        return "DimensionDataCloudControllerTemplateOptions{" +
+                "networkDomainId='" + networkDomainId + '\'' +
+                ", vlanId='" + vlanId + '\'' +
+                ", networkDomainName='" + networkDomainName + '\'' +
+                ", vlanName='" + vlanName + '\'' +
+                ", defaultPrivateIPv4BaseAddress='" + defaultPrivateIPv4BaseAddress + '\'' +
+                ", defaultPrivateIPv4PrefixSize='" + defaultPrivateIPv4PrefixSize + '\'' +
+                '}';
+    }
+
+    public String getNetworkDomainId() {
+        return networkDomainId;
+    }
+
+    public String getVlanId() {
+        return vlanId;
+    }
+
+    public String getNetworkDomainName() {
+        return networkDomainName;
+    }
+
+    public String getVlanName() {
+        return vlanName;
+    }
+
+    public String getDefaultPrivateIPv4BaseAddress() {
+        return defaultPrivateIPv4BaseAddress;
+    }
+
+    public Integer getDefaultPrivateIPv4PrefixSize() {
+        return defaultPrivateIPv4PrefixSize;
     }
 
     public DimensionDataCloudControllerTemplateOptions networkDomainId(@Nullable String networkDomainId) {
@@ -88,12 +120,24 @@ public class DimensionDataCloudControllerTemplateOptions extends TemplateOptions
         return this;
     }
 
-    public String getNetworkDomainId() {
-        return networkDomainId;
+    public DimensionDataCloudControllerTemplateOptions networkDomainName(@Nullable String networkDomainName) {
+        this.networkDomainName = networkDomainName;
+        return this;
     }
 
-    public String getVlanId() {
-        return vlanId;
+    public DimensionDataCloudControllerTemplateOptions vlanName(@Nullable String vlanName) {
+        this.vlanName = vlanName;
+        return this;
+    }
+
+    public DimensionDataCloudControllerTemplateOptions defaultPrivateIPv4BaseAddress(@Nullable String defaultPrivateIPv4BaseAddress) {
+        this.defaultPrivateIPv4BaseAddress = defaultPrivateIPv4BaseAddress;
+        return this;
+    }
+
+    public DimensionDataCloudControllerTemplateOptions defaultPrivateIPv4PrefixSize(@Nullable Integer defaultPrivateIPv4PrefixSize) {
+        this.defaultPrivateIPv4PrefixSize = defaultPrivateIPv4PrefixSize;
+        return this;
     }
 
     public static class Builder {
@@ -106,11 +150,39 @@ public class DimensionDataCloudControllerTemplateOptions extends TemplateOptions
             return options.networkDomainId(networkDomainName);
         }
         /**
-         * @see #networkDomainId
+         * @see #vlanId
          */
         public static DimensionDataCloudControllerTemplateOptions vlanId(final String vlanId) {
             final DimensionDataCloudControllerTemplateOptions options = new DimensionDataCloudControllerTemplateOptions();
             return options.vlanId(vlanId);
+        }
+        /**
+         * @see #networkDomainName
+         */
+        public static DimensionDataCloudControllerTemplateOptions networkDomainName(final String networkDomainName) {
+            final DimensionDataCloudControllerTemplateOptions options = new DimensionDataCloudControllerTemplateOptions();
+            return options.networkDomainName(networkDomainName);
+        }
+        /**
+         * @see #vlanName
+         */
+        public static DimensionDataCloudControllerTemplateOptions vlanName(final String vlanName) {
+            final DimensionDataCloudControllerTemplateOptions options = new DimensionDataCloudControllerTemplateOptions();
+            return options.vlanName(vlanName);
+        }
+        /**
+         * @see #defaultPrivateIPv4BaseAddress
+         */
+        public static DimensionDataCloudControllerTemplateOptions defaultPrivateIPv4BaseAddress(final String defaultPrivateIPv4BaseAddress) {
+            final DimensionDataCloudControllerTemplateOptions options = new DimensionDataCloudControllerTemplateOptions();
+            return options.defaultPrivateIPv4BaseAddress(defaultPrivateIPv4BaseAddress);
+        }
+        /**
+         * @see #defaultPrivateIPv4PrefixSize
+         */
+        public static DimensionDataCloudControllerTemplateOptions defaultPrivateIPv4PrefixSize(final Integer defaultPrivateIPv4PrefixSize) {
+            final DimensionDataCloudControllerTemplateOptions options = new DimensionDataCloudControllerTemplateOptions();
+            return options.defaultPrivateIPv4PrefixSize(defaultPrivateIPv4PrefixSize);
         }
     }
 

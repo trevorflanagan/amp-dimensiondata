@@ -18,6 +18,8 @@
  */
 package org.jclouds.dimensiondata.cloudcontroller.features;
 
+import static org.jclouds.Fallbacks.*;
+
 import java.util.List;
 
 import javax.inject.Named;
@@ -57,7 +59,7 @@ public interface ServerApi {
     @GET
     @Path("/server")
     @ResponseParser(ParseServers.class)
-    @Fallback(Fallbacks.EmptyIterableWithMarkerOnNotFoundOr404.class)
+    @Fallback(EmptyIterableWithMarkerOnNotFoundOr404.class)
     PaginatedCollection<Server> listServers(PaginationOptions options);
 
     @Named("server:list")
@@ -65,13 +67,13 @@ public interface ServerApi {
     @Path("/server")
     @Transform(ParseServers.ToPagedIterable.class)
     @ResponseParser(ParseServers.class)
-    @Fallback(Fallbacks.EmptyPagedIterableOnNotFoundOr404.class)
+    @Fallback(EmptyPagedIterableOnNotFoundOr404.class)
     PagedIterable<Server> listServers();
 
     @Named("server:get")
     @GET
     @Path("/server/{id}")
-    @Fallback(Fallbacks.NullOnNotFoundOr404.class)
+    @Fallback(NullOnNotFoundOr404.class)
     Server getServer(@PathParam("id") String id);
 
     @Named("server:deploy")
@@ -96,6 +98,7 @@ public interface ServerApi {
     @POST
     @Path("/deleteServer")
     @Produces(MediaType.APPLICATION_JSON)
+    @Fallback(TrueOnNotFoundOr404.class)
     @MapBinder(BindToJsonPayload.class)
     Response deleteServer(@PayloadParam("id") String id);
 

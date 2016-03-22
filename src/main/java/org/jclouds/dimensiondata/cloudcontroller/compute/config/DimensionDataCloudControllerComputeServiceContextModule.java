@@ -16,6 +16,7 @@
  */
 package org.jclouds.dimensiondata.cloudcontroller.compute.config;
 
+import org.jclouds.compute.ComputeService;
 import org.jclouds.compute.ComputeServiceAdapter;
 import org.jclouds.compute.config.ComputeServiceAdapterContextModule;
 import org.jclouds.compute.domain.Hardware;
@@ -23,6 +24,7 @@ import org.jclouds.compute.domain.Image;
 import org.jclouds.compute.domain.NodeMetadata;
 import org.jclouds.compute.options.TemplateOptions;
 import org.jclouds.compute.strategy.CreateNodesInGroupThenAddToSet;
+import org.jclouds.dimensiondata.cloudcontroller.compute.DimensionDataCloudControllerComputeService;
 import org.jclouds.dimensiondata.cloudcontroller.compute.functions.DatacenterToLocation;
 import org.jclouds.dimensiondata.cloudcontroller.compute.functions.OsImageToHardware;
 import org.jclouds.dimensiondata.cloudcontroller.compute.functions.OsImageToImage;
@@ -46,6 +48,8 @@ public class DimensionDataCloudControllerComputeServiceContextModule extends
         super.configure();
         bind(new TypeLiteral<ComputeServiceAdapter<ServerWithExternalIp, OsImage, OsImage, Datacenter>>() {
         }).to(DimensionDataCloudControllerComputeServiceAdapter.class);
+        bind(ComputeService.class).to(DimensionDataCloudControllerComputeService.class);
+
         bind(new TypeLiteral<Function<ServerWithExternalIp, NodeMetadata>>() {
         }).to(ServerWithNatRuleToNodeMetadata.class);
         bind(new TypeLiteral<Function<OsImage, Image>>() {

@@ -17,6 +17,7 @@
 package org.jclouds.dimensiondata.cloudcontroller.compute;
 
 import static com.google.common.base.Preconditions.checkNotNull;
+import static com.google.common.base.Preconditions.checkState;
 import static java.lang.String.format;
 import static org.jclouds.compute.reference.ComputeServiceConstants.COMPUTE_LOGGER;
 
@@ -24,6 +25,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Set;
+import java.util.concurrent.locks.ReentrantLock;
 
 import javax.annotation.Resource;
 import javax.inject.Inject;
@@ -35,10 +37,12 @@ import org.jclouds.compute.domain.Hardware;
 import org.jclouds.compute.domain.Template;
 import org.jclouds.compute.reference.ComputeServiceConstants.Timeouts;
 import org.jclouds.dimensiondata.cloudcontroller.DimensionDataCloudControllerApi;
+import org.jclouds.dimensiondata.cloudcontroller.compute.functions.CleanupServer;
 import org.jclouds.dimensiondata.cloudcontroller.compute.functions.ServerToServetWithExternalIp;
 import org.jclouds.dimensiondata.cloudcontroller.compute.options.DimensionDataCloudControllerTemplateOptions;
 import org.jclouds.dimensiondata.cloudcontroller.domain.Datacenter;
 import org.jclouds.dimensiondata.cloudcontroller.domain.Disk;
+import org.jclouds.dimensiondata.cloudcontroller.domain.FirewallRule;
 import org.jclouds.dimensiondata.cloudcontroller.domain.FirewallRuleTarget;
 import org.jclouds.dimensiondata.cloudcontroller.domain.FirewallRuleTarget.Port;
 import org.jclouds.dimensiondata.cloudcontroller.domain.IpRange;
@@ -87,15 +91,19 @@ public class DimensionDataCloudControllerComputeServiceAdapter implements
 
     private final DimensionDataCloudControllerApi api;
     private final Timeouts timeouts;
+    private final ReentrantLock lock = new ReentrantLock();
+    protected final CleanupServer cleanupServer;
+
 
     @Inject
-    public DimensionDataCloudControllerComputeServiceAdapter(DimensionDataCloudControllerApi api, Timeouts timeouts) {
+    public DimensionDataCloudControllerComputeServiceAdapter(DimensionDataCloudControllerApi api, Timeouts timeouts, CleanupServer cleanupServer) {
         this.api = checkNotNull(api, "api");
         this.timeouts = timeouts;
+        this.cleanupServer = cleanupServer;
     }
 
     @Override
-    public NodeAndInitialCredentials<ServerWithExternalIp> createNodeWithGroupEncodedIntoName(String group, String name, Template template) {
+    public NodeAndInitialCredentials<ServerWithExternalIp> createNodeWithGroupEncodedIntoName(String group, final String name, Template template) {
         // Infer the login credentials from the VM, defaulting to "root" user
         LoginCredentials.Builder credsBuilder = LoginCredentials.builder().user(DEFAULT_LOGIN_USER).password(DEFAULT_LOGIN_PASSWORD);
         // If login overrides are supplied in TemplateOptions, always prefer those.
@@ -105,33 +113,16 @@ public class DimensionDataCloudControllerComputeServiceAdapter implements
         }
 
         String imageId = checkNotNull(template.getImage().getId(), "template image id must not be null");
-        final String locationId = checkNotNull(template.getLocation().getId(), "template location id must not be null");
         final Hardware hardware = checkNotNull(template.getHardware(), "template hardware must not be null");
 
         DimensionDataCloudControllerTemplateOptions templateOptions = DimensionDataCloudControllerTemplateOptions.class.cast(template.getOptions());
         List<Port> ports = simplifyPorts(templateOptions.getInboundPorts());
 
-        /*
-        // TODO getOrCreateNetworkDomain with foundVlan? if yes, move to subclass of CreateNodesWithGroupEncodedIntoNameThenAddToSet
-        NetworkDomain foundNetworkDomain = tryFindNetworkDomain(new Predicate<NetworkDomain>() {
-            @Override
-            public boolean apply(NetworkDomain input) {
-                return input.datacenterId().equalsIgnoreCase(locationId);
-            }
-        });
-        Optional<Vlan> vlanOptional = DimensionDataCloudControllerUtils.tryGetVlan(api.getNetworkApi(), foundNetworkDomain.id());
-        if (!vlanOptional.isPresent()) {
-            throw new IllegalStateException();
-        }
-        */
-
-
+        String networkDomainId = templateOptions.getNetworkDomainId();
         String vlanId = templateOptions.getVlanId();
-        Vlan foundVlan = api.getNetworkApi().getVlan(vlanId);
-        NetworkDomain foundNetworkDomain = foundVlan.networkDomain();
 
         NetworkInfo networkInfo = NetworkInfo.create(
-                foundVlan.networkDomain().id(),
+                networkDomainId,
                 NIC.builder().vlanId(vlanId).build(),
                 // TODO allow additional NICs
                 Lists.<NIC>newArrayList()
@@ -147,51 +138,55 @@ public class DimensionDataCloudControllerComputeServiceAdapter implements
                 .memoryGb(template.getHardware().getRam())
                 .build();
 
-        Response response = api.getServerApi().deployServer(name, imageId, Boolean.TRUE, networkInfo, disks, overriddenLoginPassword, createServerOptions);
-        String serverId = DimensionDataCloudControllerUtils.tryFindPropertyValue(response, "serverId");
+        Response deployServerResponse = api.getServerApi().deployServer(name, imageId, Boolean.TRUE, networkInfo, disks, overriddenLoginPassword, createServerOptions);
+        final String serverId = DimensionDataCloudControllerUtils.tryFindPropertyValue(deployServerResponse, "serverId");
 
-        String message = format("server(%s) is not ready within %d ms.", serverId, timeouts.nodeRunning);
+        String message = format("Server(%s) is not ready within %d ms.", serverId, timeouts.nodeRunning);
         DimensionDataCloudControllerUtils.waitForServerStatus(api.getServerApi(), serverId, true, true, timeouts.nodeRunning, message);
 
-        String externalIp = tryFindExternalIp(api, foundNetworkDomain.id());
-        ServerWithExternalIp serverWithExternalIp = ServerWithExternalIp.builder().server(api.getServerApi().getServer(serverId)).externalIp(externalIp).build();
-        String internalIp = api.getServerApi().getServer(serverId).networkInfo().primaryNic().privateIpv4();
-        Response createNatRuleOperation = api.getNetworkApi().createNatRule(foundNetworkDomain.id(), internalIp, externalIp);
-        if (!createNatRuleOperation.error().isEmpty()) {
-            // rollback
-            api.getServerApi().deleteServer(serverId);
-            throw new IllegalStateException(String.format("Cannot create a NAT rule for internalIp %s (server %s) using externalIp %s", internalIp, serverId, externalIp));
-        }
-        // set firewall policies
-        for (Port destinationPort : ports) {
-            Response createFirewallRuleOperation = api.getNetworkApi().createFirewallRule(
-                    foundNetworkDomain.id(),
-                    generateFirewallName(serverId, destinationPort),
-                    "ACCEPT_DECISIVELY",
-                    "IPV4",
-                    "TCP",
-                    FirewallRuleTarget.builder()
-                            .ip(IpRange.create("ANY", null))
-                            .build(),
-                    FirewallRuleTarget.builder()
-                            .ip(IpRange.create(externalIp, null))
-                            .port(destinationPort)
-                            .build(),
-                    Boolean.TRUE,
-                    Placement.builder().position("LAST").build());
-            if (!createFirewallRuleOperation.error().isEmpty()) {
+        ServerWithExternalIp serverWithExternalIp = null;
+        lock.lock();
+        try {
+            String externalIp = tryFindExternalIp(api, networkDomainId);
+            serverWithExternalIp = ServerWithExternalIp.builder().server(api.getServerApi().getServer(serverId)).externalIp(externalIp).build();
+            final String internalIp = api.getServerApi().getServer(serverId).networkInfo().primaryNic().privateIpv4();
+            Response createNatRuleOperation = api.getNetworkApi().createNatRule(networkDomainId, internalIp, externalIp);
+            if (!createNatRuleOperation.error().isEmpty()) {
                 // rollback
-                // TODO delete all the firewall rules?
-                api.getServerApi().deleteServer(serverId);
-                throw new IllegalStateException(String.format("Cannot create a firewall rule %s for (server %s) using externalIp %s", destinationPort.begin(), serverId, externalIp));
+                final String natRuleErrorMessage = String.format("Cannot create a NAT rule for internalIp %s (server %s) using externalIp %s. Rolling back ...", internalIp, serverId, externalIp);
+                logger.warn(natRuleErrorMessage);
+                destroyNode(serverId);
+                throw new IllegalStateException(natRuleErrorMessage);
             }
+            // set firewall policies
+            for (Port destinationPort : ports) {
+                Response createFirewallRuleOperation = api.getNetworkApi().createFirewallRule(
+                        networkDomainId,
+                        generateFirewallName(serverId, destinationPort),
+                        "ACCEPT_DECISIVELY",
+                        "IPV4",
+                        "TCP",
+                        FirewallRuleTarget.builder()
+                                .ip(IpRange.create("ANY", null))
+                                .build(),
+                        FirewallRuleTarget.builder()
+                                .ip(IpRange.create(externalIp, null))
+                                .port(destinationPort)
+                                .build(),
+                        Boolean.TRUE,
+                        Placement.builder().position("LAST").build());
+                if (!createFirewallRuleOperation.error().isEmpty()) {
+                    final String firewallRuleErrorMessage = String.format("Cannot create a firewall rule %s for (server %s) using externalIp %s. Rolling back ...", destinationPort.begin(), serverId, externalIp);
+                    logger.warn(firewallRuleErrorMessage);
+                    destroyNode(serverId);
+                    throw new IllegalStateException(firewallRuleErrorMessage);
+                }
+            }
+        } finally {
+            lock.unlock();
         }
 
         return new NodeAndInitialCredentials<ServerWithExternalIp>(serverWithExternalIp, serverId, credsBuilder.build());
-    }
-
-    private String generateFirewallName(String serverId, Port destinationPort) {
-        return String.format(JCLOUDS_FW_RULE_PATTERN, serverId.replaceAll("-", "_"), destinationPort.end() == null ? destinationPort.begin() : destinationPort.begin() + "." + destinationPort.end());
     }
 
     @Override
@@ -225,36 +220,8 @@ public class DimensionDataCloudControllerComputeServiceAdapter implements
     }
 
     @Override
-    public void destroyNode(String id) {
-        // delete NAT rule associated to the VM, if any
-        final String internalIp = api.getServerApi().getServer(id).networkInfo().primaryNic().privateIpv4();
-        String networkDomainId = api.getServerApi().getServer(id).networkInfo().networkDomainId();
-
-        Optional<NatRule> optionalNatRule = api.getNetworkApi().listNatRules(networkDomainId).concat().firstMatch(new Predicate<NatRule>() {
-            @Override
-            public boolean apply(NatRule input) {
-                return input.internalIp().equalsIgnoreCase(internalIp);
-            }
-        });
-        if (optionalNatRule.isPresent()) {
-            api.getNetworkApi().deleteNatRule(optionalNatRule.get().id());
-        }
-
-        // power off the vm
-        Response powerOffResponse = api.getServerApi().powerOffServer(id);
-        if (!powerOffResponse.error().isEmpty()) {
-            final String message = format("Cannot power off the server %s.", id);
-            throw new IllegalStateException(message);
-        }
-        String message = format("server(%s) not terminated within %d ms.", id, timeouts.nodeTerminated);
-        DimensionDataCloudControllerUtils.waitForServerStatus(api.getServerApi(), id, false, true, timeouts.nodeTerminated, message);
-
-        // delete the vm
-        message = format("Cannot delete server %s.", id);
-        Response deleteServerResponse = api.getServerApi().deleteServer(id);
-        if (!deleteServerResponse.error().isEmpty()) {
-            throw new IllegalStateException(message);
-        }
+    public void destroyNode(final String serverId) {
+        checkState(cleanupServer.apply(serverId), "server(%s) still there after deleting!?", serverId);
     }
 
     @Override
@@ -336,17 +303,6 @@ public class DimensionDataCloudControllerComputeServiceAdapter implements
          return api.getNetworkApi().getPublicIPv4AddressBlock(DimensionDataCloudControllerUtils.tryFindPropertyValue(response, "ipBlockId")).baseIp();
     }
 
-    private NetworkDomain tryFindNetworkDomain(Predicate<NetworkDomain> networkDomainPredicate) {
-        Optional<NetworkDomain> optionalNetworkDomain = api.getNetworkApi().listNetworkDomains().concat()
-                .filter(networkDomainPredicate)
-                .firstMatch(Predicates.notNull());
-
-        if (!optionalNetworkDomain.isPresent()) {
-            throw new IllegalStateException();
-        }
-        return optionalNetworkDomain.get();
-    }
-
     private static String getNextIPV4Address(String ip) {
         String[] nums = ip.split("\\.");
         int i = (Integer.parseInt(nums[0]) << 24 | Integer.parseInt(nums[2]) << 8
@@ -404,5 +360,9 @@ public class DimensionDataCloudControllerComputeServiceAdapter implements
             ipAddress = getNextIPV4Address(ipAddress);
         }
         return ipAddresses;
+    }
+
+    private String generateFirewallName(String serverId, Port destinationPort) {
+        return String.format(JCLOUDS_FW_RULE_PATTERN, serverId.replaceAll("-", "_"), destinationPort.end() == null ? destinationPort.begin() : destinationPort.begin() + "." + destinationPort.end());
     }
 }
