@@ -31,7 +31,9 @@ import org.jclouds.compute.domain.NodeMetadataBuilder;
 import org.jclouds.compute.functions.GroupNamingConvention;
 import org.jclouds.dimensiondata.cloudcontroller.domain.Server;
 import org.jclouds.dimensiondata.cloudcontroller.domain.internal.ServerWithExternalIp;
+import org.jclouds.domain.Credentials;
 import org.jclouds.domain.Location;
+import org.jclouds.domain.LoginCredentials;
 import org.jclouds.location.predicates.LocationPredicates;
 
 import com.google.common.base.Function;
@@ -53,16 +55,17 @@ public class ServerWithNatRuleToNodeMetadata implements Function<ServerWithExter
     private final GroupNamingConvention nodeNamingConvention;
     private final OsImageToImage osImageToImage;
     private final OsImageToHardware osImageToHardware;
-
+    private final Map<String, Credentials> credentialStore;
 
     @Inject
     ServerWithNatRuleToNodeMetadata(@Memoized Supplier<Set<? extends Location>> locations,
                                GroupNamingConvention.Factory namingConvention, OsImageToImage osImageToImage,
-                               OsImageToHardware osImageToHardware) {
+                               OsImageToHardware osImageToHardware, Map<String, Credentials> credentialStore) {
         this.nodeNamingConvention = checkNotNull(namingConvention, "namingConvention").createWithoutPrefix();
         this.locations = checkNotNull(locations, "locations");
         this.osImageToImage = checkNotNull(osImageToImage, "osImageToImage");
         this.osImageToHardware = checkNotNull(osImageToHardware, "osImageToHardware");
+        this.credentialStore = checkNotNull(credentialStore, "credentialStore cannot be null");
     }
 
     @Override
@@ -101,8 +104,13 @@ public class ServerWithNatRuleToNodeMetadata implements Function<ServerWithExter
         if (privateAddress != null && from.externalIp() != null) {
             builder.publicAddresses(ImmutableSet.of(from.externalIp()));
         }
-        // TODO credentials
 
+        // DimensionData does not provide a way to get the credentials.
+        // Try to return them from the credential store
+        Credentials credentials = credentialStore.get("node#" + server.id());
+        if (credentials instanceof LoginCredentials) {
+            builder.credentials(LoginCredentials.class.cast(credentials));
+        }
 
         return builder.build();
     }

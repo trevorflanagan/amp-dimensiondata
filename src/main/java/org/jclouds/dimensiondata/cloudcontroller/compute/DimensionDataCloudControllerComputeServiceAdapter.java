@@ -180,7 +180,6 @@ public class DimensionDataCloudControllerComputeServiceAdapter implements
         } finally {
             lock.unlock();
         }
-
         return new NodeAndInitialCredentials<ServerWithExternalIp>(serverWithExternalIp, serverId, credsBuilder.build());
     }
 

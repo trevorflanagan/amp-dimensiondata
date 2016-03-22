@@ -59,9 +59,9 @@ public class ServerToServetWithExternalIp implements Function<Server, ServerWith
                 .orNull();
 
         ServerWithExternalIp.Builder builder = ServerWithExternalIp.builder().server(input);
-                if (natRule != null) {
-                    builder.externalIp(natRule.externalIp());
-                }
+        if (natRule != null) {
+            builder.externalIp(natRule.externalIp());
+        }
         return builder.build();
     }
 }

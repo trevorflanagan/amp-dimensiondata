@@ -93,8 +93,8 @@ public class DimensionDataCloudControllerComputeServiceContextLiveTest extends B
         final String name = "test";
 
         Template template = view.getComputeService().templateBuilder()
-                //.imageId("58f67195-1b0a-4b79-ae67-550896c2d22b")
-                //.locationId("NA12")
+                .imageId("58f67195-1b0a-4b79-ae67-550896c2d22b")
+                .locationId("NA12")
                 .build();
         DimensionDataCloudControllerTemplateOptions options = template.getOptions().as(DimensionDataCloudControllerTemplateOptions.class);
         options.inboundPorts(22, 8080, 8081, 8082)
