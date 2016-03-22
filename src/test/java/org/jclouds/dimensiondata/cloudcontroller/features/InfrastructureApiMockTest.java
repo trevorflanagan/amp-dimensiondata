@@ -45,18 +45,6 @@ public class InfrastructureApiMockTest extends BaseDimensionDataCloudControllerM
         }
     }
 
-    public void testOperatingSystems() throws Exception {
-        MockWebServer server = mockWebServer(new MockResponse().setBody(payloadFromResource("/operatingSystems.json")));
-        InfrastructureApi api = api(server);
-
-        try {
-            assertEquals(api.listOperatingSystems("datacenterId"), new DatacentersParseTest().expected().toList());
-            assertSent(server, "GET", "/infrastructure/datacenter");
-        } finally {
-            server.shutdown();
-        }
-    }
-
     private InfrastructureApi api(MockWebServer server) {
         return api(DimensionDataCloudControllerApi.class, server.getUrl("/").toString(), new JavaUrlHttpCommandExecutorServiceModule())
                 .getInfrastructureApi();
