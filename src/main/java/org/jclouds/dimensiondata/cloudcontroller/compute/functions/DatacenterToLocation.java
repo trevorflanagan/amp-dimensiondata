@@ -49,7 +49,7 @@ public class DatacenterToLocation implements Function<Datacenter, Location> {
                 .id(datacenter.id())
                 .description(datacenter.displayName())
                 .parent(getOnlyElement(justProvider.get()))
-                .scope(LocationScope.REGION)
+                .scope(LocationScope.ZONE)
                 .iso3166Codes(ImmutableSet.of(datacenter.country()))
                 .metadata(ImmutableMap.<String, Object>of("name", datacenter.displayName()))
                 .build();
