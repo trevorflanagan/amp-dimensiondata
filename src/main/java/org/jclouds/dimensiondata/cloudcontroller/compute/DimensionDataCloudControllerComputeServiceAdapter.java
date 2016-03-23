@@ -63,6 +63,7 @@ import com.google.common.base.Function;
 import com.google.common.base.Objects;
 import com.google.common.base.Optional;
 import com.google.common.base.Predicate;
+import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
@@ -323,23 +324,32 @@ public class DimensionDataCloudControllerComputeServiceAdapter implements
             }
             else {
                 // Range ends.
-                output.add(formatRange(range_start, range_end));
+                output.addAll(formatRange(range_start, range_end));
                 range_start = ports[i];
                 range_end = ports[i];
             }
         }
         // Make sure we get the last range.
-        output.add(formatRange(range_start, range_end));
+        output.addAll(formatRange(range_start, range_end));
         return output;
     }
 
     // Helper function for simplifyPorts. Formats port range strings.
-    private static Port formatRange(int start, int finish){
-        if (start == finish){
-            return Port.create(start, null);
-        }
-        else {
-            return Port.create(start, finish);
+    private static List<Port> formatRange(int start, int finish) {
+        if (start == finish) {
+            return ImmutableList.of(Port.create(start, null));
+        } else if (finish - start > 1024) {
+            List<Port> ports = Lists.newArrayList();
+            int numOfPorts = (finish - start) / 1024;
+            while (numOfPorts > 0) {
+                ports.add(Port.create(start, start + 1024));
+                start = start + 1024;
+                numOfPorts--;
+            }
+            ports.add(Port.create(start + 1, finish));
+            return ports;
+        } else {
+            return ImmutableList.of(Port.create(start, finish));
         }
     }
 
