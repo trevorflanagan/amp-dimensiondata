@@ -33,6 +33,7 @@ import org.jclouds.compute.domain.ExecResponse;
 import org.jclouds.compute.domain.Hardware;
 import org.jclouds.compute.domain.Image;
 import org.jclouds.compute.domain.NodeMetadata;
+import org.jclouds.compute.domain.OsFamily;
 import org.jclouds.compute.domain.Template;
 import org.jclouds.compute.internal.BaseComputeServiceContextLiveTest;
 import org.jclouds.compute.reference.ComputeServiceConstants;
@@ -93,7 +94,8 @@ public class DimensionDataCloudControllerComputeServiceContextLiveTest extends B
         final String name = "test";
 
         Template template = view.getComputeService().templateBuilder()
-                .imageId("58f67195-1b0a-4b79-ae67-550896c2d22b")
+                .osFamily(OsFamily.UBUNTU)
+                //.locationId("NA9")
                 .locationId("NA12")
                 .build();
         DimensionDataCloudControllerTemplateOptions options = template.getOptions().as(DimensionDataCloudControllerTemplateOptions.class);

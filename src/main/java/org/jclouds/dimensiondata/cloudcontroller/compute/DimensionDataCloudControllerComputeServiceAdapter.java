@@ -34,6 +34,7 @@ import javax.inject.Singleton;
 
 import org.jclouds.compute.ComputeServiceAdapter;
 import org.jclouds.compute.domain.Hardware;
+import org.jclouds.compute.domain.Image;
 import org.jclouds.compute.domain.Template;
 import org.jclouds.compute.reference.ComputeServiceConstants.Timeouts;
 import org.jclouds.dimensiondata.cloudcontroller.DimensionDataCloudControllerApi;
@@ -102,13 +103,14 @@ public class DimensionDataCloudControllerComputeServiceAdapter implements
         // Infer the login credentials from the VM, defaulting to "root" user
         LoginCredentials.Builder credsBuilder = LoginCredentials.builder().user(DEFAULT_LOGIN_USER).password(DEFAULT_LOGIN_PASSWORD);
         // If login overrides are supplied in TemplateOptions, always prefer those.
-        String overriddenLoginPassword = Objects.firstNonNull(template.getOptions().getLoginPassword(), DEFAULT_LOGIN_PASSWORD);
-        if (overriddenLoginPassword != null) {
-            credsBuilder.password(overriddenLoginPassword);
+        String loginPassword = Objects.firstNonNull(template.getOptions().getLoginPassword(), DEFAULT_LOGIN_PASSWORD);
+        if (loginPassword != null) {
+            credsBuilder.password(loginPassword);
         }
 
         String imageId = checkNotNull(template.getImage().getId(), "template image id must not be null");
-        final Hardware hardware = checkNotNull(template.getHardware(), "template hardware must not be null");
+        Image image = checkNotNull(template.getImage(), "template image must not be null");
+        Hardware hardware = checkNotNull(template.getHardware(), "template hardware must not be null");
 
         DimensionDataCloudControllerTemplateOptions templateOptions = DimensionDataCloudControllerTemplateOptions.class.cast(template.getOptions());
         List<Port> ports = simplifyPorts(templateOptions.getInboundPorts());
@@ -133,7 +135,7 @@ public class DimensionDataCloudControllerComputeServiceAdapter implements
                 .memoryGb(template.getHardware().getRam())
                 .build();
 
-        Response deployServerResponse = api.getServerApi().deployServer(name, imageId, Boolean.TRUE, networkInfo, disks, overriddenLoginPassword, createServerOptions);
+        Response deployServerResponse = api.getServerApi().deployServer(name, imageId, Boolean.TRUE, networkInfo, disks, loginPassword, createServerOptions);
         final String serverId = DimensionDataCloudControllerUtils.tryFindPropertyValue(deployServerResponse, "serverId");
 
         String message = format("Server(%s) is not ready within %d ms.", serverId, timeouts.nodeRunning);
@@ -200,12 +202,7 @@ public class DimensionDataCloudControllerComputeServiceAdapter implements
 
     @Override
     public Iterable<Datacenter> listLocations() {
-        return api.getInfrastructureApi().listDatacenters().concat().filter(new Predicate<Datacenter>() {
-            @Override
-            public boolean apply(Datacenter input) {
-                return input.type().equalsIgnoreCase(DEFAULT_DATACENTER_TYPE);
-            }
-        }).toList();
+        return api.getInfrastructureApi().listDatacenters().concat().toList();
     }
 
     @Override
