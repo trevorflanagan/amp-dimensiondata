@@ -55,7 +55,7 @@ public class CleanupServer implements Function<String, Boolean> {
    @Override
    public Boolean apply(final String serverId) {
       Server server = api.getServerApi().getServer(serverId);
-
+      if (server == null) return true;
       String networkDomainId = server.networkInfo().networkDomainId();
       final String internalIp = server.networkInfo().primaryNic().privateIpv4();
 

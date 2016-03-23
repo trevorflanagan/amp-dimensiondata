@@ -53,6 +53,11 @@ public class DimensionDataCloudControllerErrorHandler implements HttpErrorHandle
             message = message != null ? message : String.format("%s -> %s", command.getCurrentRequest().getRequestLine(),
                     response.getStatusLine());
             switch (response.getStatusCode()) {
+                case 400:
+                    if (!command.getCurrentRequest().getMethod().equals("DELETE")) {
+                        exception = new ResourceNotFoundException(message, exception);
+                    }
+                    break;
                 case 401:
                 case 403:
                     exception = new AuthorizationException(message, exception);

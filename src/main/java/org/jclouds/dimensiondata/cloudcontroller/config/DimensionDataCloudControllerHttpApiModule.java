@@ -33,7 +33,7 @@ import org.jclouds.rest.config.HttpApiModule;
 import com.google.inject.Scopes;
 
 @ConfiguresHttpApi
-public class DimensionDataCloudControllerHttpApiModule  extends HttpApiModule<DimensionDataCloudControllerApi> {
+public class DimensionDataCloudControllerHttpApiModule extends HttpApiModule<DimensionDataCloudControllerApi> {
 
     @Override
     protected void bindErrorHandlers() {
