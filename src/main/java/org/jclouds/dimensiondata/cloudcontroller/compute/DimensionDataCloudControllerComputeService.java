@@ -33,6 +33,7 @@ import javax.inject.Singleton;
 import org.jclouds.Constants;
 import org.jclouds.collect.Memoized;
 import org.jclouds.compute.ComputeServiceContext;
+import org.jclouds.compute.RunNodesException;
 import org.jclouds.compute.callables.RunScriptOnNode;
 import org.jclouds.compute.domain.Hardware;
 import org.jclouds.compute.domain.Image;
@@ -93,7 +94,6 @@ public class DimensionDataCloudControllerComputeService extends BaseComputeServi
                nodeTerminated, nodeSuspended, initScriptRunnerFactory, initAdminAccess, runScriptOnNodeFactory,
                persistNodeCredentials, timeouts, userExecutor, imageExtension, securityGroupExtension);
       this.cleanupServer = checkNotNull(cleanupServer, "cleanupServer");
-
    }
 
    @Override

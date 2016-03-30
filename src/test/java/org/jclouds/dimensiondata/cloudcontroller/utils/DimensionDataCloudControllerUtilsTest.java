@@ -40,14 +40,14 @@ public class DimensionDataCloudControllerUtilsTest {
 
     @Test
     public void testSimplifyPortsWithFewPorts() throws Exception {
-        int[] ports = new int[1024];
+        int[] ports = new int[10];
         for (int i = 0; i < ports.length; i++) {
             ports[i] = i + 1;
         }
         List<FirewallRuleTarget.Port> portList = DimensionDataCloudControllerUtils.simplifyPorts(ports);
         Assert.assertEquals(portList.size(), 1);
         for (FirewallRuleTarget.Port port : portList) {
-            Assert.assertEquals(port.end() - port.begin(), 1023);
+            Assert.assertEquals(port.end() - port.begin(), 9);
         }
     }
 }

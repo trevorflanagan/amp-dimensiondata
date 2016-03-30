@@ -42,6 +42,7 @@ import org.jclouds.dimensiondata.cloudcontroller.compute.functions.ServerToServe
 import org.jclouds.dimensiondata.cloudcontroller.compute.options.DimensionDataCloudControllerTemplateOptions;
 import org.jclouds.dimensiondata.cloudcontroller.domain.Datacenter;
 import org.jclouds.dimensiondata.cloudcontroller.domain.Disk;
+import org.jclouds.dimensiondata.cloudcontroller.domain.FirewallRule;
 import org.jclouds.dimensiondata.cloudcontroller.domain.FirewallRuleTarget;
 import org.jclouds.dimensiondata.cloudcontroller.domain.FirewallRuleTarget.Port;
 import org.jclouds.dimensiondata.cloudcontroller.domain.IpRange;
@@ -155,27 +156,38 @@ public class DimensionDataCloudControllerComputeServiceAdapter implements
                 throw new IllegalStateException(natRuleErrorMessage);
             }
             // set firewall policies
-            for (Port destinationPort : ports) {
-                Response createFirewallRuleOperation = api.getNetworkApi().createFirewallRule(
-                        networkDomainId,
-                        generateFirewallName(serverId, destinationPort),
-                        "ACCEPT_DECISIVELY",
-                        "IPV4",
-                        "TCP",
-                        FirewallRuleTarget.builder()
-                                .ip(IpRange.create("ANY", null))
-                                .build(),
-                        FirewallRuleTarget.builder()
-                                .ip(IpRange.create(externalIp, null))
-                                .port(destinationPort)
-                                .build(),
-                        Boolean.TRUE,
-                        Placement.builder().position("LAST").build());
-                if (!createFirewallRuleOperation.error().isEmpty()) {
-                    final String firewallRuleErrorMessage = String.format("Cannot create a firewall rule %s for (server %s) using externalIp %s. Rolling back ...", destinationPort.begin(), serverId, externalIp);
-                    logger.warn(firewallRuleErrorMessage);
-                    destroyNode(serverId);
-                    throw new IllegalStateException(firewallRuleErrorMessage);
+            for (final Port destinationPort : ports) {
+                if (!api.getNetworkApi().listFirewallRules(networkDomainId).concat().anyMatch(new Predicate<FirewallRule>() {
+                    @Override
+                    public boolean apply(FirewallRule input) {
+                        return input.protocol().equals("TCP") &&
+                                input.action().equals("ACCEPT_DECISIVELY") &&
+                                input.ipVersion().equals("IPV4") &&
+                                input.destination().port().equals(destinationPort);
+                    }
+                })) {
+                    Response createFirewallRuleOperation = api.getNetworkApi().createFirewallRule(
+                            networkDomainId,
+                            generateFirewallName(serverId, destinationPort),
+                            "ACCEPT_DECISIVELY",
+                            "IPV4",
+                            "TCP",
+                            FirewallRuleTarget.builder()
+                                    .ip(IpRange.create("ANY", null))
+                                    .build(),
+                            FirewallRuleTarget.builder()
+                                    .ip(IpRange.create("ANY", null))
+                                    //.ip(IpRange.create(externalIp, null))
+                                    .port(destinationPort)
+                                    .build(),
+                            Boolean.TRUE,
+                            Placement.builder().position("LAST").build());
+                    if (!createFirewallRuleOperation.error().isEmpty()) {
+                        final String firewallRuleErrorMessage = String.format("Cannot create a firewall rule %s for (server %s) using externalIp %s. Rolling back ...", destinationPort.begin(), serverId, externalIp);
+                        logger.warn(firewallRuleErrorMessage);
+                        destroyNode(serverId);
+                        throw new IllegalStateException(firewallRuleErrorMessage);
+                    }
                 }
             }
         } finally {
