@@ -18,6 +18,10 @@ package org.jclouds.dimensiondata.cloudcontroller.utils;
 
 import static org.jclouds.util.Predicates2.retry;
 
+import java.util.Arrays;
+import java.util.List;
+
+import org.jclouds.dimensiondata.cloudcontroller.domain.FirewallRuleTarget.Port;
 import org.jclouds.dimensiondata.cloudcontroller.domain.Property;
 import org.jclouds.dimensiondata.cloudcontroller.domain.Response;
 import org.jclouds.dimensiondata.cloudcontroller.domain.Vlan;
@@ -30,6 +34,8 @@ import com.google.common.base.Optional;
 import com.google.common.base.Predicate;
 import com.google.common.base.Predicates;
 import com.google.common.collect.FluentIterable;
+import com.google.common.collect.ImmutableList;
+import com.google.common.collect.Lists;
 
 public class DimensionDataCloudControllerUtils {
 
@@ -60,6 +66,52 @@ public class DimensionDataCloudControllerUtils {
         boolean isServerRunning = retry(new ServerStatus(api, started, deployed), timeoutMillis).apply(serverId);
         if (!isServerRunning) {
             throw new IllegalStateException(message);
+        }
+    }
+
+    // Helper function for simplifying an array of ports to a list of ranges FirewallOptions expects.
+    public static List<Port> simplifyPorts(int[] ports){
+        if ((ports == null) || (ports.length == 0)) {
+            return null;
+        }
+        List<Port> output = Lists.newArrayList();
+        Arrays.sort(ports);
+
+        int range_start = ports[0];
+        int range_end = ports[0];
+        for (int i = 1; i < ports.length; i++) {
+            if ((ports[i - 1] == ports[i] - 1) || (ports[i - 1] == ports[i])){
+                // Range continues.
+                range_end = ports[i];
+            }
+            else {
+                // Range ends.
+                output.addAll(formatRange(range_start, range_end));
+                range_start = ports[i];
+                range_end = ports[i];
+            }
+        }
+        // Make sure we get the last range.
+        output.addAll(formatRange(range_start, range_end));
+        return output;
+    }
+
+    // Helper function for simplifyPorts. Formats port range strings.
+    private static List<Port> formatRange(int range_start, int range_end) {
+        if (range_start == range_end) {
+            return ImmutableList.of(Port.create(range_start, null));
+        } else {
+            int offset = 1024;
+            if (range_end - range_start >= offset) {
+                List<Port> ports = Lists.newArrayList();
+                while (range_start <= range_end) {
+                    ports.add(Port.create(range_start, range_start + offset));
+                    range_start = range_start + offset;
+                }
+                return ImmutableList.copyOf(ports);
+            } else {
+                return ImmutableList.of(Port.create(range_start, range_end));
+            }
         }
     }
 }

@@ -38,7 +38,7 @@ public class OsImageToHardware implements Function<OsImage, Hardware> {
       HardwareBuilder builder = new HardwareBuilder().ids(from.id())
               .name(from.name())
               .hypervisor("vmx")
-              .processors(ImmutableList.of(new Processor(from.cpu().coresPerSocket(), from.cpu().count())))
+              .processors(ImmutableList.of(new Processor(from.cpu().count(), from.cpu().coresPerSocket())))
               .ram(from.memoryGb());
 
       if (from.disks() != null) {

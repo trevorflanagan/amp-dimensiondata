@@ -20,9 +20,8 @@ import static com.google.common.base.Preconditions.checkNotNull;
 import static com.google.common.base.Preconditions.checkState;
 import static java.lang.String.format;
 import static org.jclouds.compute.reference.ComputeServiceConstants.COMPUTE_LOGGER;
+import static org.jclouds.dimensiondata.cloudcontroller.utils.DimensionDataCloudControllerUtils.simplifyPorts;
 
-import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 import java.util.Set;
 import java.util.concurrent.locks.ReentrantLock;
@@ -63,7 +62,6 @@ import com.google.common.base.Function;
 import com.google.common.base.Objects;
 import com.google.common.base.Optional;
 import com.google.common.base.Predicate;
-import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
@@ -305,52 +303,6 @@ public class DimensionDataCloudControllerComputeServiceAdapter implements
 
         return String.format("%d.%d.%d.%d", i >>> 24 & 0xFF, i >> 16 & 0xFF,
                 i >>   8 & 0xFF, i >>  0 & 0xFF);
-    }
-
-    // Helper function for simplifying an array of ports to a list of ranges FirewallOptions expects.
-    public static List<Port> simplifyPorts(int[] ports){
-        if ((ports == null) || (ports.length == 0)) {
-            return null;
-        }
-        ArrayList<Port> output = Lists.newArrayList();
-        Arrays.sort(ports);
-
-        int range_start = ports[0];
-        int range_end = ports[0];
-        for (int i = 1; i < ports.length; i++) {
-            if ((ports[i - 1] == ports[i] - 1) || (ports[i - 1] == ports[i])){
-                // Range continues.
-                range_end = ports[i];
-            }
-            else {
-                // Range ends.
-                output.addAll(formatRange(range_start, range_end));
-                range_start = ports[i];
-                range_end = ports[i];
-            }
-        }
-        // Make sure we get the last range.
-        output.addAll(formatRange(range_start, range_end));
-        return output;
-    }
-
-    // Helper function for simplifyPorts. Formats port range strings.
-    private static List<Port> formatRange(int start, int finish) {
-        if (start == finish) {
-            return ImmutableList.of(Port.create(start, null));
-        } else if (finish - start > 1024) {
-            List<Port> ports = Lists.newArrayList();
-            int numOfPorts = (finish - start) / 1024;
-            while (numOfPorts > 0) {
-                ports.add(Port.create(start, start + 1024));
-                start = start + 1024;
-                numOfPorts--;
-            }
-            ports.add(Port.create(start + 1, finish));
-            return ports;
-        } else {
-            return ImmutableList.of(Port.create(start, finish));
-        }
     }
 
     private Set<String> generateAllPublicIPv4Addresses(PublicIpBlock publicIpBlock) {
