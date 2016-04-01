@@ -16,6 +16,8 @@
  */
 package org.jclouds.dimensiondata.cloudcontroller.features;
 
+import java.util.List;
+
 import javax.inject.Named;
 import javax.ws.rs.Consumes;
 import javax.ws.rs.GET;
@@ -31,6 +33,7 @@ import org.jclouds.Fallbacks.NullOnNotFoundOr404;
 import org.jclouds.collect.PagedIterable;
 import org.jclouds.dimensiondata.cloudcontroller.domain.FirewallRule;
 import org.jclouds.dimensiondata.cloudcontroller.domain.FirewallRuleTarget;
+import org.jclouds.dimensiondata.cloudcontroller.domain.FirewallRuleTarget.Port;
 import org.jclouds.dimensiondata.cloudcontroller.domain.NatRule;
 import org.jclouds.dimensiondata.cloudcontroller.domain.NetworkDomain;
 import org.jclouds.dimensiondata.cloudcontroller.domain.PaginatedCollection;
@@ -151,6 +154,7 @@ public interface NetworkApi {
     @Path("/createNatRule")
     @Produces(MediaType.APPLICATION_JSON)
     @MapBinder(BindToJsonPayload.class)
+    @Fallback(Fallbacks.VoidOnNotFoundOr404.class)
     Response createNatRule(@PayloadParam("networkDomainId") String networkDomainId, @PayloadParam("internalIp") String internalIp,
                            @PayloadParam("externalIp") String externalIp);
 
@@ -213,5 +217,15 @@ public interface NetworkApi {
     @Path("/deleteFirewallRule")
     @Produces(MediaType.APPLICATION_JSON)
     @MapBinder(BindToJsonPayload.class)
+    @Fallback(NullOnNotFoundOr404.class)
     Response deleteFirewallRule(@PayloadParam("id") String natRuleId);
+
+    @Named("network:createPortList")
+    @POST
+    @Path("/createPortList")
+    @Produces(MediaType.APPLICATION_JSON)
+    @MapBinder(BindToJsonPayload.class)
+    Response createPortList(@PayloadParam("networkDomainId") String networkDomainId, @PayloadParam("name") String name,
+                            @PayloadParam("description") String description, @PayloadParam("port") List<Port> port, @PayloadParam("childPortListId") List<String> childPortListId);
+
 }

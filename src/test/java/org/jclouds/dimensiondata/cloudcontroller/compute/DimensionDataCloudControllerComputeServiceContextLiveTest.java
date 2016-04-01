@@ -51,7 +51,7 @@ import com.google.inject.Module;
 @Test(groups = "live", testName = "DimensionDataCloudControllerComputeServiceContextLiveTest")
 public class DimensionDataCloudControllerComputeServiceContextLiveTest extends BaseComputeServiceContextLiveTest {
 
-    private static final int NUM_NODES = 1;
+    private static final int NUM_NODES = 2;
 
     @Resource
     @Named(ComputeServiceConstants.COMPUTE_LOGGER)
@@ -99,7 +99,8 @@ public class DimensionDataCloudControllerComputeServiceContextLiveTest extends B
                 //.locationId("NA12")
                 .build();
         DimensionDataCloudControllerTemplateOptions options = template.getOptions().as(DimensionDataCloudControllerTemplateOptions.class);
-        options.inboundPorts(22, 8080, 8081, 8082)
+        options
+                .inboundPorts(22, 8080, 8081)
                 .runScript(AdminAccess.standard());
 
         try {

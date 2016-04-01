@@ -18,8 +18,6 @@ package org.jclouds.dimensiondata.cloudcontroller.handlers;
 
 import static org.jclouds.http.HttpUtils.closeClientButKeepContentStream;
 
-import java.io.IOException;
-
 import javax.inject.Singleton;
 
 import org.jclouds.http.HttpCommand;
@@ -28,9 +26,6 @@ import org.jclouds.http.HttpResponse;
 import org.jclouds.http.HttpResponseException;
 import org.jclouds.rest.AuthorizationException;
 import org.jclouds.rest.ResourceNotFoundException;
-
-import com.google.common.base.Throwables;
-import com.google.common.io.Closeables;
 
 /**
  * This will org.jclouds.dimensiondata.cloudcontroller.parse and set an appropriate exception on the command object.
@@ -41,49 +36,38 @@ public class DimensionDataCloudControllerErrorHandler implements HttpErrorHandle
     public void handleError(HttpCommand command, HttpResponse response) {
         // it is important to always read fully and close streams
         byte[] data = closeClientButKeepContentStream(response);
-
-        // Create default exception
-        String message = data != null
-                ? new String(data)
-                : String.format("%s -> %s", command.getCurrentRequest().getRequestLine(), response.getStatusLine());
+        String message = data != null ? new String(data) : null;
 
         Exception exception = message != null ? new HttpResponseException(command, response, message)
                 : new HttpResponseException(command, response);
-        try {
-            message = message != null ? message : String.format("%s -> %s", command.getCurrentRequest().getRequestLine(),
-                    response.getStatusLine());
-            switch (response.getStatusCode()) {
-                case 400:
-                    if (!command.getCurrentRequest().getMethod().equals("DELETE")) {
-                        exception = new ResourceNotFoundException(message, exception);
-                    }
-                    break;
-                case 401:
-                case 403:
-                    exception = new AuthorizationException(message, exception);
-                    break;
-                case 404:
-                    if (!command.getCurrentRequest().getMethod().equals("DELETE")) {
-                        exception = new ResourceNotFoundException(message, exception);
-                    }
-                    break;
-                case 500:
-                    if (message != null ){
-                        if (message.indexOf("Unable to determine package for") != -1) {
-                            exception = new ResourceNotFoundException(message, exception);
-                        } else if (message.indexOf("currently an active transaction") != -1) {
-                            exception = new IllegalStateException(message, exception);
-                        }
-                    }
-            }
-        } finally {
-            try {
-                Closeables.close(response.getPayload(), true);
-            } catch (IOException e) {
-                // This code will never be reached
-                throw Throwables.propagate(e);
-            }
-            command.setException(exception);
+        message = message != null ? message : String.format("%s -> %s", command.getCurrentRequest().getRequestLine(),
+                response.getStatusLine());
+        switch (response.getStatusCode()) {
+            case 400:
+                if (message.contains("RESOURCE_NOT_FOUND")) {
+                    exception = new ResourceNotFoundException(message, exception);
+                } else if (message.contains("INVALID_INPUT_DATA") ||
+                        message.contains("ORGANIZATION_NOT_VERIFIED") ||
+                        message.contains("SYSTEM_ERROR") && !message.contains("RETRYABLE_SYSTEM_ERROR") ||
+                        message.contains("UNEXPECTED_ERROR")) {
+                    exception = new IllegalStateException(message, exception);
+                } else if (message.contains("RETRYABLE_SYSTEM_ERROR")) {
+                    // TODO ignore and retry later
+                    return;
+                }
+                break;
+            case 401:
+                exception = new AuthorizationException(message, exception);
+                break;
+            case 403:
+                exception = new AuthorizationException(message, exception);
+                break;
+            case 404:
+                if (!command.getCurrentRequest().getMethod().equals("DELETE")) {
+                    exception = new ResourceNotFoundException(message, exception);
+                }
+                break;
         }
+        command.setException(exception);
     }
 }

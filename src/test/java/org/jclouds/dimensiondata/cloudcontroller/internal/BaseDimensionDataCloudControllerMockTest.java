@@ -28,7 +28,7 @@ import javax.ws.rs.core.HttpHeaders;
 import javax.ws.rs.core.MediaType;
 
 import org.jclouds.http.BaseMockWebServerTest;
-import org.jclouds.http.config.JavaUrlHttpCommandExecutorServiceModule;
+import org.jclouds.http.okhttp.config.OkHttpCommandExecutorServiceModule;
 
 import com.google.common.base.Charsets;
 import com.google.common.base.Throwables;
@@ -49,7 +49,7 @@ public class BaseDimensionDataCloudControllerMockTest extends BaseMockWebServerT
 
    @Override
    protected Module createConnectionModule() {
-      return new JavaUrlHttpCommandExecutorServiceModule();
+      return new OkHttpCommandExecutorServiceModule();
    }
 
    public byte[] payloadFromResource(String resource) {

@@ -26,6 +26,19 @@ import org.testng.annotations.Test;
 public class DimensionDataCloudControllerUtilsTest {
 
     @Test
+    public void testSimplifyPortsWithRandomRanges() throws Exception {
+        int[] ports = new int[3];
+        ports[0] = 22;
+        ports[1] = 8080;
+        ports[2] = 8081;
+        List<FirewallRuleTarget.Port> portList = DimensionDataCloudControllerUtils.simplifyPorts(ports);
+        Assert.assertEquals(portList.size(), 2);
+        Assert.assertEquals(portList.get(0).end() - portList.get(0).begin(), 1024);
+        Assert.assertEquals(portList.get(1).end() - portList.get(1).begin(), 1024);
+    }
+
+
+    @Test
     public void testSimplifyPortsWithFullRange() throws Exception {
         int[] ports = new int[65535];
         for (int i = 0; i < ports.length; i++) {
@@ -33,7 +46,7 @@ public class DimensionDataCloudControllerUtilsTest {
         }
         List<FirewallRuleTarget.Port> portList = DimensionDataCloudControllerUtils.simplifyPorts(ports);
         Assert.assertEquals(portList.size(), 64);
-        for (FirewallRuleTarget.Port port : portList) {
+        for (FirewallRuleTarget.Port port : portList.subList(0, portList.size() - 1)) {
             Assert.assertEquals(port.end() - port.begin(), 1024);
         }
     }
@@ -50,4 +63,23 @@ public class DimensionDataCloudControllerUtilsTest {
             Assert.assertEquals(port.end() - port.begin(), 9);
         }
     }
+
+    @Test
+    public void testSinglePortRange() throws Exception {
+        List<FirewallRuleTarget.Port> portList = DimensionDataCloudControllerUtils.formatRange(1, 1025);
+        Assert.assertEquals(portList.size(), 1);
+        for (FirewallRuleTarget.Port port : portList) {
+            Assert.assertEquals(port.end() - port.begin(), 1024);
+        }
+    }
+
+    @Test
+    public void testMultiplePortRangeOfSize1024() throws Exception {
+        List<FirewallRuleTarget.Port> portList = DimensionDataCloudControllerUtils.formatRange(1, 65535);
+        Assert.assertEquals(portList.size(), 64);
+        for (FirewallRuleTarget.Port port : portList.subList(1, portList.size() - 1)) {
+            Assert.assertEquals(port.end() - port.begin(), 1024);
+        }
+    }
+
 }

@@ -44,7 +44,7 @@ public abstract class FirewallRuleTarget {
 
     FirewallRuleTarget() {} // For AutoValue only!
 
-    public abstract IpRange ip();
+    @Nullable public abstract IpRange ip();
     @Nullable public abstract Port port();
 
     @SerializedNames({ "ip", "port" })

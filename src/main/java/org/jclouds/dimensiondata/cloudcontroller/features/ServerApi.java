@@ -94,7 +94,7 @@ public interface ServerApi {
     @POST
     @Path("/deleteServer")
     @Produces(MediaType.APPLICATION_JSON)
-    @Fallback(Fallbacks.TrueOnNotFoundOr404.class)
+    @Fallback(Fallbacks.VoidOnNotFoundOr404.class)
     @MapBinder(BindToJsonPayload.class)
     Response deleteServer(@PayloadParam("id") String id);
 

@@ -30,26 +30,14 @@ public class DimensionDataCloudControllerTemplateOptions extends TemplateOptions
     protected String vlanName;
     protected String defaultPrivateIPv4BaseAddress;
     protected Integer defaultPrivateIPv4PrefixSize;
+    protected boolean autoCreateNatRule = false;
+
 
     @Override
     public DimensionDataCloudControllerTemplateOptions clone() {
         final DimensionDataCloudControllerTemplateOptions options = new DimensionDataCloudControllerTemplateOptions();
         copyTo(options);
         return options;
-    }
-
-    @Override
-    public void copyTo(final TemplateOptions to) {
-        super.copyTo(to);
-        if (to instanceof DimensionDataCloudControllerTemplateOptions) {
-            final DimensionDataCloudControllerTemplateOptions eTo = DimensionDataCloudControllerTemplateOptions.class.cast(to);
-            eTo.networkDomainId(networkDomainId);
-            eTo.vlanId(vlanId);
-            eTo.networkDomainName(networkDomainName);
-            eTo.vlanName(vlanName);
-            eTo.defaultPrivateIPv4BaseAddress(defaultPrivateIPv4BaseAddress);
-            eTo.defaultPrivateIPv4PrefixSize(defaultPrivateIPv4PrefixSize);
-        }
     }
 
     @Override
@@ -60,6 +48,7 @@ public class DimensionDataCloudControllerTemplateOptions extends TemplateOptions
 
         DimensionDataCloudControllerTemplateOptions that = (DimensionDataCloudControllerTemplateOptions) o;
 
+        if (autoCreateNatRule != that.autoCreateNatRule) return false;
         if (networkDomainId != null ? !networkDomainId.equals(that.networkDomainId) : that.networkDomainId != null)
             return false;
         if (vlanId != null ? !vlanId.equals(that.vlanId) : that.vlanId != null) return false;
@@ -92,7 +81,8 @@ public class DimensionDataCloudControllerTemplateOptions extends TemplateOptions
                 ", networkDomainName='" + networkDomainName + '\'' +
                 ", vlanName='" + vlanName + '\'' +
                 ", defaultPrivateIPv4BaseAddress='" + defaultPrivateIPv4BaseAddress + '\'' +
-                ", defaultPrivateIPv4PrefixSize='" + defaultPrivateIPv4PrefixSize + '\'' +
+                ", defaultPrivateIPv4PrefixSize=" + defaultPrivateIPv4PrefixSize +
+                ", autoCreateNatRule=" + autoCreateNatRule +
                 '}';
     }
 
@@ -118,6 +108,10 @@ public class DimensionDataCloudControllerTemplateOptions extends TemplateOptions
 
     public Integer getDefaultPrivateIPv4PrefixSize() {
         return defaultPrivateIPv4PrefixSize;
+    }
+
+    public boolean autoCreateNatRule() {
+        return autoCreateNatRule;
     }
 
     public DimensionDataCloudControllerTemplateOptions networkDomainId(@Nullable String networkDomainId) {
@@ -147,6 +141,11 @@ public class DimensionDataCloudControllerTemplateOptions extends TemplateOptions
 
     public DimensionDataCloudControllerTemplateOptions defaultPrivateIPv4PrefixSize(@Nullable Integer defaultPrivateIPv4PrefixSize) {
         this.defaultPrivateIPv4PrefixSize = defaultPrivateIPv4PrefixSize;
+        return this;
+    }
+
+    public DimensionDataCloudControllerTemplateOptions autoCreateNatRule(boolean autoCreateNatRule) {
+        this.autoCreateNatRule = autoCreateNatRule;
         return this;
     }
 
@@ -193,6 +192,13 @@ public class DimensionDataCloudControllerTemplateOptions extends TemplateOptions
         public static DimensionDataCloudControllerTemplateOptions defaultPrivateIPv4PrefixSize(final Integer defaultPrivateIPv4PrefixSize) {
             final DimensionDataCloudControllerTemplateOptions options = new DimensionDataCloudControllerTemplateOptions();
             return options.defaultPrivateIPv4PrefixSize(defaultPrivateIPv4PrefixSize);
+        }
+        /**
+         * @see #autoCreateNatRule
+         */
+        public static DimensionDataCloudControllerTemplateOptions autoCreateNatRule(boolean autoCreateNatRule) {
+            final DimensionDataCloudControllerTemplateOptions options = new DimensionDataCloudControllerTemplateOptions();
+            return options.autoCreateNatRule(autoCreateNatRule);
         }
     }
 
