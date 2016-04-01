@@ -147,11 +147,13 @@ public class DimensionDataCloudControllerComputeServiceAdapter implements
         String message = format("Server(%s) is not ready within %d ms.", serverId, timeouts.nodeRunning);
         DimensionDataCloudControllerUtils.waitForServerStatus(api.getServerApi(), serverId, true, true, timeouts.nodeRunning, message);
 
+        ServerWithExternalIp.Builder serverWithExternalIpBuilder = ServerWithExternalIp.builder().server(api.getServerApi().getServer(serverId));
+
         if (templateOptions.autoCreateNatRule()) {
             lock.lock();
             try {
                 String externalIp = tryFindExternalIp(api, networkDomainId);
-                ServerWithExternalIp serverWithExternalIp = ServerWithExternalIp.builder().server(api.getServerApi().getServer(serverId)).externalIp(externalIp).build();
+                serverWithExternalIpBuilder.externalIp(externalIp);
                 String internalIp = api.getServerApi().getServer(serverId).networkInfo().primaryNic().privateIpv4();
                 Response createNatRuleOperation = api.getNetworkApi().createNatRule(networkDomainId, internalIp, externalIp);
                 if (!createNatRuleOperation.error().isEmpty()) {
@@ -211,8 +213,7 @@ public class DimensionDataCloudControllerComputeServiceAdapter implements
                 }
             }
         }
-
-        return new NodeAndInitialCredentials<ServerWithExternalIp>(serverWithExternalIp, serverId, credsBuilder.build());
+        return new NodeAndInitialCredentials<ServerWithExternalIp>(serverWithExternalIpBuilder.build(), serverId, credsBuilder.build());
     }
 
     @Override

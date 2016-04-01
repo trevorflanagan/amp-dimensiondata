@@ -30,7 +30,7 @@ public class DimensionDataCloudControllerTemplateOptions extends TemplateOptions
     protected String vlanName;
     protected String defaultPrivateIPv4BaseAddress;
     protected Integer defaultPrivateIPv4PrefixSize;
-    protected boolean autoCreateNatRule = false;
+    protected boolean autoCreateNatRule = true;
 
 
     @Override

@@ -51,7 +51,7 @@ import com.google.inject.Module;
 @Test(groups = "live", testName = "DimensionDataCloudControllerComputeServiceContextLiveTest")
 public class DimensionDataCloudControllerComputeServiceContextLiveTest extends BaseComputeServiceContextLiveTest {
 
-    private static final int NUM_NODES = 2;
+    private static final int NUM_NODES = 1;
 
     @Resource
     @Named(ComputeServiceConstants.COMPUTE_LOGGER)
