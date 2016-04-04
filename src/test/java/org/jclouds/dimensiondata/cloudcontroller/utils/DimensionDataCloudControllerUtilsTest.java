@@ -33,8 +33,6 @@ public class DimensionDataCloudControllerUtilsTest {
         ports[2] = 8081;
         List<FirewallRuleTarget.Port> portList = DimensionDataCloudControllerUtils.simplifyPorts(ports);
         Assert.assertEquals(portList.size(), 2);
-        Assert.assertEquals(portList.get(0).end() - portList.get(0).begin(), 1024);
-        Assert.assertEquals(portList.get(1).end() - portList.get(1).begin(), 1024);
     }
 
 
