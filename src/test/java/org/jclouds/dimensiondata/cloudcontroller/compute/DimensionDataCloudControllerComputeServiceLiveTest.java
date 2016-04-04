@@ -17,6 +17,8 @@
 package org.jclouds.dimensiondata.cloudcontroller.compute;
 
 import org.jclouds.compute.domain.NodeMetadata;
+import org.jclouds.compute.domain.Template;
+import org.jclouds.compute.domain.TemplateBuilder;
 import org.jclouds.compute.internal.BaseComputeServiceLiveTest;
 import org.jclouds.sshj.config.SshjSshClientModule;
 import org.testng.annotations.Test;
@@ -42,18 +44,22 @@ public class DimensionDataCloudControllerComputeServiceLiveTest extends BaseComp
 
    @Override
    public void testOptionToNotBlock() throws Exception {
-      // DigitalOcean ComputeService implementation has to block until the node
+      // DimensionData ComputeService implementation has to block until the node
       // is provisioned, to be able to return it.
    }
 
    @Override
    protected void checkTagsInNodeEquals(NodeMetadata node, ImmutableSet<String> tags) {
-      // DigitalOcean does not support tags
+      // DimensionData does not support tags
    }
 
    @Override
    protected void checkUserMetadataContains(NodeMetadata node, ImmutableMap<String, String> userMetadata) {
-      // DigitalOcean does not support user metadata
+      // DimensionData does not support user metadata
    }
 
+   @Override
+   protected Template buildTemplate(TemplateBuilder templateBuilder) {
+      return super.buildTemplate(templateBuilder.locationId("NA9"));
+   }
 }

@@ -168,51 +168,8 @@ public class DimensionDataCloudControllerComputeServiceAdapter implements
             }
         }
 
-        // TODO set more fine-grained firewall policies when v2.2 is out
-        Set<FirewallRuleTarget.Port> ports = ImmutableSet.copyOf(simplifyPorts(templateOptions.getInboundPorts()));
-        Set<FirewallRuleTarget.Port> existingDestinationPorts = api.getNetworkApi().listFirewallRules(networkDomainId).concat()
-                .filter(new Predicate<FirewallRule>() {
-                    @Override
-                    public boolean apply(FirewallRule firewallRule) {
-                        return firewallRule.destination() != null;
-                    }
-                })
-                .transform(new Function<FirewallRule, FirewallRuleTarget.Port>() {
-                    @Override
-                    public FirewallRuleTarget.Port apply(FirewallRule firewallRule) {
-                        return firewallRule.destination().port();
-                    }
-                })
-                .filter(Predicates.<FirewallRuleTarget.Port>notNull())
-                .toSet();
+        // TODO set more fine-grained firewall policies when v2.2 is out, remove them from GetOrCreateNetworkDomain
 
-        Set<FirewallRuleTarget.Port> portsToBeInstalled = Sets.difference(ports, existingDestinationPorts).immutableCopy();
-        for (FirewallRuleTarget.Port destinationPort : portsToBeInstalled) {
-            Response createFirewallRuleResponse = api.getNetworkApi().createFirewallRule(
-                    networkDomainId,
-                    generateFirewallName(destinationPort),
-                    DEFAULT_ACTION,
-                    DEFAULT_IP_VERSION,
-                    DEFAULT_PROTOCOL,
-                    FirewallRuleTarget.builder()
-                            .ip(IpRange.create("ANY", null))
-                            .build(),
-                    FirewallRuleTarget.builder()
-                            .ip(IpRange.create("ANY", null))
-                            .port(destinationPort)
-                            .build(),
-                    Boolean.TRUE,
-                    Placement.builder().position("LAST").build());
-            if (createFirewallRuleResponse != null) {
-                if (!createFirewallRuleResponse.error().isEmpty()) {
-                    String firewallRuleErrorMessage = String.format("Cannot create a firewall rule %s-%s. Rolling back ...", destinationPort.begin(), destinationPort.end());
-                    logger.warn(firewallRuleErrorMessage);
-                    throw new IllegalStateException(firewallRuleErrorMessage);
-                } else {
-                    DimensionDataCloudControllerUtils.tryFindPropertyValue(createFirewallRuleResponse, "firewallRuleId");
-                }
-            }
-        }
         return new NodeAndInitialCredentials<ServerWithExternalIp>(serverWithExternalIpBuilder.build(), serverId, credsBuilder.build());
     }
 

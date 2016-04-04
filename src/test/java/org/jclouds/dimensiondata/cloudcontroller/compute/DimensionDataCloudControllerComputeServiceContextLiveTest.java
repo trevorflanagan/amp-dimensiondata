@@ -26,6 +26,8 @@ import java.util.Set;
 import javax.annotation.Resource;
 import javax.inject.Named;
 
+import org.assertj.core.api.Condition;
+import org.assertj.core.internal.Conditions;
 import org.jclouds.compute.RunNodesException;
 import org.jclouds.compute.RunScriptOnNodesException;
 import org.jclouds.compute.domain.ComputeMetadata;
@@ -51,7 +53,7 @@ import com.google.inject.Module;
 @Test(groups = "live", testName = "DimensionDataCloudControllerComputeServiceContextLiveTest")
 public class DimensionDataCloudControllerComputeServiceContextLiveTest extends BaseComputeServiceContextLiveTest {
 
-    private static final int NUM_NODES = 1;
+    private static final int NUM_NODES = 2;
 
     @Resource
     @Named(ComputeServiceConstants.COMPUTE_LOGGER)
@@ -63,30 +65,22 @@ public class DimensionDataCloudControllerComputeServiceContextLiveTest extends B
 
     @Test
     public void testListHardwareProfiles() {
-        for (Hardware hardware : view.getComputeService().listHardwareProfiles()) {
-            System.out.println(hardware);
-        }
+        assertThat(view.getComputeService().listHardwareProfiles()).isNotEmpty();
     }
 
     @Test
     public void testListAvailableLocations() throws RunNodesException {
-        for (Location location : view.getComputeService().listAssignableLocations()) {
-            System.out.println(location);
-        }
+        assertThat(view.getComputeService().listAssignableLocations()).isNotEmpty();
     }
 
     @Test
     public void testListImages() throws RunNodesException {
-        for (Image image : view.getComputeService().listImages()) {
-            System.out.println(image);
-        }
+        assertThat(view.getComputeService().listImages()).isNotEmpty();
     }
 
     @Test
     public void testListNodes() throws RunNodesException {
-        for (ComputeMetadata node : view.getComputeService().listNodes()) {
-            System.out.println(node);
-        }
+        assertThat(view.getComputeService().listNodes()).isNotNull();
     }
 
     @Test

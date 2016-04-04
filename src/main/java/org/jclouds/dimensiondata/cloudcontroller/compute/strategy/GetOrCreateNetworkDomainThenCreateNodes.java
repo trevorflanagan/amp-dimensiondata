@@ -19,6 +19,11 @@ package org.jclouds.dimensiondata.cloudcontroller.compute.strategy;
 import static com.google.common.base.Objects.firstNonNull;
 import static com.google.common.collect.Iterables.tryFind;
 import static java.lang.String.format;
+import static org.jclouds.dimensiondata.cloudcontroller.compute.DimensionDataCloudControllerComputeServiceAdapter.DEFAULT_ACTION;
+import static org.jclouds.dimensiondata.cloudcontroller.compute.DimensionDataCloudControllerComputeServiceAdapter.DEFAULT_IP_VERSION;
+import static org.jclouds.dimensiondata.cloudcontroller.compute.DimensionDataCloudControllerComputeServiceAdapter.DEFAULT_PROTOCOL;
+import static org.jclouds.dimensiondata.cloudcontroller.utils.DimensionDataCloudControllerUtils.generateFirewallName;
+import static org.jclouds.dimensiondata.cloudcontroller.utils.DimensionDataCloudControllerUtils.simplifyPorts;
 import static org.jclouds.util.Predicates2.retry;
 
 import java.util.List;
@@ -40,16 +45,24 @@ import org.jclouds.compute.strategy.ListNodesStrategy;
 import org.jclouds.compute.strategy.impl.CreateNodesWithGroupEncodedIntoNameThenAddToSet;
 import org.jclouds.dimensiondata.cloudcontroller.DimensionDataCloudControllerApi;
 import org.jclouds.dimensiondata.cloudcontroller.compute.options.DimensionDataCloudControllerTemplateOptions;
+import org.jclouds.dimensiondata.cloudcontroller.domain.FirewallRule;
+import org.jclouds.dimensiondata.cloudcontroller.domain.FirewallRuleTarget;
+import org.jclouds.dimensiondata.cloudcontroller.domain.IpRange;
 import org.jclouds.dimensiondata.cloudcontroller.domain.NetworkDomain;
+import org.jclouds.dimensiondata.cloudcontroller.domain.Placement;
 import org.jclouds.dimensiondata.cloudcontroller.domain.Response;
 import org.jclouds.dimensiondata.cloudcontroller.domain.Vlan;
 import org.jclouds.dimensiondata.cloudcontroller.features.NetworkApi;
 import org.jclouds.dimensiondata.cloudcontroller.utils.DimensionDataCloudControllerUtils;
 import org.jclouds.logging.Logger;
 
+import com.google.common.base.Function;
 import com.google.common.base.Optional;
 import com.google.common.base.Predicate;
+import com.google.common.base.Predicates;
+import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Multimap;
+import com.google.common.collect.Sets;
 import com.google.common.util.concurrent.ListenableFuture;
 import com.google.common.util.concurrent.ListeningExecutorService;
 import com.google.inject.Inject;
@@ -102,6 +115,51 @@ public class GetOrCreateNetworkDomainThenCreateNodes
             templateOptions.vlanId(vlanId);
         }
 
+        // set firewall rules on networkDomain
+        Set<FirewallRuleTarget.Port> ports = ImmutableSet.copyOf(simplifyPorts(templateOptions.getInboundPorts()));
+        Set<FirewallRuleTarget.Port> existingDestinationPorts = api.getNetworkApi().listFirewallRules(templateOptions.getNetworkDomainId()).concat()
+                .filter(new Predicate<FirewallRule>() {
+                    @Override
+                    public boolean apply(FirewallRule firewallRule) {
+                        return firewallRule.destination() != null;
+                    }
+                })
+                .transform(new Function<FirewallRule, FirewallRuleTarget.Port>() {
+                    @Override
+                    public FirewallRuleTarget.Port apply(FirewallRule firewallRule) {
+                        return firewallRule.destination().port();
+                    }
+                })
+                .filter(Predicates.<FirewallRuleTarget.Port>notNull())
+                .toSet();
+
+        Set<FirewallRuleTarget.Port> portsToBeInstalled = Sets.difference(ports, existingDestinationPorts).immutableCopy();
+        for (FirewallRuleTarget.Port destinationPort : portsToBeInstalled) {
+            Response createFirewallRuleResponse = api.getNetworkApi().createFirewallRule(
+                    templateOptions.getNetworkDomainId(),
+                    generateFirewallName(destinationPort),
+                    DEFAULT_ACTION,
+                    DEFAULT_IP_VERSION,
+                    DEFAULT_PROTOCOL,
+                    FirewallRuleTarget.builder()
+                            .ip(IpRange.create("ANY", null))
+                            .build(),
+                    FirewallRuleTarget.builder()
+                            .ip(IpRange.create("ANY", null))
+                            .port(destinationPort)
+                            .build(),
+                    Boolean.TRUE,
+                    Placement.builder().position("LAST").build());
+            if (createFirewallRuleResponse != null) {
+                if (!createFirewallRuleResponse.error().isEmpty()) {
+                    String firewallRuleErrorMessage = String.format("Cannot create a firewall rule %s-%s. Rolling back ...", destinationPort.begin(), destinationPort.end());
+                    logger.warn(firewallRuleErrorMessage);
+                    throw new IllegalStateException(firewallRuleErrorMessage);
+                } else {
+                    DimensionDataCloudControllerUtils.tryFindPropertyValue(createFirewallRuleResponse, "firewallRuleId");
+                }
+            }
+        }
         return super.execute(group, count, template, goodNodes, badNodes, customizationResponses);
     }
 
