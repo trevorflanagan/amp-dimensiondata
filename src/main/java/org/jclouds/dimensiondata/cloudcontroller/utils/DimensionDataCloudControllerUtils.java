@@ -39,22 +39,7 @@ import com.google.common.collect.Lists;
 
 public class DimensionDataCloudControllerUtils {
 
-    public static final String JCLOUDS_FW_RULE_PATTERN = "jclouds.%s";
-
-    /*
-    public static String analyseResponse(Response response) {
-        if (!response.info().isEmpty()) {
-
-        if ("NAME_NOT_UNIQUE".equals(response.responseCode())) {
-            String operation = response.operation();
-            if ("DEPLOY_NETWORK_DOMAIN".equals(operation)) {
-                return "networkDomainId";
-            } else if ("CREATE_FIREWALL_RULE".equals(operation)) {
-                return "firewallRuleId";
-            }
-        }
-    }
-    */
+    public static final String JCLOUDS_FW_RULE_PATTERN = "jclouds.%s.%s";
 
     public static String tryFindPropertyValue(Response response, final String propertyName) {
         if (!response.info().isEmpty()) {
@@ -143,7 +128,7 @@ public class DimensionDataCloudControllerUtils {
         return ports;
     }
 
-    public static String generateFirewallName(Port destinationPort) {
-        return String.format(JCLOUDS_FW_RULE_PATTERN, destinationPort.end() == null ? destinationPort.begin() : destinationPort.begin() + "_" + destinationPort.end());
+    public static String generateFirewallName(String serverId, Port destinationPort) {
+        return String.format(JCLOUDS_FW_RULE_PATTERN, serverId.replaceAll("-", "_"), destinationPort.end() == null || destinationPort.begin().equals(destinationPort.end()) ? destinationPort.begin() : destinationPort.begin() + "_" + destinationPort.end());
     }
 }

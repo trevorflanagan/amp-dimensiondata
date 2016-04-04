@@ -19,9 +19,11 @@ package org.jclouds.dimensiondata.cloudcontroller.config;
 import org.jclouds.dimensiondata.cloudcontroller.DimensionDataCloudControllerApi;
 import org.jclouds.dimensiondata.cloudcontroller.handlers.DimensionDataCloudControllerErrorHandler;
 import org.jclouds.http.HttpErrorHandler;
+import org.jclouds.http.HttpRetryHandler;
 import org.jclouds.http.annotation.ClientError;
 import org.jclouds.http.annotation.Redirection;
 import org.jclouds.http.annotation.ServerError;
+import org.jclouds.http.handlers.BackoffLimitedRetryHandler;
 import org.jclouds.location.config.LocationModule;
 import org.jclouds.location.suppliers.ImplicitLocationSupplier;
 import org.jclouds.location.suppliers.implicit.OnlyLocationOrFirstZone;
@@ -40,12 +42,10 @@ public class DimensionDataCloudControllerHttpApiModule extends HttpApiModule<Dim
         bind(HttpErrorHandler.class).annotatedWith(ServerError.class).to(DimensionDataCloudControllerErrorHandler.class);
     }
 
-    /*
     @Override
     protected void bindRetryHandlers() {
         bind(HttpRetryHandler.class).annotatedWith(ClientError.class).to(BackoffLimitedRetryHandler.class);
     }
-    */
 
     @Override
     protected void installLocations() {

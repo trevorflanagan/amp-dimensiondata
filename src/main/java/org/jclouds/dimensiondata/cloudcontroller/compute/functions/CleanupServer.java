@@ -76,7 +76,7 @@ public class CleanupServer implements Function<String, Boolean> {
       api.getNetworkApi().listFirewallRules(networkDomainId).concat().filter(new Predicate<FirewallRule>() {
          @Override
          public boolean apply(FirewallRule firewallRule) {
-            return firewallRule.name().startsWith("jclouds.");
+            return firewallRule.name().contains(serverId.replaceAll("-", "_"));
          }
       }).transform(new Function<FirewallRule, Boolean>() {
          @Override

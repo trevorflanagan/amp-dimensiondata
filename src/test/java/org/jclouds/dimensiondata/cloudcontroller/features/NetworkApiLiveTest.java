@@ -83,7 +83,7 @@ public class NetworkApiLiveTest extends BaseDimensionDataCloudControllerApiLiveT
             FirewallRuleTarget.Port destinationPort = FirewallRuleTarget.Port.create(j + 1 , j + 1025);
             Response createFirewallRuleResponse = api().createFirewallRule(
                     networkDomainId,
-                    generateFirewallName(destinationPort),
+                    generateFirewallName("serverId", destinationPort),
                     DEFAULT_ACTION,
                     DEFAULT_IP_VERSION,
                     DEFAULT_PROTOCOL,
@@ -110,7 +110,7 @@ public class NetworkApiLiveTest extends BaseDimensionDataCloudControllerApiLiveT
             FirewallRuleTarget.Port destinationPort = FirewallRuleTarget.Port.create(1, 1025);
             Response createFirewallRuleResponse = api().createFirewallRule(
                     networkDomainId,
-                    generateFirewallName(destinationPort),
+                    generateFirewallName("serverId", destinationPort),
                     DEFAULT_ACTION,
                     DEFAULT_IP_VERSION,
                     DEFAULT_PROTOCOL,

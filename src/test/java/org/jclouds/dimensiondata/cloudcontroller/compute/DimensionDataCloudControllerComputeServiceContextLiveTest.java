@@ -90,7 +90,9 @@ public class DimensionDataCloudControllerComputeServiceContextLiveTest extends B
         DimensionDataCloudControllerTemplateOptions options = template.getOptions().as(DimensionDataCloudControllerTemplateOptions.class);
         options
                 .inboundPorts(22, 8080, 8081)
-                .runScript(AdminAccess.standard());
+                .runScript(AdminAccess.standard())
+                .networkDomainId("91f577d2-5812-4e39-a79f-a35e42eb78a6")
+                .vlanId("025c59d7-b7e5-4261-95b8-4af067233ee7");
 
         try {
             Set<? extends NodeMetadata> nodes = view.getComputeService().createNodesInGroup(name, NUM_NODES, template);

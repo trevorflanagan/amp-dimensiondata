@@ -27,6 +27,7 @@ import org.jclouds.http.HttpResponseException;
 import org.jclouds.rest.AuthorizationException;
 import org.jclouds.rest.ResourceAlreadyExistsException;
 import org.jclouds.rest.ResourceNotFoundException;
+import org.jclouds.rest.RetryAfterException;
 
 /**
  * This will org.jclouds.dimensiondata.cloudcontroller.parse and set an appropriate exception on the command object.
@@ -49,12 +50,10 @@ public class DimensionDataCloudControllerErrorHandler implements HttpErrorHandle
                     exception = new ResourceNotFoundException(message, exception);
                 } else if (message.contains("INVALID_INPUT_DATA") ||
                         message.contains("ORGANIZATION_NOT_VERIFIED") ||
-                        message.contains("SYSTEM_ERROR") && !message.contains("RETRYABLE_SYSTEM_ERROR") ||
-                        message.contains("UNEXPECTED_ERROR")) {
+                        message.contains("SYSTEM_ERROR") && !message.contains("RETRYABLE_SYSTEM_ERROR")) {
                     exception = new IllegalStateException(message, exception);
-                } else if (message.contains("Please try again later")) {
-                    // TODO ignore and retry later
-                    return;
+                } else if (message.contains("Please try again later") || message.contains("UNEXPECTED_ERROR")) {
+                    exception = new RetryAfterException(message, exception, 1);
                 } else if (message.contains("NAME_NOT_UNIQUE")) {
                     exception = new ResourceAlreadyExistsException(message, exception);
                 }
