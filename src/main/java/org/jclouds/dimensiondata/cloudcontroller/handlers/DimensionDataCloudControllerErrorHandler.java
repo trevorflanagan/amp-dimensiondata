@@ -44,7 +44,7 @@ public class DimensionDataCloudControllerErrorHandler implements HttpErrorHandle
                 response.getStatusLine());
         switch (response.getStatusCode()) {
             case 400:
-                if (message.contains("RESOURCE_NOT_FOUND")) {
+                if (message.contains("RESOURCE_NOT_FOUND") || message.contains("OPERATION_NOT_SUPPORTED")) {
                     exception = new ResourceNotFoundException(message, exception);
                 } else if (message.contains("INVALID_INPUT_DATA") ||
                         message.contains("ORGANIZATION_NOT_VERIFIED") ||

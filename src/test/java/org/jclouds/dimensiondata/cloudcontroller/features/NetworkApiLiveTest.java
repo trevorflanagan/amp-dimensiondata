@@ -60,20 +60,17 @@ public class NetworkApiLiveTest extends BaseDimensionDataCloudControllerApiLiveT
             Assert.fail();
         }
         networkDomainId = networkDomain.id();
-        // String networkDomainId = "250c2c09-ffed-4b44-8b80-3000b6088074";
     }
 
-    @Test(dependsOnMethods = "testCreateFirewallRules")
+    @Test//(dependsOnMethods = "testCreateFirewallRules")
     public void testExploreNetworkDomains() {
         List<NatRule> natRules = api().listNatRules(networkDomainId).concat().toList();
         assertNotNull(natRules);
         List<FirewallRule> firewallRules = api().listFirewallRules(networkDomainId).concat().toList();
         assertNotNull(firewallRules);
-            /*
             for (FirewallRule firewallRule : firewallRules) {
                 api().deleteFirewallRule(firewallRule.id());
             }
-            */
     }
 
     @Test
