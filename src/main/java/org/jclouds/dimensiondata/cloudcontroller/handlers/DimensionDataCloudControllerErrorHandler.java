@@ -51,7 +51,7 @@ public class DimensionDataCloudControllerErrorHandler implements HttpErrorHandle
                         message.contains("SYSTEM_ERROR") && !message.contains("RETRYABLE_SYSTEM_ERROR") ||
                         message.contains("UNEXPECTED_ERROR")) {
                     exception = new IllegalStateException(message, exception);
-                } else if (message.contains("RETRYABLE_SYSTEM_ERROR")) {
+                } else if (message.contains("Please try again later")) {
                     // TODO ignore and retry later
                     return;
                 }

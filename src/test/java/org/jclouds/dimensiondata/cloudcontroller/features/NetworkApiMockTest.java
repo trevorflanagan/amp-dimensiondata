@@ -82,11 +82,11 @@ public class NetworkApiMockTest extends BaseDimensionDataCloudControllerMockTest
 
     public void testCreateFirewallRule() throws Exception {
         MockWebServer server = mockWebServer(
-                new MockResponse().setResponseCode(400).setStatus("HTTP/1.1 400 Bad Request").setBody("{ \"code\":\"RETRYABLE_SYSTEM_ERROR\" }"),
-                new MockResponse().setResponseCode(400).setStatus("HTTP/1.1 400 Bad Request").setBody("{ \"code\":\"RETRYABLE_SYSTEM_ERROR\" }"),
-                new MockResponse().setResponseCode(400).setStatus("HTTP/1.1 400 Bad Request").setBody("{ \"code\":\"RETRYABLE_SYSTEM_ERROR\" }"),
-                new MockResponse().setResponseCode(400).setStatus("HTTP/1.1 400 Bad Request").setBody("{ \"code\":\"RETRYABLE_SYSTEM_ERROR\" }"),
-                new MockResponse().setResponseCode(400).setStatus("HTTP/1.1 400 Bad Request").setBody("{ \"code\":\"RETRYABLE_SYSTEM_ERROR\" }"),
+                new MockResponse().setResponseCode(400).setStatus("HTTP/1.1 400 Bad Request").setBody("{ \"responseCode\":\"RETRYABLE_SYSTEM_ERROR\",\"message\":\"Please try again later.\" }"),
+                new MockResponse().setResponseCode(400).setStatus("HTTP/1.1 400 Bad Request").setBody("{ \"responseCode\":\"RETRYABLE_SYSTEM_ERROR\",\"message\":\"Please try again later.\" }"),
+                new MockResponse().setResponseCode(400).setStatus("HTTP/1.1 400 Bad Request").setBody("{ \"responseCode\":\"RETRYABLE_SYSTEM_ERROR\",\"message\":\"Please try again later.\" }"),
+                new MockResponse().setResponseCode(400).setStatus("HTTP/1.1 400 Bad Request").setBody("content: [{\"operation\":\"CREATE_FIREWALL_RULE\",\"responseCode\":\"RESOURCE_BUSY\",\"message\":\"Another Firewall Rule operation is in progress for Network Domain with Id 12b1fa4c-a2fd-4a84-84e0-f4c80d91e2ea. Please try again later.\",\"info\":[],\"warning\":[],\"error\":[],\"requestId\":\"na/2016-04-04T03:55:35.057-04:00/be8c37c9-46fa-4a73-9553-38c1bb7c291b\"}]"),
+                new MockResponse().setResponseCode(400).setStatus("HTTP/1.1 400 Bad Request").setBody("{ \"responseCode\":\"RETRYABLE_SYSTEM_ERROR\",\"message\":\"Please try again later.\" }"),
                 new MockResponse().setResponseCode(200).setBody("{\n" +
                         "\"operation\": \"CREATE_FIREWALL_RULE\",\n" +
                         "\"responseCode\": \"OK\",\n" +
