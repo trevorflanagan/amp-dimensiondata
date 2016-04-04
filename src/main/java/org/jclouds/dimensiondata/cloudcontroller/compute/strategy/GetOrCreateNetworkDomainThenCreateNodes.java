@@ -151,11 +151,12 @@ public class GetOrCreateNetworkDomainThenCreateNodes
                     Boolean.TRUE,
                     Placement.builder().position("LAST").build());
             if (createFirewallRuleResponse != null && !createFirewallRuleResponse.responseCode().equals("RESOURCE_BUSY")) {
-                DimensionDataCloudControllerUtils.tryFindPropertyValue(createFirewallRuleResponse, "firewallRuleId");
-                if (!createFirewallRuleResponse.error().isEmpty()) {
-                    String firewallRuleErrorMessage = String.format("Cannot create a firewall rule %s-%s. Rolling back ...", destinationPort.begin(), destinationPort.end());
-                    logger.warn(firewallRuleErrorMessage);
-                    throw new IllegalStateException(firewallRuleErrorMessage);
+                if (DimensionDataCloudControllerUtils.tryFindPropertyValue(createFirewallRuleResponse, "firewallRuleId") != null) {
+                    if (!createFirewallRuleResponse.error().isEmpty()) {
+                        String firewallRuleErrorMessage = String.format("Cannot create a firewall rule %s-%s. Rolling back ...", destinationPort.begin(), destinationPort.end());
+                        logger.warn(firewallRuleErrorMessage);
+                        throw new IllegalStateException(firewallRuleErrorMessage);
+                    }
                 }
             }
         }

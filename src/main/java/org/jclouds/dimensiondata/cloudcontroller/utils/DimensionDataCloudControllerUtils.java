@@ -60,6 +60,21 @@ public class DimensionDataCloudControllerUtils {
         return optionalPropertyName.get();
     }
 
+    public static String tryFindPropertyValueOrNull(Response response, final String propertyName) {
+        Optional<String> optionalPropertyName = FluentIterable.from(response.info()).firstMatch(new Predicate<Property>() {
+            @Override
+            public boolean apply(Property input) {
+                return input.name().equals(propertyName);
+            }
+        }).transform(new Function<Property, String>() {
+            @Override
+            public String apply(Property input) {
+                return input.value();
+            }
+        });
+        return optionalPropertyName.orNull();
+    }
+
     public static Optional<Vlan> tryGetVlan(NetworkApi api, String networkDomainId) {
         return api.listVlans(networkDomainId).concat().firstMatch(Predicates.<Vlan>notNull());
     }
