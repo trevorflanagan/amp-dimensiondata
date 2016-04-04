@@ -150,13 +150,12 @@ public class GetOrCreateNetworkDomainThenCreateNodes
                             .build(),
                     Boolean.TRUE,
                     Placement.builder().position("LAST").build());
-            if (createFirewallRuleResponse != null) {
+            if (createFirewallRuleResponse != null && !createFirewallRuleResponse.responseCode().equals("RESOURCE_BUSY")) {
+                DimensionDataCloudControllerUtils.tryFindPropertyValue(createFirewallRuleResponse, "firewallRuleId");
                 if (!createFirewallRuleResponse.error().isEmpty()) {
                     String firewallRuleErrorMessage = String.format("Cannot create a firewall rule %s-%s. Rolling back ...", destinationPort.begin(), destinationPort.end());
                     logger.warn(firewallRuleErrorMessage);
                     throw new IllegalStateException(firewallRuleErrorMessage);
-                } else {
-                    DimensionDataCloudControllerUtils.tryFindPropertyValue(createFirewallRuleResponse, "firewallRuleId");
                 }
             }
         }
