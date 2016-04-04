@@ -24,6 +24,32 @@ import com.google.auto.value.AutoValue;
 @AutoValue
 public abstract class NetworkDomain {
 
+    public enum Type {
+        ESSENTIALS("ESSENTIALS"),
+        ADVANCED("ADVANCED");
+
+        private String text;
+
+        Type(String text) {
+            this.text = text;
+        }
+
+        public String getText() {
+            return this.text;
+        }
+
+        public static Type fromString(String text) {
+            if (text != null) {
+                for (Type b : Type.values()) {
+                    if (text.equalsIgnoreCase(b.text)) {
+                        return b;
+                    }
+                }
+            }
+            return null;
+        }
+    }
+
     NetworkDomain() {}
 
     public static Builder builder() {
@@ -35,12 +61,12 @@ public abstract class NetworkDomain {
     public abstract String name();
     @Nullable public abstract String description();
     @Nullable public abstract String state();
-    @Nullable public abstract String type();
+    @Nullable public abstract Type type();
     @Nullable public abstract String snatIpv4Address();
     @Nullable public abstract String createTime();
 
     @SerializedNames({ "id", "datacenterId", "name", "description", "state", "type", "snatIpv4Address", "createTime" })
-    public static NetworkDomain create(String id, String datacenterId, String name, String description, String state, String type, String snatIpv4Address, String createTime) {
+    public static NetworkDomain create(String id, String datacenterId, String name, String description, String state, Type type, String snatIpv4Address, String createTime) {
         return builder().id(id).datacenterId(datacenterId).name(name).description(description).state(state).type(type).snatIpv4Address(snatIpv4Address).createTime(createTime).build();
     }
 
@@ -53,7 +79,7 @@ public abstract class NetworkDomain {
         public abstract Builder name(String name);
         public abstract Builder description(String description);
         public abstract Builder state(String state);
-        public abstract Builder type(String type);
+        public abstract Builder type(Type type);
         public abstract Builder snatIpv4Address(String snatIpv4Address);
         public abstract Builder createTime(String createTime);
 

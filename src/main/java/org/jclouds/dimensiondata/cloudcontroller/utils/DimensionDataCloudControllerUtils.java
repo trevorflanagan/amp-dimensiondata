@@ -41,38 +41,41 @@ public class DimensionDataCloudControllerUtils {
 
     public static final String JCLOUDS_FW_RULE_PATTERN = "jclouds.%s";
 
-    public static String tryFindPropertyValue(Response response, final String propertyName) {
-        Optional<String> optionalPropertyName = FluentIterable.from(response.info()).firstMatch(new Predicate<Property>() {
-            @Override
-            public boolean apply(Property input) {
-                return input.name().equals(propertyName);
-            }
-        }).transform(new Function<Property, String>() {
-            @Override
-            public String apply(Property input) {
-                return input.value();
-            }
-        });
-        if (!optionalPropertyName.isPresent()) {
-            // TODO
-            throw new IllegalStateException();
-        }
-        return optionalPropertyName.get();
-    }
+    /*
+    public static String analyseResponse(Response response) {
+        if (!response.info().isEmpty()) {
 
-    public static String tryFindPropertyValueOrNull(Response response, final String propertyName) {
-        Optional<String> optionalPropertyName = FluentIterable.from(response.info()).firstMatch(new Predicate<Property>() {
-            @Override
-            public boolean apply(Property input) {
-                return input.name().equals(propertyName);
+        if ("NAME_NOT_UNIQUE".equals(response.responseCode())) {
+            String operation = response.operation();
+            if ("DEPLOY_NETWORK_DOMAIN".equals(operation)) {
+                return "networkDomainId";
+            } else if ("CREATE_FIREWALL_RULE".equals(operation)) {
+                return "firewallRuleId";
             }
-        }).transform(new Function<Property, String>() {
-            @Override
-            public String apply(Property input) {
-                return input.value();
+        }
+    }
+    */
+
+    public static String tryFindPropertyValue(Response response, final String propertyName) {
+        if (!response.info().isEmpty()) {
+            Optional<String> optionalPropertyName = FluentIterable.from(response.info()).firstMatch(new Predicate<Property>() {
+                @Override
+                public boolean apply(Property input) {
+                    return input.name().equals(propertyName);
+                }
+            }).transform(new Function<Property, String>() {
+                @Override
+                public String apply(Property input) {
+                    return input.value();
+                }
+            });
+            if (!optionalPropertyName.isPresent()) {
+                // TODO
+                throw new IllegalStateException();
             }
-        });
-        return optionalPropertyName.orNull();
+            return optionalPropertyName.get();
+        }
+        return "";
     }
 
     public static Optional<Vlan> tryGetVlan(NetworkApi api, String networkDomainId) {

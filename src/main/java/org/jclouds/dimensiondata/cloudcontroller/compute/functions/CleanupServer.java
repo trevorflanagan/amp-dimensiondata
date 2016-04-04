@@ -26,6 +26,7 @@ import javax.inject.Singleton;
 import org.jclouds.compute.reference.ComputeServiceConstants;
 import org.jclouds.compute.reference.ComputeServiceConstants.Timeouts;
 import org.jclouds.dimensiondata.cloudcontroller.DimensionDataCloudControllerApi;
+import org.jclouds.dimensiondata.cloudcontroller.domain.FirewallRule;
 import org.jclouds.dimensiondata.cloudcontroller.domain.NatRule;
 import org.jclouds.dimensiondata.cloudcontroller.domain.Response;
 import org.jclouds.dimensiondata.cloudcontroller.domain.Server;
@@ -72,7 +73,6 @@ public class CleanupServer implements Function<String, Boolean> {
       }).toList();
 
       // delete firewall rules
-      /* TODO re-introduce fw rules deletion
       api.getNetworkApi().listFirewallRules(networkDomainId).concat().filter(new Predicate<FirewallRule>() {
          @Override
          public boolean apply(FirewallRule firewallRule) {
@@ -85,7 +85,6 @@ public class CleanupServer implements Function<String, Boolean> {
             return deleteFirewallRule.error().isEmpty();
          }
       }).toList();
-      */
 
       // power off the server
       Response powerOffResponse = api.getServerApi().powerOffServer(serverId);

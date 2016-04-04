@@ -16,6 +16,8 @@
  */
 package org.jclouds.dimensiondata.cloudcontroller.parse;
 
+import static org.jclouds.dimensiondata.cloudcontroller.domain.NetworkDomain.Type.ESSENTIALS;
+
 import java.util.List;
 
 import javax.ws.rs.Consumes;
@@ -47,7 +49,7 @@ public class NetworkDomainsParseTest extends BaseDimensionDataCloudControllerPar
                         .name("test")
                         .description("")
                         .state("NORMAL")
-                        .type("ESSENTIALS")
+                        .type(ESSENTIALS)
                         .snatIpv4Address("168.128.3.44")
                         .createTime("2016-03-08T14:39:47.000Z")
                         .build()

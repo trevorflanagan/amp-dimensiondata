@@ -25,6 +25,7 @@ import org.jclouds.http.HttpErrorHandler;
 import org.jclouds.http.HttpResponse;
 import org.jclouds.http.HttpResponseException;
 import org.jclouds.rest.AuthorizationException;
+import org.jclouds.rest.ResourceAlreadyExistsException;
 import org.jclouds.rest.ResourceNotFoundException;
 
 /**
@@ -55,8 +56,7 @@ public class DimensionDataCloudControllerErrorHandler implements HttpErrorHandle
                     // TODO ignore and retry later
                     return;
                 } else if (message.contains("NAME_NOT_UNIQUE")) {
-                    // TODO ignore and don't retry
-                    return;
+                    exception = new ResourceAlreadyExistsException(message, exception);
                 }
                 break;
             case 401:

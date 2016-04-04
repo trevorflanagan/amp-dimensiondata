@@ -22,6 +22,7 @@ import static java.lang.String.format;
 import static org.jclouds.dimensiondata.cloudcontroller.compute.DimensionDataCloudControllerComputeServiceAdapter.DEFAULT_ACTION;
 import static org.jclouds.dimensiondata.cloudcontroller.compute.DimensionDataCloudControllerComputeServiceAdapter.DEFAULT_IP_VERSION;
 import static org.jclouds.dimensiondata.cloudcontroller.compute.DimensionDataCloudControllerComputeServiceAdapter.DEFAULT_PROTOCOL;
+import static org.jclouds.dimensiondata.cloudcontroller.predicates.NetworkPredicates.networkDomainPredicate;
 import static org.jclouds.dimensiondata.cloudcontroller.utils.DimensionDataCloudControllerUtils.generateFirewallName;
 import static org.jclouds.dimensiondata.cloudcontroller.utils.DimensionDataCloudControllerUtils.simplifyPorts;
 import static org.jclouds.util.Predicates2.retry;
@@ -55,11 +56,13 @@ import org.jclouds.dimensiondata.cloudcontroller.domain.Vlan;
 import org.jclouds.dimensiondata.cloudcontroller.features.NetworkApi;
 import org.jclouds.dimensiondata.cloudcontroller.utils.DimensionDataCloudControllerUtils;
 import org.jclouds.logging.Logger;
+import org.jclouds.rest.ResourceAlreadyExistsException;
 
 import com.google.common.base.Function;
 import com.google.common.base.Optional;
 import com.google.common.base.Predicate;
 import com.google.common.base.Predicates;
+import com.google.common.base.Throwables;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Multimap;
 import com.google.common.collect.Sets;
@@ -71,10 +74,10 @@ import com.google.inject.Inject;
 public class GetOrCreateNetworkDomainThenCreateNodes
         extends CreateNodesWithGroupEncodedIntoNameThenAddToSet {
 
-    private static final String DEFAULT_NETWORK_DOMAIN_NAME = "JCLOUDS_NETWORK_DOMAIN";
-    private static final String DEFAULT_VLAN_NAME = "JCLOUDS_VLAN";
-    private static final String DEFAULT_PRIVATE_IPV4_BASE_ADDRESS = "10.0.0.0";
-    private static final Integer DEFAULT_PRIVATE_IPV4_PREFIX_SIZE = 24;
+    public static final String DEFAULT_NETWORK_DOMAIN_NAME = "JCLOUDS_NETWORK_DOMAIN";
+    public static final String DEFAULT_VLAN_NAME = "JCLOUDS_VLAN";
+    public static final String DEFAULT_PRIVATE_IPV4_BASE_ADDRESS = "10.0.0.0";
+    public static final Integer DEFAULT_PRIVATE_IPV4_PREFIX_SIZE = 24;
 
     private final DimensionDataCloudControllerApi api;
     private final Timeouts timeouts;
@@ -109,15 +112,121 @@ public class GetOrCreateNetworkDomainThenCreateNodes
 
         // If networkDomain and vlanId overrides are supplied in TemplateOptions, always prefer those.
         if (templateOptions.getNetworkDomainId() == null && templateOptions.getVlanId() == null) {
-            String networkDomainId = tryFindExistingNetworkDomainOrCreate(api, location, networkDomainName);
+            String networkDomainId = tryCreateOrGetExistingNetworkDomain(api, location, networkDomainName);
             templateOptions.networkDomainId(networkDomainId);
-            String vlanId = tryFindExistingVlanOrCreate(api, templateOptions.getNetworkDomainId(), vlanName, defaultPrivateIPv4BaseAddress, defaultPrivateIPv4PrefixSize);
+            String vlanId = tryCreateOrGetExistingVlan(api, templateOptions.getNetworkDomainId(), vlanName, defaultPrivateIPv4BaseAddress, defaultPrivateIPv4PrefixSize);
             templateOptions.vlanId(vlanId);
         }
 
         // set firewall rules on networkDomain
         Set<FirewallRuleTarget.Port> ports = ImmutableSet.copyOf(simplifyPorts(templateOptions.getInboundPorts()));
-        Set<FirewallRuleTarget.Port> existingDestinationPorts = api.getNetworkApi().listFirewallRules(templateOptions.getNetworkDomainId()).concat()
+        Set<FirewallRuleTarget.Port> existingDestinationPorts = getExistingDestinationPorts(templateOptions);
+
+        Set<FirewallRuleTarget.Port> portsToBeInstalled = Sets.difference(ports, existingDestinationPorts).immutableCopy();
+        for (FirewallRuleTarget.Port destinationPort : portsToBeInstalled) {
+            tryCreateOrCheckFirewallRuleExists(templateOptions, destinationPort);
+        }
+        return super.execute(group, count, template, goodNodes, badNodes, customizationResponses);
+    }
+
+    private void tryCreateOrCheckFirewallRuleExists(DimensionDataCloudControllerTemplateOptions templateOptions, FirewallRuleTarget.Port destinationPort) {
+        final String firewallRuleName = generateFirewallName(destinationPort);
+        try {
+            Response createFirewallRuleResponse = api.getNetworkApi().createFirewallRule(
+                    templateOptions.getNetworkDomainId(),
+                    firewallRuleName,
+                    DEFAULT_ACTION,
+                    DEFAULT_IP_VERSION,
+                    DEFAULT_PROTOCOL,
+                    FirewallRuleTarget.builder()
+                            .ip(IpRange.create("ANY", null))
+                            .build(),
+                    FirewallRuleTarget.builder()
+                            .ip(IpRange.create("ANY", null))
+                            .port(destinationPort)
+                            .build(),
+                    Boolean.TRUE,
+                    Placement.builder().position("LAST").build());
+            if (!createFirewallRuleResponse.error().isEmpty()) {
+                String firewallRuleErrorMessage = String.format("Cannot create a firewall rule %s-%s. Rolling back ...", destinationPort.begin(), destinationPort.end());
+                logger.warn(firewallRuleErrorMessage);
+                throw new IllegalStateException(firewallRuleErrorMessage);
+            } else {
+                DimensionDataCloudControllerUtils.tryFindPropertyValue(createFirewallRuleResponse, "firewallRuleId");
+            }
+        } catch (ResourceAlreadyExistsException e) {
+            logger.debug("Cannot create a firewall rule with name %s. Looking for an existing firewall rule in the network domain %s ...", firewallRuleName, templateOptions.getNetworkDomainId());
+            if (!api.getNetworkApi().listFirewallRules(templateOptions.getNetworkDomainId()).concat()
+                    .filter(new Predicate<FirewallRule>() {
+                        @Override
+                        public boolean apply(FirewallRule firewallRule) {
+                            return firewallRule.name().equals(firewallRuleName);
+                        }
+                    }).isEmpty()) {
+                logger.debug("Cannot found an existing firewall rule %s", firewallRuleName);
+                throw Throwables.propagate(e);
+            }
+        }
+    }
+
+    private String tryCreateOrGetExistingNetworkDomain(final DimensionDataCloudControllerApi api, final String location, final String networkDomainName) {
+        logger.debug("Creating a network domain '%s' in location '%s' ...", networkDomainName, location);
+
+        String networkDomainId;
+        try {
+            Response deployNetworkDomainResponse = api.getNetworkApi().deployNetworkDomain(location, networkDomainName, "network domain created by jclouds", "ESSENTIALS");
+            networkDomainId = DimensionDataCloudControllerUtils.tryFindPropertyValue(deployNetworkDomainResponse, "networkDomainId");
+            DimensionDataCloudControllerUtils.tryFindPropertyValue(deployNetworkDomainResponse, "networkDomainId");
+            String message = format("networkDomain(%s) is not ready within %d ms.", networkDomainId, timeouts.nodeRunning);
+            boolean isNetworkDomainReady = retry(new NetworkDomainStatus(api.getNetworkApi()), timeouts.nodeRunning).apply(networkDomainId);
+            if (!isNetworkDomainReady) {
+                throw new IllegalStateException(message);
+            }
+        } catch (ResourceAlreadyExistsException e) {
+            logger.debug("Cannot create a network domain with name %s. Looking for a suitable existing network domain in datacenter %s ...", networkDomainName, location);
+            List<NetworkDomain> networkDomains = api.getNetworkApi().listNetworkDomains().concat().toList();
+
+            Optional<NetworkDomain> networkDomainOptional = tryFind(networkDomains, networkDomainPredicate(location, networkDomainName));
+            if (networkDomainOptional.isPresent()) {
+                logger.debug("Found a suitable existing network domain %s", networkDomainOptional.get());
+                return networkDomainOptional.get().id();
+            } else {
+                throw Throwables.propagate(e);
+            }
+        }
+        return networkDomainId;
+    }
+
+    private String tryCreateOrGetExistingVlan(final DimensionDataCloudControllerApi api, final String networkDomainId,
+                                              final String vlanName, final String defaultPrivateIPv4BaseAddress,
+                                              final Integer defaultPrivateIPv4PrefixSize) {
+
+
+        logger.debug("Creating a vlan %s in network domain '%s' ...", vlanName, networkDomainId);
+        try {
+            Response deployVlanResponse = api.getNetworkApi().deployVlan(networkDomainId, vlanName, "vlan created by jclouds", defaultPrivateIPv4BaseAddress, defaultPrivateIPv4PrefixSize);
+            String vlanId = DimensionDataCloudControllerUtils.tryFindPropertyValue(deployVlanResponse, "vlanId");
+            String message = format("vlan(%s) is not ready within %d ms.", vlanId, timeouts.nodeRunning);
+            boolean isVlanReady = retry(new VlanStatus(api.getNetworkApi()), timeouts.nodeRunning).apply(vlanId);
+            if (!isVlanReady) {
+                throw new IllegalStateException(message);
+            }
+            return vlanId;
+        } catch (ResourceAlreadyExistsException e) {
+            logger.debug("Cannot create a vlan with name %s. Looking for a suitable existing vlan in networDomain %s ...", vlanName, networkDomainId);
+            Optional<Vlan> optionalVlan = DimensionDataCloudControllerUtils.tryGetVlan(api.getNetworkApi(), networkDomainId);
+            if (optionalVlan.isPresent()) {
+                logger.debug("Found a suitable existing vlan %s", optionalVlan.get());
+                return optionalVlan.get().id();
+            } else {
+                throw Throwables.propagate(e);
+            }
+
+        }
+    }
+
+    private Set<FirewallRuleTarget.Port> getExistingDestinationPorts(DimensionDataCloudControllerTemplateOptions templateOptions) {
+        return api.getNetworkApi().listFirewallRules(templateOptions.getNetworkDomainId()).concat()
                 .filter(new Predicate<FirewallRule>() {
                     @Override
                     public boolean apply(FirewallRule firewallRule) {
@@ -132,88 +241,8 @@ public class GetOrCreateNetworkDomainThenCreateNodes
                 })
                 .filter(Predicates.<FirewallRuleTarget.Port>notNull())
                 .toSet();
-
-        Set<FirewallRuleTarget.Port> portsToBeInstalled = Sets.difference(ports, existingDestinationPorts).immutableCopy();
-        for (FirewallRuleTarget.Port destinationPort : portsToBeInstalled) {
-            Response createFirewallRuleResponse = api.getNetworkApi().createFirewallRule(
-                    templateOptions.getNetworkDomainId(),
-                    generateFirewallName(destinationPort),
-                    DEFAULT_ACTION,
-                    DEFAULT_IP_VERSION,
-                    DEFAULT_PROTOCOL,
-                    FirewallRuleTarget.builder()
-                            .ip(IpRange.create("ANY", null))
-                            .build(),
-                    FirewallRuleTarget.builder()
-                            .ip(IpRange.create("ANY", null))
-                            .port(destinationPort)
-                            .build(),
-                    Boolean.TRUE,
-                    Placement.builder().position("LAST").build());
-            if (createFirewallRuleResponse != null && !createFirewallRuleResponse.responseCode().equals("RESOURCE_BUSY")) {
-                if (DimensionDataCloudControllerUtils.tryFindPropertyValue(createFirewallRuleResponse, "firewallRuleId") != null) {
-                    if (!createFirewallRuleResponse.error().isEmpty()) {
-                        String firewallRuleErrorMessage = String.format("Cannot create a firewall rule %s-%s. Rolling back ...", destinationPort.begin(), destinationPort.end());
-                        logger.warn(firewallRuleErrorMessage);
-                        throw new IllegalStateException(firewallRuleErrorMessage);
-                    }
-                }
-            }
-        }
-        return super.execute(group, count, template, goodNodes, badNodes, customizationResponses);
     }
 
-    private String tryFindExistingNetworkDomainOrCreate(final DimensionDataCloudControllerApi api, final String location, final String networkDomainName) {
-        List<NetworkDomain> networkDomains = api.getNetworkApi().listNetworkDomains().concat().toList();
-        logger.debug("Looking for a suitable existing network domain in datacenter %s ...", location);
-
-        Predicate<NetworkDomain> networkDomainPredicate = new Predicate<NetworkDomain>() {
-            @Override
-            public boolean apply(NetworkDomain networkDomain) {
-                return networkDomain.datacenterId().equalsIgnoreCase(location) &&
-                        networkDomain.name().equals(networkDomainName);
-            }
-        };
-
-        Optional<NetworkDomain> networkDomainOptional = tryFind(networkDomains, networkDomainPredicate);
-
-        String networkDomainId;
-        if (networkDomainOptional.isPresent()) {
-            logger.debug("Found a suitable existing network domain {}", networkDomainOptional.get());
-            return networkDomainOptional.get().id();
-        } else {
-            logger.debug("Creating a network domain '%s' in location '%s' ...", networkDomainName, location);
-            Response deployNetworkDomainResponse = api.getNetworkApi().deployNetworkDomain(location, networkDomainName, "network domain created by jclouds", "ESSENTIALS");
-
-            networkDomainId = DimensionDataCloudControllerUtils.tryFindPropertyValue(deployNetworkDomainResponse, "networkDomainId");
-            String message = format("networkDomain(%s) is not ready within %d ms.", networkDomainId, timeouts.nodeRunning);
-            boolean isNetworkDomainReady = retry(new NetworkDomainStatus(api.getNetworkApi()), timeouts.nodeRunning).apply(networkDomainId);
-            if (!isNetworkDomainReady) {
-                throw new IllegalStateException(message);
-            }
-            return networkDomainId;
-        }
-    }
-
-    private String tryFindExistingVlanOrCreate(final DimensionDataCloudControllerApi api, final String networkDomainId,
-                                             final String vlanName, final String defaultPrivateIPv4BaseAddress,
-                                             final Integer defaultPrivateIPv4PrefixSize) {
-        Optional<Vlan> optionalVlan = DimensionDataCloudControllerUtils.tryGetVlan(api.getNetworkApi(), networkDomainId);
-        if (optionalVlan.isPresent()) {
-            logger.debug("Found a suitable existing vlan %s", optionalVlan.get());
-            return optionalVlan.get().id();
-        } else {
-            logger.debug("Creating a vlan %s in network domain '%s' ...", vlanName, networkDomainId);
-            Response deployVlanResponse = api.getNetworkApi().deployVlan(networkDomainId, vlanName, "vlan created by jclouds", defaultPrivateIPv4BaseAddress, defaultPrivateIPv4PrefixSize);
-            String vlanId = DimensionDataCloudControllerUtils.tryFindPropertyValue(deployVlanResponse, "vlanId");
-            String message = format("vlan(%s) is not ready within %d ms.", vlanId, timeouts.nodeRunning);
-            boolean isVlanReady = retry(new VlanStatus(api.getNetworkApi()), timeouts.nodeRunning).apply(vlanId);
-            if (!isVlanReady) {
-                throw new IllegalStateException(message);
-            }
-            return vlanId;
-        }
-    }
 
     private class NetworkDomainStatus implements Predicate<String> {
 
