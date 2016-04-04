@@ -54,6 +54,9 @@ public class DimensionDataCloudControllerErrorHandler implements HttpErrorHandle
                 } else if (message.contains("Please try again later")) {
                     // TODO ignore and retry later
                     return;
+                } else if (message.contains("NAME_NOT_UNIQUE")) {
+                    // TODO ignore and don't retry
+                    return;
                 }
                 break;
             case 401:
