@@ -16,26 +16,22 @@
  */
 package org.jclouds.dimensiondata.cloudcontroller;
 
-import com.google.auto.service.AutoService;
-import com.google.common.collect.ImmutableSet;
-import com.google.inject.Module;
-import org.jclouds.Constants;
-import org.jclouds.apis.ApiMetadata;
-import org.jclouds.compute.ComputeServiceContext;
-import org.jclouds.compute.config.ComputeServiceProperties;
-import org.jclouds.dimensiondata.cloudcontroller.compute.config.DimensionDataCloudControllerComputeServiceContextModule;
-import org.jclouds.dimensiondata.cloudcontroller.config.DimensionDataCloudControllerHttpApiModule;
-import org.jclouds.dimensiondata.cloudcontroller.config.DimensionDataCloudControllerParserModule;
-import org.jclouds.http.okhttp.config.OkHttpCommandExecutorServiceModule;
-import org.jclouds.rest.internal.BaseHttpApiMetadata;
+import static org.jclouds.reflect.Reflection2.typeToken;
 
 import java.net.URI;
 import java.util.Properties;
 
-import static org.jclouds.compute.config.ComputeServiceProperties.TEMPLATE;
-import static org.jclouds.reflect.Reflection2.typeToken;
+import org.jclouds.Constants;
+import org.jclouds.apis.ApiMetadata;
+import org.jclouds.compute.ComputeServiceContext;
+import org.jclouds.dimensiondata.cloudcontroller.compute.config.DimensionDataCloudControllerComputeServiceContextModule;
+import org.jclouds.dimensiondata.cloudcontroller.config.DimensionDataCloudControllerHttpApiModule;
+import org.jclouds.dimensiondata.cloudcontroller.config.DimensionDataCloudControllerParserModule;
+import org.jclouds.rest.internal.BaseHttpApiMetadata;
 
-@AutoService(ApiMetadata.class)
+import com.google.common.collect.ImmutableSet;
+import com.google.inject.Module;
+
 public class DimensionDataCloudControllerApiMetadata extends BaseHttpApiMetadata<DimensionDataCloudControllerApi> {
 
    @Override
@@ -54,29 +50,25 @@ public class DimensionDataCloudControllerApiMetadata extends BaseHttpApiMetadata
    public static Properties defaultProperties() {
       Properties properties = BaseHttpApiMetadata.defaultProperties();
       properties.setProperty(Constants.PROPERTY_CONNECTION_TIMEOUT, "1200000"); // 15 minutes
-      properties.setProperty(ComputeServiceProperties.IMAGE_LOGIN_USER, "root:password");
-      properties.setProperty(TEMPLATE, "osFamily=UBUNTU,os64Bit=true");
       return properties;
    }
 
    public static class Builder extends BaseHttpApiMetadata.Builder<DimensionDataCloudControllerApi, Builder> {
 
       protected Builder() {
-         super(DimensionDataCloudControllerApi.class);
          id("dimensiondata-cloudcontroller")
                  .name("DimensionData CloudController API")
                  .identityName("user name")
                  .credentialName("user password")
                  .documentation(URI.create("http://www.dimensiondata.com/en-US/Solutions/Cloud"))
-                 .version("2.1")
                  .defaultEndpoint("https://api-REGION.dimensiondata.com/caas/2.1/ORG-ID")
                  .defaultProperties(DimensionDataCloudControllerApiMetadata.defaultProperties())
                  .view(typeToken(ComputeServiceContext.class))
-                 .defaultModules(ImmutableSet.<Class<? extends Module>>of(
-                         DimensionDataCloudControllerParserModule.class,
-                         DimensionDataCloudControllerHttpApiModule.class,
-                         OkHttpCommandExecutorServiceModule.class,
-                         DimensionDataCloudControllerComputeServiceContextModule.class));
+                 .defaultModules(ImmutableSet.<Class<? extends Module>>builder()
+                         .add(DimensionDataCloudControllerHttpApiModule.class)
+                         .add(DimensionDataCloudControllerParserModule.class)
+                         .add(DimensionDataCloudControllerComputeServiceContextModule.class)
+                         .build());
       }
 
       @Override

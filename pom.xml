@@ -39,7 +39,7 @@
         <test.dimensiondata-cloudcontroller.endpoint>FIXME</test.dimensiondata-cloudcontroller.endpoint>
         <test.dimensiondata-cloudcontroller.identity>FIXME</test.dimensiondata-cloudcontroller.identity>
         <test.dimensiondata-cloudcontroller.credential>FIXME</test.dimensiondata-cloudcontroller.credential>
-        <jclouds.osgi.export>org.jclouds.dimensiondata-cloudcontroller*;version="${project.version}"</jclouds.osgi.export>
+        <jclouds.osgi.export>org.jclouds.dimensiondata*;version="${project.version}"</jclouds.osgi.export>
         <jclouds.osgi.import>
             org.jclouds.compute.internal;version="${project.version}",
             org.jclouds.rest.internal;version="${project.version}",
@@ -51,54 +51,38 @@
     <dependencies>
         <dependency>
             <groupId>org.apache.jclouds</groupId>
-            <artifactId>jclouds-compute</artifactId>
-            <version>${project.parent.version}</version>
-        </dependency>
-        <dependency>
-            <groupId>com.google.auto.service</groupId>
-            <artifactId>auto-service</artifactId>
-            <optional>true</optional>
-        </dependency>
-        <dependency>
-            <groupId>com.google.auto.value</groupId>
-            <artifactId>auto-value</artifactId>
-            <scope>provided</scope>
-        </dependency>
-        <dependency>
-            <groupId>org.apache.jclouds.driver</groupId>
-            <artifactId>jclouds-okhttp</artifactId>
-            <version>${project.parent.version}</version>
-        </dependency>
-
-        <dependency>
-            <groupId>org.apache.jclouds.driver</groupId>
-            <artifactId>jclouds-sshj</artifactId>
-            <version>${project.parent.version}</version>
-            <scope>test</scope>
-        </dependency>
-        <dependency>
-            <groupId>org.apache.jclouds.driver</groupId>
-            <artifactId>jclouds-bouncycastle</artifactId>
-            <version>${project.parent.version}</version>
+            <artifactId>jclouds-core</artifactId>
+            <version>${project.version}</version>
         </dependency>
         <dependency>
             <groupId>org.apache.jclouds</groupId>
-            <artifactId>jclouds-core</artifactId>
-            <version>${project.parent.version}</version>
+            <artifactId>jclouds-compute</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>org.apache.jclouds</groupId>
+            <artifactId>jclouds-compute</artifactId>
+            <version>${project.version}</version>
             <type>test-jar</type>
             <scope>test</scope>
         </dependency>
         <dependency>
             <groupId>org.apache.jclouds</groupId>
-            <artifactId>jclouds-compute</artifactId>
-            <version>${project.parent.version}</version>
+            <artifactId>jclouds-core</artifactId>
+            <version>${project.version}</version>
             <type>test-jar</type>
             <scope>test</scope>
         </dependency>
         <dependency>
             <groupId>org.apache.jclouds.driver</groupId>
             <artifactId>jclouds-slf4j</artifactId>
-            <version>${project.parent.version}</version>
+            <version>${project.version}</version>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.apache.jclouds.driver</groupId>
+            <artifactId>jclouds-sshj</artifactId>
+            <version>${project.version}</version>
             <scope>test</scope>
         </dependency>
         <dependency>
@@ -119,11 +103,14 @@
             </exclusions>
         </dependency>
         <dependency>
-            <groupId>org.jboss.shrinkwrap</groupId>
-            <artifactId>shrinkwrap-depchain</artifactId>
-            <version>1.2.2</version>
-            <type>pom</type>
-            <scope>test</scope>
+            <groupId>com.google.auto.value</groupId>
+            <artifactId>auto-value</artifactId>
+            <scope>provided</scope>
+        </dependency>
+        <dependency>
+            <groupId>com.google.auto.service</groupId>
+            <artifactId>auto-service</artifactId>
+            <scope>provided</scope>
         </dependency>
     </dependencies>
 
@@ -234,10 +221,18 @@
                                 <configuration>
                                     <threadCount>1</threadCount>
                                     <systemPropertyVariables>
-                                        <test.dimensiondata-cloudcontroller.api-version>${test.dimensiondata-cloudcontroller.api-version}</test.dimensiondata-cloudcontroller.api-version>
-                                        <test.dimensiondata-cloudcontroller.endpoint>${test.dimensiondata-cloudcontroller.endpoint}</test.dimensiondata-cloudcontroller.endpoint>
-                                        <test.dimensiondata-cloudcontroller.identity>${test.dimensiondata-cloudcontroller.identity}</test.dimensiondata-cloudcontroller.identity>
-                                        <test.dimensiondata-cloudcontroller.credential>${test.dimensiondata-cloudcontroller.credential}</test.dimensiondata-cloudcontroller.credential>
+                                        <test.dimensiondata-cloudcontroller.api-version>
+                                            ${test.dimensiondata-cloudcontroller.api-version}
+                                        </test.dimensiondata-cloudcontroller.api-version>
+                                        <test.dimensiondata-cloudcontroller.endpoint>
+                                            ${test.dimensiondata-cloudcontroller.endpoint}
+                                        </test.dimensiondata-cloudcontroller.endpoint>
+                                        <test.dimensiondata-cloudcontroller.identity>
+                                            ${test.dimensiondata-cloudcontroller.identity}
+                                        </test.dimensiondata-cloudcontroller.identity>
+                                        <test.dimensiondata-cloudcontroller.credential>
+                                            ${test.dimensiondata-cloudcontroller.credential}
+                                        </test.dimensiondata-cloudcontroller.credential>
                                     </systemPropertyVariables>
                                 </configuration>
                             </execution>

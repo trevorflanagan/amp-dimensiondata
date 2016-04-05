@@ -17,19 +17,17 @@
 package org.jclouds.dimensiondata.cloudcontroller.features;
 
 import static org.testng.Assert.assertEquals;
-import static org.testng.Assert.assertNotNull;
+import static org.testng.Assert.assertNull;
 
-import java.util.List;
-
-import org.jclouds.dimensiondata.cloudcontroller.DimensionDataCloudControllerApi;
+import org.jclouds.dimensiondata.cloudcontroller.domain.Disk;
+import org.jclouds.dimensiondata.cloudcontroller.domain.NIC;
+import org.jclouds.dimensiondata.cloudcontroller.domain.NetworkInfo;
 import org.jclouds.dimensiondata.cloudcontroller.domain.Response;
 import org.jclouds.dimensiondata.cloudcontroller.domain.Server;
 import org.jclouds.dimensiondata.cloudcontroller.internal.BaseDimensionDataCloudControllerMockTest;
-import org.jclouds.http.config.JavaUrlHttpCommandExecutorServiceModule;
 import org.testng.annotations.Test;
 
-import com.squareup.okhttp.mockwebserver.MockResponse;
-import com.squareup.okhttp.mockwebserver.MockWebServer;
+import com.google.common.collect.Lists;
 
 /**
  * Mock tests for the {@link ServerApi} class.
@@ -37,6 +35,42 @@ import com.squareup.okhttp.mockwebserver.MockWebServer;
 @Test(groups = "unit", testName = "ServerApiMockTest")
 public class ServerApiMockTest extends BaseDimensionDataCloudControllerMockTest {
 
+    public void testDeployServerReturnsUnexpectedError() throws InterruptedException {
+        server.enqueue(responseUnexpectedError());
+        server.enqueue(response200());
+
+        NetworkInfo networkInfo = NetworkInfo.create(
+                "networkDomainId",
+                NIC.builder().vlanId("vlanId").build(),
+                // TODO allow additional NICs
+                Lists.<NIC>newArrayList()
+        );
+        Response response = api.getServerApi().deployServer(
+                ServerApiMockTest.class.getSimpleName(),
+                "imageId",
+                true,
+                networkInfo,
+                Lists.<Disk>newArrayList(),
+                "administratorPassword");
+
+        assertNull(response);
+
+        assertEquals(server.getRequestCount(), 2);
+        assertSent(server, "POST", "/server/deployServer");
+    }
+
+    public void testGetServerReturnsResourceNotFound() throws InterruptedException {
+        server.enqueue(responseResourceNotFound());
+        server.enqueue(response200());
+
+        Server found = api.getServerApi().getServer("12345");
+
+        assertNull(found);
+
+        assertEquals(server.getRequestCount(), 2);
+        assertSent(server, "GET", "/server/server/12345");
+    }
+    /*
     public void testListServers() throws Exception {
         MockWebServer server = mockWebServer(new MockResponse().setBody(payloadFromResource("/servers.json")));
         ServerApi api = api(server);
@@ -84,10 +118,6 @@ public class ServerApiMockTest extends BaseDimensionDataCloudControllerMockTest 
             server.shutdown();
         }
     }
-
-    private ServerApi api(MockWebServer server) {
-        return api(DimensionDataCloudControllerApi.class, server.getUrl("/").toString(), new JavaUrlHttpCommandExecutorServiceModule())
-                .getServerApi();
-    }
+*/
 
 }

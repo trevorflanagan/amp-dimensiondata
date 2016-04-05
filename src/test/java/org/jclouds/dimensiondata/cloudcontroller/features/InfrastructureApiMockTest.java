@@ -16,16 +16,12 @@
  */
 package org.jclouds.dimensiondata.cloudcontroller.features;
 
+import static com.google.common.collect.Iterables.size;
 import static org.testng.Assert.assertEquals;
 
-import org.jclouds.dimensiondata.cloudcontroller.DimensionDataCloudControllerApi;
+import org.jclouds.dimensiondata.cloudcontroller.domain.Datacenter;
 import org.jclouds.dimensiondata.cloudcontroller.internal.BaseDimensionDataCloudControllerMockTest;
-import org.jclouds.dimensiondata.cloudcontroller.parse.DatacentersParseTest;
-import org.jclouds.http.config.JavaUrlHttpCommandExecutorServiceModule;
 import org.testng.annotations.Test;
-
-import com.squareup.okhttp.mockwebserver.MockResponse;
-import com.squareup.okhttp.mockwebserver.MockWebServer;
 
 /**
  * Mock tests for the {@link InfrastructureApi} class.
@@ -33,21 +29,16 @@ import com.squareup.okhttp.mockwebserver.MockWebServer;
 @Test(groups = "unit", testName = "InfrastructureApiMockTest")
 public class InfrastructureApiMockTest extends BaseDimensionDataCloudControllerMockTest {
 
+
     public void testListDatacenters() throws Exception {
-        MockWebServer server = mockWebServer(new MockResponse().setBody(payloadFromResource("/datacenters.json")));
-        InfrastructureApi api = api(server);
+        server.enqueue(jsonResponse("/datacenters.json"));
+        Iterable<Datacenter> datacenters = api.getInfrastructureApi().listDatacenters().concat();
 
-        try {
-            assertEquals(api.listDatacenters().concat().toList(), new DatacentersParseTest().expected().toList());
-            assertSent(server, "GET", "/infrastructure/datacenter");
-        } finally {
-            server.shutdown();
-        }
-    }
+        assertEquals(size(datacenters), 8); // Force the PagedIterable to advance
+        assertEquals(server.getRequestCount(), 2);
 
-    private InfrastructureApi api(MockWebServer server) {
-        return api(DimensionDataCloudControllerApi.class, server.getUrl("/").toString(), new JavaUrlHttpCommandExecutorServiceModule())
-                .getInfrastructureApi();
+        assertSent(server, "GET", "/infrastructure/datacenter");
+        assertSent(server, "GET", "/infrastructure/datacenter?page=2&per_page=5");
     }
 
 }

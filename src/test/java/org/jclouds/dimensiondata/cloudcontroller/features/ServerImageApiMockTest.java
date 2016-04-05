@@ -16,19 +16,12 @@
  */
 package org.jclouds.dimensiondata.cloudcontroller.features;
 
+import static com.google.common.collect.Iterables.size;
 import static org.testng.Assert.assertEquals;
-import static org.testng.Assert.assertNotNull;
 
-import java.util.List;
-
-import org.jclouds.dimensiondata.cloudcontroller.DimensionDataCloudControllerApi;
 import org.jclouds.dimensiondata.cloudcontroller.domain.OsImage;
 import org.jclouds.dimensiondata.cloudcontroller.internal.BaseDimensionDataCloudControllerMockTest;
-import org.jclouds.http.config.JavaUrlHttpCommandExecutorServiceModule;
 import org.testng.annotations.Test;
-
-import com.squareup.okhttp.mockwebserver.MockResponse;
-import com.squareup.okhttp.mockwebserver.MockWebServer;
 
 /**
  * Mock tests for the {@link ServerImageApi} class.
@@ -36,42 +29,19 @@ import com.squareup.okhttp.mockwebserver.MockWebServer;
 @Test(groups = "unit", testName = "ServerImageApiMockTest")
 public class ServerImageApiMockTest extends BaseDimensionDataCloudControllerMockTest {
 
+
     public void testListServers() throws Exception {
-        MockWebServer server = mockWebServer(new MockResponse().setBody(payloadFromResource("/osImages.json")));
-        ServerImageApi api = api(server);
 
-        try {
-            List<OsImage> osImages = api.listOsImages().concat().toList();
+        server.enqueue(jsonResponse("/osImages.json"));
+        //MockWebServer server = mockWebServer(new MockResponse().setBody(payloadFromResource("/networkDomains.json")));
+        //NetworkApi api = api(server);
+        Iterable<OsImage> osImages = api.getServerImageApi().listOsImages().concat();
 
-            assertSent(server, "GET", "/image/osImage");
-            assertEquals(osImages.size(), 1);
-            for (OsImage osImage : osImages) {
-                assertNotNull(osImage);
-            }
+        assertEquals(size(osImages), 8); // Force the PagedIterable to advance
+        assertEquals(server.getRequestCount(), 2);
 
-        } finally {
-            server.shutdown();
-        }
-    }
-
-    public void testGetOsImage() throws Exception {
-        MockWebServer server = mockWebServer(new MockResponse().setBody(payloadFromResource("/osImage.json")));
-        ServerImageApi api = api(server);
-
-        try {
-            OsImage found = api.getOsImage("12345");
-
-            assertSent(server, "GET", "/image/osImage/12345");
-            assertNotNull(found);
-
-        } finally {
-            server.shutdown();
-        }
-    }
-
-    private ServerImageApi api(MockWebServer server) {
-        return api(DimensionDataCloudControllerApi.class, server.getUrl("/").toString(), new JavaUrlHttpCommandExecutorServiceModule())
-                .getServerImageApi();
+        assertSent(server, "GET", "/image/osImage");
+        assertSent(server, "GET", "/image/osImage?page=2&per_page=5");
     }
 
 }

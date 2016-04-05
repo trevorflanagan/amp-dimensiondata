@@ -29,6 +29,7 @@ import javax.inject.Named;
 import org.jclouds.compute.RunNodesException;
 import org.jclouds.compute.RunScriptOnNodesException;
 import org.jclouds.compute.domain.ExecResponse;
+import org.jclouds.compute.domain.Hardware;
 import org.jclouds.compute.domain.NodeMetadata;
 import org.jclouds.compute.domain.OsFamily;
 import org.jclouds.compute.domain.Template;
@@ -59,7 +60,11 @@ public class DimensionDataCloudControllerComputeServiceContextLiveTest extends B
 
     @Test
     public void testListHardwareProfiles() {
-        assertThat(view.getComputeService().listHardwareProfiles()).isNotEmpty();
+        Set<? extends Hardware> hardwareProfiles = view.getComputeService().listHardwareProfiles();
+        assertThat(hardwareProfiles).isNotEmpty();
+        for (Hardware hardwareProfile : hardwareProfiles) {
+            System.out.println(hardwareProfile);
+        }
     }
 
     @Test
