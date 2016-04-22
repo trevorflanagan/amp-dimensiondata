@@ -20,7 +20,8 @@ import static com.google.common.base.Preconditions.checkNotNull;
 import static com.google.common.base.Preconditions.checkState;
 import static java.lang.String.format;
 import static org.jclouds.compute.reference.ComputeServiceConstants.COMPUTE_LOGGER;
-import static org.jclouds.dimensiondata.cloudcontroller.utils.DimensionDataCloudControllerUtils.generateFirewallName;
+import static org.jclouds.dimensiondata.cloudcontroller.utils.DimensionDataCloudControllerUtils.generateFirewallRuleName;
+import static org.jclouds.dimensiondata.cloudcontroller.utils.DimensionDataCloudControllerUtils.generatePortListName;
 import static org.jclouds.dimensiondata.cloudcontroller.utils.DimensionDataCloudControllerUtils.simplifyPorts;
 
 import java.util.List;
@@ -58,15 +59,13 @@ import org.jclouds.dimensiondata.cloudcontroller.domain.options.CreateServerOpti
 import org.jclouds.dimensiondata.cloudcontroller.utils.DimensionDataCloudControllerUtils;
 import org.jclouds.domain.LoginCredentials;
 import org.jclouds.logging.Logger;
-import org.jclouds.rest.ResourceAlreadyExistsException;
 
 import com.google.common.base.Function;
 import com.google.common.base.Objects;
 import com.google.common.base.Optional;
 import com.google.common.base.Predicate;
 import com.google.common.base.Predicates;
-import com.google.common.base.Throwables;
-import com.google.common.collect.ImmutableSet;
+import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
@@ -119,6 +118,8 @@ public class DimensionDataCloudControllerComputeServiceAdapter implements
 
         DimensionDataCloudControllerTemplateOptions templateOptions = DimensionDataCloudControllerTemplateOptions.class.cast(template.getOptions());
 
+        List<FirewallRuleTarget.Port> tests = simplifyPorts(templateOptions.getInboundPorts());
+
         String networkDomainId = templateOptions.getNetworkDomainId();
         String vlanId = templateOptions.getVlanId();
 
@@ -128,10 +129,6 @@ public class DimensionDataCloudControllerComputeServiceAdapter implements
                 // TODO allow additional NICs
                 Lists.<NIC>newArrayList()
         );
-
-        // TODO remove portsToBeInstalled with create PortList when v2.2 is available
-        //Response createPorlListResponse = api.getNetworkApi().createPortList(networkDomainId, "clocker", "clocker", ports, ImmutableList.<String>of());
-        //final String portListId = DimensionDataCloudControllerUtils.tryFindPropertyValue(createPorlListResponse, "portListId");
 
         List<Disk> disks = Lists.newArrayList();
         for (int i = 0; i < template.getHardware().getVolumes().size(); i++) {
@@ -153,8 +150,8 @@ public class DimensionDataCloudControllerComputeServiceAdapter implements
 
         if (templateOptions.autoCreateNatRule()) {
             lock.lock();
+            String externalIp = tryFindExternalIp(api, networkDomainId);
             try {
-                String externalIp = tryFindExternalIp(api, networkDomainId);
                 serverWithExternalIpBuilder.externalIp(externalIp);
                 String internalIp = api.getServerApi().getServer(serverId).networkInfo().primaryNic().privateIpv4();
                 Response createNatRuleOperation = api.getNetworkApi().createNatRule(networkDomainId, internalIp, externalIp);
@@ -171,14 +168,50 @@ public class DimensionDataCloudControllerComputeServiceAdapter implements
 
             // TODO set more fine-grained firewall policies when v2.2 is out, remove them from GetOrCreateNetworkDomain
             // set firewall rules on networkDomain
-            Set<FirewallRuleTarget.Port> ports = ImmutableSet.copyOf(simplifyPorts(templateOptions.getInboundPorts()));
+            List<FirewallRuleTarget.Port> ports = simplifyPorts(templateOptions.getInboundPorts());
+
+            // TODO remove portsToBeInstalled with create PortList when v2.2 is available
+            Response createPorlListResponse = api.getNetworkApi()
+                    .createPortList(networkDomainId,
+                            generatePortListName(serverId),
+                            "port list created by jclouds",
+                            ports,
+                            ImmutableList.<String>of());
+            final String portListId = DimensionDataCloudControllerUtils.tryFindPropertyValue(createPorlListResponse, "portListId");
+
+            FirewallRuleTarget.PortList portList = api.getNetworkApi().getPortList(portListId);
+            Response createFirewallRuleResponse = api.getNetworkApi().createFirewallRule(
+                    templateOptions.getNetworkDomainId(),
+                    generateFirewallRuleName(serverId),
+                    DEFAULT_ACTION,
+                    DEFAULT_IP_VERSION,
+                    DEFAULT_PROTOCOL,
+                    FirewallRuleTarget.builder()
+                            .ip(IpRange.create("ANY", null))
+                            .build(),
+                    FirewallRuleTarget.builder()
+                            .ip(IpRange.create(externalIp, null))
+                            .portList(portList)
+                            .build(),
+                    Boolean.TRUE,
+                    Placement.builder().position("LAST").build());
+            if (!createFirewallRuleResponse.error().isEmpty()) {
+                // rollback
+                String firewallRuleErrorMessage = String.format("Cannot create a firewall rule %s. Rolling back ...", portListId);
+                logger.warn(firewallRuleErrorMessage);
+                destroyNode(serverId);
+                throw new IllegalStateException(firewallRuleErrorMessage);
+            }
+/*
             Set<FirewallRuleTarget.Port> existingDestinationPorts = getExistingDestinationPorts(templateOptions);
 
             Set<FirewallRuleTarget.Port> portsToBeInstalled = Sets.difference(ports, existingDestinationPorts).immutableCopy();
             for (FirewallRuleTarget.Port destinationPort : portsToBeInstalled) {
                 tryCreateOrCheckFirewallRuleExists(serverId, templateOptions, destinationPort);
             }
+*/
         }
+
         return new NodeAndInitialCredentials<ServerWithExternalIp>(serverWithExternalIpBuilder.build(), serverId, credsBuilder.build());
     }
 
@@ -332,9 +365,9 @@ public class DimensionDataCloudControllerComputeServiceAdapter implements
                 .toSet();
     }
 
-
+/*
     private void tryCreateOrCheckFirewallRuleExists(String serverId, DimensionDataCloudControllerTemplateOptions templateOptions, FirewallRuleTarget.Port destinationPort) {
-        final String firewallRuleName = generateFirewallName(serverId, destinationPort);
+        final String firewallRuleName = convertServerId(serverId, destinationPort);
         try {
             Response createFirewallRuleResponse = api.getNetworkApi().createFirewallRule(
                     templateOptions.getNetworkDomainId(),
@@ -372,5 +405,6 @@ public class DimensionDataCloudControllerComputeServiceAdapter implements
             }
         }
     }
+*/
 
 }

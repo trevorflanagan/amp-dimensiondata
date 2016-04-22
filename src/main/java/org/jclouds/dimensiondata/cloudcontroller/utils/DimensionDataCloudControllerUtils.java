@@ -39,8 +39,6 @@ import com.google.common.collect.Lists;
 
 public class DimensionDataCloudControllerUtils {
 
-    public static final String JCLOUDS_FW_RULE_PATTERN = "jclouds.%s.%s";
-
     public static String tryFindPropertyValue(Response response, final String propertyName) {
         if (!response.info().isEmpty()) {
             Optional<String> optionalPropertyName = FluentIterable.from(response.info()).firstMatch(new Predicate<Property>() {
@@ -111,7 +109,7 @@ public class DimensionDataCloudControllerUtils {
         return ports;
     }
 
-    // Helper function for simplifyPorts. Formats port range strings.
+    // Helper function for simplifyPorts.
     public static List<Port> formatRange(int range_start, int range_end, List<Port> ports) {
         int allowed_range = 1024;
 
@@ -122,13 +120,24 @@ public class DimensionDataCloudControllerUtils {
                 formatRange(range_start, range_start + allowed_range, ports);
                 range_start = range_start + allowed_range + 1;
             }
+        } else if (range_end == range_start) {
+            ports.add(Port.create(range_start, null));
         } else {
             ports.add(Port.create(range_start, range_end));
         }
         return ports;
     }
 
-    public static String generateFirewallName(String serverId, Port destinationPort) {
-        return String.format(JCLOUDS_FW_RULE_PATTERN, serverId.replaceAll("-", "_"), destinationPort.end() == null || destinationPort.begin().equals(destinationPort.end()) ? destinationPort.begin() : destinationPort.begin() + "_" + destinationPort.end());
+    public static String convertServerId(String serverId) {
+        return serverId.replaceAll("-", "_");
     }
+
+    public static String generateFirewallRuleName(String serverId) {
+        return String.format("fw.%s", convertServerId(serverId));
+    }
+
+    public static String generatePortListName(String serverId) {
+        return String.format("pl.%s", convertServerId(serverId));
+    }
+
 }

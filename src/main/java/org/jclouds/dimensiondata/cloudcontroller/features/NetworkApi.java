@@ -199,7 +199,7 @@ public interface NetworkApi {
 
     @Named("network:listFirewallRules")
     @GET
-    @Path("/firewallRule")
+        @Path("/firewallRule")
     @ResponseParser(ParseFirewallRules.class)
     @Fallback(Fallbacks.EmptyIterableWithMarkerOnNotFoundOr404.class)
     PaginatedCollection<FirewallRule> listFirewallRules(@QueryParam("networkDomainId") String networkDomainId, PaginationOptions options);
@@ -228,4 +228,17 @@ public interface NetworkApi {
     Response createPortList(@PayloadParam("networkDomainId") String networkDomainId, @PayloadParam("name") String name,
                             @PayloadParam("description") String description, @PayloadParam("port") List<Port> port, @PayloadParam("childPortListId") List<String> childPortListId);
 
+    @Named("network:getPortList")
+    @GET
+    @Path("/portList/{id}")
+    @Fallback(NullOnNotFoundOr404.class)
+    FirewallRuleTarget.PortList getPortList(@PathParam("id") String portListId);
+
+    @Named("network:deletePortList")
+    @POST
+    @Path("/deletePortList")
+    @Produces(MediaType.APPLICATION_JSON)
+    @MapBinder(BindToJsonPayload.class)
+    @Fallback(NullOnNotFoundOr404.class)
+    Response deletePortList(@PayloadParam("id") String portListId);
 }

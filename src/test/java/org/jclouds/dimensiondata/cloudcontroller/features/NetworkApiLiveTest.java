@@ -21,7 +21,7 @@ import static org.jclouds.dimensiondata.cloudcontroller.compute.DimensionDataClo
 import static org.jclouds.dimensiondata.cloudcontroller.compute.DimensionDataCloudControllerComputeServiceAdapter.DEFAULT_PROTOCOL;
 import static org.jclouds.dimensiondata.cloudcontroller.compute.strategy.GetOrCreateNetworkDomainThenCreateNodes.DEFAULT_PRIVATE_IPV4_BASE_ADDRESS;
 import static org.jclouds.dimensiondata.cloudcontroller.compute.strategy.GetOrCreateNetworkDomainThenCreateNodes.DEFAULT_PRIVATE_IPV4_PREFIX_SIZE;
-import static org.jclouds.dimensiondata.cloudcontroller.utils.DimensionDataCloudControllerUtils.generateFirewallName;
+import static org.jclouds.dimensiondata.cloudcontroller.utils.DimensionDataCloudControllerUtils.convertServerId;
 import static org.testng.Assert.assertNotNull;
 
 import java.util.List;
@@ -83,7 +83,7 @@ public class NetworkApiLiveTest extends BaseDimensionDataCloudControllerApiLiveT
             FirewallRuleTarget.Port destinationPort = FirewallRuleTarget.Port.create(j + 1 , j + 1025);
             Response createFirewallRuleResponse = api().createFirewallRule(
                     networkDomainId,
-                    generateFirewallName("serverId", destinationPort),
+                    convertServerId("serverId", destinationPort),
                     DEFAULT_ACTION,
                     DEFAULT_IP_VERSION,
                     DEFAULT_PROTOCOL,
@@ -110,7 +110,7 @@ public class NetworkApiLiveTest extends BaseDimensionDataCloudControllerApiLiveT
             FirewallRuleTarget.Port destinationPort = FirewallRuleTarget.Port.create(1, 1025);
             Response createFirewallRuleResponse = api().createFirewallRule(
                     networkDomainId,
-                    generateFirewallName("serverId", destinationPort),
+                    convertServerId("serverId", destinationPort),
                     DEFAULT_ACTION,
                     DEFAULT_IP_VERSION,
                     DEFAULT_PROTOCOL,
