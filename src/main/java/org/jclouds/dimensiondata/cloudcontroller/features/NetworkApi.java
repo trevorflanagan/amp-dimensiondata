@@ -137,7 +137,6 @@ public interface NetworkApi {
     @Fallback(NullOnNotFoundOr404.class)
     Response deleteVlan(@PayloadParam("id") String vlanId);
 
-
     @Named("network:addPublicIpBlock")
     @POST
     @Path("/addPublicIpBlock")
@@ -159,6 +158,14 @@ public interface NetworkApi {
     @ResponseParser(ParsePublicIpBlocks.class)
     @Fallback(Fallbacks.EmptyPagedIterableOnNotFoundOr404.class)
     PagedIterable<PublicIpBlock> listPublicIPv4AddressBlocks(@QueryParam("networkDomainId") String networkDomainId);
+
+    @Named("network:removePublicIpBlock")
+    @POST
+    @Path("/removePublicIpBlock")
+    @Produces(MediaType.APPLICATION_JSON)
+    @MapBinder(BindToJsonPayload.class)
+    @Fallback(NullOnNotFoundOr404.class)
+    Response removePublicIpBlock(@PayloadParam("id") String publicIpBlockId);
 
     @Named("server:getPublicIpBlock")
     @GET

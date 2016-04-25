@@ -26,8 +26,6 @@ import static org.jclouds.dimensiondata.cloudcontroller.utils.DimensionDataCloud
 import static org.jclouds.dimensiondata.cloudcontroller.utils.DimensionDataCloudControllerUtils.simplifyPorts;
 
 import java.util.List;
-import java.util.Set;
-import java.util.concurrent.locks.ReentrantLock;
 
 import javax.annotation.Resource;
 import javax.inject.Inject;
@@ -49,11 +47,9 @@ import org.jclouds.dimensiondata.cloudcontroller.domain.Disk;
 import org.jclouds.dimensiondata.cloudcontroller.domain.FirewallRuleTarget;
 import org.jclouds.dimensiondata.cloudcontroller.domain.IpRange;
 import org.jclouds.dimensiondata.cloudcontroller.domain.NIC;
-import org.jclouds.dimensiondata.cloudcontroller.domain.NatRule;
 import org.jclouds.dimensiondata.cloudcontroller.domain.NetworkInfo;
 import org.jclouds.dimensiondata.cloudcontroller.domain.OsImage;
 import org.jclouds.dimensiondata.cloudcontroller.domain.Placement;
-import org.jclouds.dimensiondata.cloudcontroller.domain.PublicIpBlock;
 import org.jclouds.dimensiondata.cloudcontroller.domain.Response;
 import org.jclouds.dimensiondata.cloudcontroller.domain.internal.ServerWithExternalIp;
 import org.jclouds.dimensiondata.cloudcontroller.domain.options.CreateServerOptions;
@@ -61,15 +57,11 @@ import org.jclouds.dimensiondata.cloudcontroller.utils.DimensionDataCloudControl
 import org.jclouds.domain.LoginCredentials;
 import org.jclouds.logging.Logger;
 
-import com.google.common.base.Function;
 import com.google.common.base.Objects;
-import com.google.common.base.Optional;
 import com.google.common.base.Predicate;
-import com.google.common.collect.FluentIterable;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Lists;
-import com.google.common.collect.Sets;
 
 /**
  * defines the connection between the {@link org.jclouds.dimensiondata.cloudcontroller.DimensionDataCloudControllerApi} implementation and
@@ -92,7 +84,6 @@ public class DimensionDataCloudControllerComputeServiceAdapter implements
 
     private final DimensionDataCloudControllerApi api;
     private final Timeouts timeouts;
-    private final ReentrantLock lock = new ReentrantLock();
     protected final CleanupServer cleanupServer;
 
 
@@ -153,22 +144,11 @@ public class DimensionDataCloudControllerComputeServiceAdapter implements
         ServerWithExternalIp.Builder serverWithExternalIpBuilder = ServerWithExternalIp.builder().server(api.getServerApi().getServer(serverId));
 
         if (templateOptions.autoCreateNatRule()) {
-            lock.lock();
+            // addPublicIPv4AddressBlock
+            Response response = api.getNetworkApi().addPublicIpBlock(networkDomainId);
+            manageResponse(response, format("Cannot add a publicIpBlock to networkDomainId %s", networkDomainId));
+            String externalIp = api.getNetworkApi().getPublicIPv4AddressBlock(DimensionDataCloudControllerUtils.tryFindPropertyValue(response, "ipBlockId")).baseIp();
 
-            String externalIp;
-            Set<String> set = getAllPublicIPv4AddressAvailable(api, networkDomainId);
-            Set<String> inUse = getExternalIPv4AddressesInUse(api, networkDomainId);
-            Optional<String> optionalExternalIp = FluentIterable.from(Sets.difference(set, inUse)).first();
-
-            if (optionalExternalIp.isPresent()) {
-                externalIp = optionalExternalIp.get();
-            } else {
-                // addPublicIPv4AddressBlock
-                Response response = api.getNetworkApi().addPublicIpBlock(networkDomainId);
-                manageResponse(response, format("Cannot add a publicIpBlock to networkDomainId %s", networkDomainId));
-                externalIp = api.getNetworkApi().getPublicIPv4AddressBlock(DimensionDataCloudControllerUtils.tryFindPropertyValue(response, "ipBlockId")).baseIp();
-            }
-            try {
                 serverWithExternalIpBuilder.externalIp(externalIp);
                 String internalIp = api.getServerApi().getServer(serverId).networkInfo().primaryNic().privateIpv4();
                 Response createNatRuleOperation = api.getNetworkApi().createNatRule(networkDomainId, internalIp, externalIp);
@@ -179,9 +159,6 @@ public class DimensionDataCloudControllerComputeServiceAdapter implements
                     destroyNode(serverId);
                     throw new IllegalStateException(natRuleErrorMessage);
                 }
-            } finally {
-                lock.unlock();
-            }
 
             List<FirewallRuleTarget.Port> ports = simplifyPorts(templateOptions.getInboundPorts());
             Response createPorlListResponse = api.getNetworkApi()
@@ -276,55 +253,6 @@ public class DimensionDataCloudControllerComputeServiceAdapter implements
                 return Iterables.contains(ids, input.server().id());
             }
         });
-    }
-
-    private Set<String> getExternalIPv4AddressesInUse(DimensionDataCloudControllerApi api, final String networkDomainId) {
-        return api.getNetworkApi().listNatRules(networkDomainId).concat()
-                    .filter(new Predicate<NatRule>() {
-                        @Override
-                        public boolean apply(NatRule natRule) {
-                            return natRule.networkDomainId().equalsIgnoreCase(networkDomainId);
-                        }
-                    })
-                    .transform(new Function<NatRule, String>() {
-                        @Override
-                        public String apply(NatRule natRule) {
-                            return natRule.externalIp();
-                        }
-                    })
-                    .toSet();
-    }
-
-    private Set<String> getAllPublicIPv4AddressAvailable(DimensionDataCloudControllerApi api, String networkDomainId) {
-        return api.getNetworkApi().listPublicIPv4AddressBlocks(networkDomainId).concat()
-                .transformAndConcat(new Function<PublicIpBlock, Iterable<String>>() {
-                    @Override
-                    public Iterable<String> apply(PublicIpBlock publicIpBlock) {
-                        return generateAllPublicIPv4Addresses(publicIpBlock);
-                    }
-                }).toSet();
-    }
-
-    private static String getNextIPV4Address(String ip) {
-        String[] nums = ip.split("\\.");
-        int i = (Integer.parseInt(nums[0]) << 24 | Integer.parseInt(nums[2]) << 8
-                |  Integer.parseInt(nums[1]) << 16 | Integer.parseInt(nums[3])) + 1;
-
-        // If you wish to skip over .255 addresses.
-        if ((byte) i == -1) i++;
-
-        return String.format("%d.%d.%d.%d", i >>> 24 & 0xFF, i >> 16 & 0xFF,
-                i >>   8 & 0xFF, i >>  0 & 0xFF);
-    }
-
-    private Set<String> generateAllPublicIPv4Addresses(PublicIpBlock publicIpBlock) {
-        Set<String> ipAddresses = Sets.newHashSet();
-        String ipAddress = publicIpBlock.baseIp();
-        for (int i = 0; i < publicIpBlock.size(); i++) {
-            ipAddresses.add(ipAddress);
-            ipAddress = getNextIPV4Address(ipAddress);
-        }
-        return ipAddresses;
     }
 
 }
