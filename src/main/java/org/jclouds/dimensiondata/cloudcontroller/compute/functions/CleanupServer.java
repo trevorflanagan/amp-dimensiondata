@@ -90,9 +90,9 @@ public class CleanupServer implements Function<String, Boolean> {
       }
 
       for (FirewallRule firewallRule : firewallRulesToBeDeleted) {
-         if (firewallRule.destination() != null && firewallRule.destination().portListId() != null) {
-            Response deletePortListResponse = api.getNetworkApi().deletePortList(firewallRule.destination().portListId());
-            manageResponse(deletePortListResponse, format("Cannot delete port list %s created for server (%s). Rolling back ...", firewallRule.destination().portListId(), serverId));
+         if (firewallRule.destination() != null && firewallRule.destination().portList() != null) {
+            Response deletePortListResponse = api.getNetworkApi().deletePortList(firewallRule.destination().portList().id());
+            manageResponse(deletePortListResponse, format("Cannot delete port list %s created for server (%s). Rolling back ...", firewallRule.destination().portList().id(), serverId));
          }
       }
 
@@ -106,5 +106,7 @@ public class CleanupServer implements Function<String, Boolean> {
       Response deleteServerResponse = api.getServerApi().deleteServer(serverId);
       return deleteServerResponse.error().isEmpty();
    }
+
+
 
 }
