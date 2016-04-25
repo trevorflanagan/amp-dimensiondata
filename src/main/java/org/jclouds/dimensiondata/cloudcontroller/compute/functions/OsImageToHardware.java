@@ -22,7 +22,7 @@ import org.jclouds.compute.domain.Hardware;
 import org.jclouds.compute.domain.HardwareBuilder;
 import org.jclouds.compute.domain.Processor;
 import org.jclouds.compute.domain.Volume;
-import org.jclouds.compute.domain.internal.VolumeImpl;
+import org.jclouds.compute.domain.VolumeBuilder;
 import org.jclouds.dimensiondata.cloudcontroller.domain.Disk;
 import org.jclouds.dimensiondata.cloudcontroller.domain.OsImage;
 
@@ -47,12 +47,12 @@ public class OsImageToHardware implements Function<OsImage, Hardware> {
                          .transform(new Function<Disk, Volume>() {
                             @Override
                             public Volume apply(Disk disk) {
-                               float volumeSize = disk.sizeGb();
-                               return new VolumeImpl(
-                                       disk.id(),
-                                       // TODO check other supported types
-                                       Volume.Type.LOCAL,
-                                       volumeSize, null, true, false);
+                               return new VolumeBuilder()
+                                       .id(disk.id())
+                                       .device(String.valueOf(disk.scsiId()))
+                                       .size(Float.valueOf(disk.sizeGb()))
+                                       .type(Volume.Type.LOCAL)
+                                       .build();
                             }
                          }).toSet());
       }

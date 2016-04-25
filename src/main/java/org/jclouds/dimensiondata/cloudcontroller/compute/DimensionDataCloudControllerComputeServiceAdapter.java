@@ -38,6 +38,7 @@ import org.jclouds.compute.ComputeServiceAdapter;
 import org.jclouds.compute.domain.Hardware;
 import org.jclouds.compute.domain.Image;
 import org.jclouds.compute.domain.Template;
+import org.jclouds.compute.domain.Volume;
 import org.jclouds.compute.reference.ComputeServiceConstants.Timeouts;
 import org.jclouds.dimensiondata.cloudcontroller.DimensionDataCloudControllerApi;
 import org.jclouds.dimensiondata.cloudcontroller.compute.functions.CleanupServer;
@@ -129,9 +130,14 @@ public class DimensionDataCloudControllerComputeServiceAdapter implements
         );
 
         List<Disk> disks = Lists.newArrayList();
-        for (int i = 0; i < template.getHardware().getVolumes().size(); i++) {
-            // TODO make speed configurable
-            disks.add(Disk.builder().scsiId(i).speed("STANDARD").build());
+        // TODO add all the volumes as disks
+        if (template.getHardware().getVolumes() != null) {
+            Volume volume = template.getHardware().getVolumes().get(0);
+            disks.add(Disk.builder()
+                    .scsiId(Integer.valueOf(volume.getDevice()))
+                    .sizeGb(volume.getSize().intValue())
+                    .speed("STANDARD")
+                    .build());
         }
 
         CreateServerOptions createServerOptions = CreateServerOptions.builder()
