@@ -135,7 +135,7 @@ public class DimensionDataCloudControllerComputeServiceAdapter implements
         }
 
         CreateServerOptions createServerOptions = CreateServerOptions.builder()
-                .memoryGb(template.getHardware().getRam())
+                .memoryGb(template.getHardware().getRam() / 1024)
                 .build();
 
         Response deployServerResponse = api.getServerApi().deployServer(name, imageId, Boolean.TRUE, networkInfo, disks, loginPassword, createServerOptions);
