@@ -35,11 +35,10 @@ public class NetworkApiMockTest extends BaseDimensionDataCloudControllerMockTest
         //NetworkApi api = api(server);
         Iterable<NetworkDomain> networkDomains = api.getNetworkApi().listNetworkDomains().concat();
 
-        assertEquals(size(networkDomains), 8); // Force the PagedIterable to advance
-        assertEquals(server.getRequestCount(), 2);
+        assertEquals(size(networkDomains), 1); // Force the PagedIterable to advance
+        assertEquals(server.getRequestCount(), 1);
 
         assertSent(server, "GET", "/network/networkDomain");
-        assertSent(server, "GET", "//network/networkDomain?page=2&per_page=5");
     }
 /*
     public void testListVlans() throws Exception {
