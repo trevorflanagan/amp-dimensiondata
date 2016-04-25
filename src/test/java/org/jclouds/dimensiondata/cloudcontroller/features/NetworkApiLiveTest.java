@@ -21,146 +21,108 @@ import static org.jclouds.dimensiondata.cloudcontroller.compute.DimensionDataClo
 import static org.jclouds.dimensiondata.cloudcontroller.compute.DimensionDataCloudControllerComputeServiceAdapter.DEFAULT_PROTOCOL;
 import static org.jclouds.dimensiondata.cloudcontroller.compute.strategy.GetOrCreateNetworkDomainThenCreateNodes.DEFAULT_PRIVATE_IPV4_BASE_ADDRESS;
 import static org.jclouds.dimensiondata.cloudcontroller.compute.strategy.GetOrCreateNetworkDomainThenCreateNodes.DEFAULT_PRIVATE_IPV4_PREFIX_SIZE;
-import static org.jclouds.dimensiondata.cloudcontroller.utils.DimensionDataCloudControllerUtils.convertServerId;
+import static org.jclouds.dimensiondata.cloudcontroller.utils.DimensionDataCloudControllerUtils.generateFirewallRuleName;
 import static org.testng.Assert.assertNotNull;
 
 import java.util.List;
 
-import org.jclouds.dimensiondata.cloudcontroller.domain.FirewallRule;
 import org.jclouds.dimensiondata.cloudcontroller.domain.FirewallRuleTarget;
 import org.jclouds.dimensiondata.cloudcontroller.domain.IpRange;
-import org.jclouds.dimensiondata.cloudcontroller.domain.NatRule;
 import org.jclouds.dimensiondata.cloudcontroller.domain.Placement;
 import org.jclouds.dimensiondata.cloudcontroller.domain.Response;
 import org.jclouds.dimensiondata.cloudcontroller.internal.BaseDimensionDataCloudControllerApiLiveTest;
 import org.jclouds.dimensiondata.cloudcontroller.utils.DimensionDataCloudControllerUtils;
 import org.jclouds.rest.ResourceAlreadyExistsException;
+import org.testng.Assert;
 import org.testng.annotations.AfterClass;
 import org.testng.annotations.BeforeClass;
 import org.testng.annotations.Test;
 
+import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
 
 @Test(groups = "live", testName = "NetworkApiLiveTest", singleThreaded = true)
 public class NetworkApiLiveTest extends BaseDimensionDataCloudControllerApiLiveTest {
 
+    private static final String DATACENTER = "NA9";
+
     private String networkDomainId;
     private String vlanId;
+    private String portListId;
     private List<String> firewallRuleIds;
 
     @BeforeClass
     public void init() {
         firewallRuleIds = Lists.newArrayList();
-        /*
-        NetworkDomain networkDomain = api().listNetworkDomains().concat().firstMatch(new Predicate<NetworkDomain>() {
-            @Override
-            public boolean apply(NetworkDomain networkDomain) {
-                return networkDomain.datacenterId().equals("NA9");
-            }
-        }).orNull();
-        if (networkDomain == null) {
-            Assert.fail();
-        }
-        networkDomainId = networkDomain.id();
-        */
-    }
-
-    @Test(dependsOnMethods = "testCreateMultipleFirewallRules")
-    public void testExploreNetworkDomains() {
-        List<NatRule> natRules = api().listNatRules(networkDomainId).concat().toList();
-        assertNotNull(natRules);
-        List<FirewallRule> firewallRules = api().listFirewallRules(networkDomainId).concat().toList();
-        assertNotNull(firewallRules);
-            for (FirewallRule firewallRule : firewallRules) {
-                api().deleteFirewallRule(firewallRule.id());
-            }
-    }
-
-    @Test(dependsOnMethods = "testCreateSameFirewallRuleTwice")
-    public void testCreateMultipleFirewallRules() {
-        for (int i = 0; i < 12; i++) {
-            int j = i * 1024;
-            FirewallRuleTarget.Port destinationPort = FirewallRuleTarget.Port.create(j + 1 , j + 1025);
-            Response createFirewallRuleResponse = api().createFirewallRule(
-                    networkDomainId,
-                    convertServerId("serverId", destinationPort),
-                    DEFAULT_ACTION,
-                    DEFAULT_IP_VERSION,
-                    DEFAULT_PROTOCOL,
-                    FirewallRuleTarget.builder()
-                            .ip(IpRange.create("ANY", null))
-                            .build(),
-                    FirewallRuleTarget.builder()
-                            .ip(IpRange.create("ANY", null))
-                            .port(destinationPort)
-                            .build(),
-                    Boolean.TRUE,
-                    Placement.builder().position("LAST").build());
-            if (!createFirewallRuleResponse.error().isEmpty()) {
-                String firewallRuleErrorMessage = String.format("Cannot create a firewall rule %s-%s. Rolling back ...", destinationPort.begin(), destinationPort.end());
-                throw new IllegalStateException(firewallRuleErrorMessage);
-            }
-            firewallRuleIds.add(DimensionDataCloudControllerUtils.tryFindPropertyValue(createFirewallRuleResponse, "firewallRuleId"));
-        }
     }
 
     @Test(dependsOnMethods = "testDeployVlan")
-    public void testCreateSameFirewallRuleTwice() {
-        for (int i = 0; i < 2; i++) {
-            FirewallRuleTarget.Port destinationPort = FirewallRuleTarget.Port.create(1, 1025);
-            Response createFirewallRuleResponse = api().createFirewallRule(
-                    networkDomainId,
-                    convertServerId("serverId", destinationPort),
-                    DEFAULT_ACTION,
-                    DEFAULT_IP_VERSION,
-                    DEFAULT_PROTOCOL,
-                    FirewallRuleTarget.builder()
-                            .ip(IpRange.create("ANY", null))
-                            .build(),
-                    FirewallRuleTarget.builder()
-                            .ip(IpRange.create("ANY", null))
-                            .port(destinationPort)
-                            .build(),
-                    Boolean.TRUE,
-                    Placement.builder().position("LAST").build());
-            if (!createFirewallRuleResponse.error().isEmpty()) {
-                String firewallRuleErrorMessage = String.format("Cannot create a firewall rule %s-%s. Rolling back ...", destinationPort.begin(), destinationPort.end());
-                throw new IllegalStateException(firewallRuleErrorMessage);
-            }
-            String firewallRuleId = DimensionDataCloudControllerUtils.tryFindPropertyValue(createFirewallRuleResponse, "firewallRuleId");
-            if (firewallRuleId != null) {
-                firewallRuleIds.add(firewallRuleId);
-            }
+    public void testCreatePortList() {
+        Response response = api().createPortList(networkDomainId, this.getClass().getCanonicalName(), this.getClass().getCanonicalName(),
+                ImmutableList.of(FirewallRuleTarget.Port.create(22, null)), Lists.<String>newArrayList());
+        portListId = DimensionDataCloudControllerUtils.tryFindPropertyValue(response, "portListId");
+    }
+
+    @Test(dependsOnMethods = "testCreatePortList")
+    public void testCreateFirewallRuleWithPortList() {
+        Response createFirewallRuleResponse = api().createFirewallRule(
+                networkDomainId,
+                generateFirewallRuleName("server-id"),
+                DEFAULT_ACTION,
+                DEFAULT_IP_VERSION,
+                DEFAULT_PROTOCOL,
+                FirewallRuleTarget.builder()
+                        .ip(IpRange.create("ANY", null))
+                        .build(),
+                FirewallRuleTarget.builder()
+                        .ip(IpRange.create("ANY", null))
+                        .portListId(portListId)
+                        .build(),
+                Boolean.TRUE,
+                Placement.builder().position("LAST").build());
+        if (!createFirewallRuleResponse.error().isEmpty()) {
+            Assert.fail();
         }
+        firewallRuleIds.add(DimensionDataCloudControllerUtils.tryFindPropertyValue(createFirewallRuleResponse, "firewallRuleId"));
     }
 
     @Test(dependsOnMethods = "testDeployNetworkDomain")
     public void testDeployVlan() {
         Response deployVlanResponse =  api().deployVlan(networkDomainId, NetworkApiLiveTest.class.getSimpleName(), NetworkApiLiveTest.class.getSimpleName(), DEFAULT_PRIVATE_IPV4_BASE_ADDRESS, DEFAULT_PRIVATE_IPV4_PREFIX_SIZE);
         vlanId = DimensionDataCloudControllerUtils.tryFindPropertyValue(deployVlanResponse, "vlanId");
-
+        assertNotNull(vlanId);
     }
 
     @Test
     public void testDeployNetworkDomain() {
-        String location = "NA9";
         String networkDomainName = NetworkApiLiveTest.class.getSimpleName();
-        Response deployNetworkDomainResponse = api().deployNetworkDomain(location, networkDomainName, NetworkApiLiveTest.class.getSimpleName(), "ESSENTIALS");
+        Response deployNetworkDomainResponse = api().deployNetworkDomain(DATACENTER, networkDomainName, NetworkApiLiveTest.class.getSimpleName(), "ESSENTIALS");
         networkDomainId = DimensionDataCloudControllerUtils.tryFindPropertyValue(deployNetworkDomainResponse, "networkDomainId");
         assertNotNull(networkDomainId);
     }
 
     @Test(expectedExceptions = ResourceAlreadyExistsException.class)
     public void testDeploySameNetworkDomain() {
-        api().deployNetworkDomain("NA9", NetworkApiLiveTest.class.getSimpleName(), NetworkApiLiveTest.class.getSimpleName(), "ESSENTIALS");
+        api().deployNetworkDomain(DATACENTER, NetworkApiLiveTest.class.getSimpleName(), NetworkApiLiveTest.class.getSimpleName(), "ESSENTIALS");
     }
 
     @AfterClass
     public void tearDown() {
         if (!firewallRuleIds.isEmpty()) {
             for (String firewallRuleId : firewallRuleIds) {
-                api().deleteFirewallRule(firewallRuleId);
+                Response response = api().deleteFirewallRule(firewallRuleId);
             }
+        }
+        if (portListId != null) {
+            api().deletePortList(portListId);
+        }
+        if (vlanId != null) {
+            api().deleteVlan(vlanId);
+            // TODO wait for deletion
+            api().getVlan(vlanId);
+        }
+        if (networkDomainId != null) {
+            api().deleteNetworkDomain(networkDomainId);
         }
     }
 

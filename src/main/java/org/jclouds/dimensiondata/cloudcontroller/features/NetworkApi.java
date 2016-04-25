@@ -91,6 +91,14 @@ public interface NetworkApi {
     @Fallback(Fallbacks.EmptyPagedIterableOnNotFoundOr404.class)
     PagedIterable<NetworkDomain> listNetworkDomains();
 
+    @Named("network:deleteNetwotkDomain")
+    @POST
+    @Path("/deleteNetworkDomain")
+    @Produces(MediaType.APPLICATION_JSON)
+    @MapBinder(BindToJsonPayload.class)
+    @Fallback(NullOnNotFoundOr404.class)
+    Response deleteNetworkDomain(@PayloadParam("id") String networkDomainId);
+
     @Named("network:deployVlan")
     @POST
     @Path("/deployVlan")
@@ -120,6 +128,15 @@ public interface NetworkApi {
     @ResponseParser(ParseVlans.class)
     @Fallback(Fallbacks.EmptyPagedIterableOnNotFoundOr404.class)
     PagedIterable<Vlan> listVlans(@QueryParam("networkDomainId") String networkDomainId);
+
+    @Named("network:deleteVlan")
+    @POST
+    @Path("/deleteVlan")
+    @Produces(MediaType.APPLICATION_JSON)
+    @MapBinder(BindToJsonPayload.class)
+    @Fallback(NullOnNotFoundOr404.class)
+    Response deleteVlan(@PayloadParam("id") String vlanId);
+
 
     @Named("network:addPublicIpBlock")
     @POST
@@ -241,4 +258,6 @@ public interface NetworkApi {
     @MapBinder(BindToJsonPayload.class)
     @Fallback(NullOnNotFoundOr404.class)
     Response deletePortList(@PayloadParam("id") String portListId);
+
+
 }

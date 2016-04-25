@@ -18,6 +18,7 @@ package org.jclouds.dimensiondata.cloudcontroller.compute.functions;
 
 import static java.lang.String.format;
 import static org.jclouds.dimensiondata.cloudcontroller.utils.DimensionDataCloudControllerUtils.generateFirewallRuleName;
+import static org.jclouds.dimensiondata.cloudcontroller.utils.DimensionDataCloudControllerUtils.manageResponse;
 
 import java.util.List;
 
@@ -104,12 +105,6 @@ public class CleanupServer implements Function<String, Boolean> {
       // delete server
       Response deleteServerResponse = api.getServerApi().deleteServer(serverId);
       return deleteServerResponse.error().isEmpty();
-   }
-
-   private void manageResponse(Response response, String errorMessage) {
-      if (!response.error().isEmpty()) {
-         throw new IllegalStateException(errorMessage);
-      }
    }
 
 }

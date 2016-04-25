@@ -140,4 +140,9 @@ public class DimensionDataCloudControllerUtils {
         return String.format("pl.%s", convertServerId(serverId));
     }
 
+    public static void manageResponse(Response response, String errorMessage) {
+        if (!response.error().isEmpty()) {
+            throw new IllegalStateException(errorMessage);
+        }
+    }
 }

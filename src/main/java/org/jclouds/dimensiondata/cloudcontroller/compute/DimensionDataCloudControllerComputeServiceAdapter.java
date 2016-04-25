@@ -22,6 +22,7 @@ import static java.lang.String.format;
 import static org.jclouds.compute.reference.ComputeServiceConstants.COMPUTE_LOGGER;
 import static org.jclouds.dimensiondata.cloudcontroller.utils.DimensionDataCloudControllerUtils.generateFirewallRuleName;
 import static org.jclouds.dimensiondata.cloudcontroller.utils.DimensionDataCloudControllerUtils.generatePortListName;
+import static org.jclouds.dimensiondata.cloudcontroller.utils.DimensionDataCloudControllerUtils.manageResponse;
 import static org.jclouds.dimensiondata.cloudcontroller.utils.DimensionDataCloudControllerUtils.simplifyPorts;
 
 import java.util.List;
@@ -44,7 +45,6 @@ import org.jclouds.dimensiondata.cloudcontroller.compute.functions.ServerToServe
 import org.jclouds.dimensiondata.cloudcontroller.compute.options.DimensionDataCloudControllerTemplateOptions;
 import org.jclouds.dimensiondata.cloudcontroller.domain.Datacenter;
 import org.jclouds.dimensiondata.cloudcontroller.domain.Disk;
-import org.jclouds.dimensiondata.cloudcontroller.domain.FirewallRule;
 import org.jclouds.dimensiondata.cloudcontroller.domain.FirewallRuleTarget;
 import org.jclouds.dimensiondata.cloudcontroller.domain.IpRange;
 import org.jclouds.dimensiondata.cloudcontroller.domain.NIC;
@@ -64,7 +64,7 @@ import com.google.common.base.Function;
 import com.google.common.base.Objects;
 import com.google.common.base.Optional;
 import com.google.common.base.Predicate;
-import com.google.common.base.Predicates;
+import com.google.common.collect.FluentIterable;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Lists;
@@ -118,8 +118,6 @@ public class DimensionDataCloudControllerComputeServiceAdapter implements
 
         DimensionDataCloudControllerTemplateOptions templateOptions = DimensionDataCloudControllerTemplateOptions.class.cast(template.getOptions());
 
-        List<FirewallRuleTarget.Port> tests = simplifyPorts(templateOptions.getInboundPorts());
-
         String networkDomainId = templateOptions.getNetworkDomainId();
         String vlanId = templateOptions.getVlanId();
 
@@ -150,7 +148,20 @@ public class DimensionDataCloudControllerComputeServiceAdapter implements
 
         if (templateOptions.autoCreateNatRule()) {
             lock.lock();
-            String externalIp = tryFindExternalIp(api, networkDomainId);
+
+            String externalIp;
+            Set<String> set = getAllPublicIPv4AddressAvailable(api, networkDomainId);
+            Set<String> inUse = getExternalIPv4AddressesInUse(api, networkDomainId);
+            Optional<String> optionalExternalIp = FluentIterable.from(Sets.difference(set, inUse)).first();
+
+            if (optionalExternalIp.isPresent()) {
+                externalIp = optionalExternalIp.get();
+            } else {
+                // addPublicIPv4AddressBlock
+                Response response = api.getNetworkApi().addPublicIpBlock(networkDomainId);
+                manageResponse(response, format("Cannot add a publicIpBlock to networkDomainId %s", networkDomainId));
+                externalIp = api.getNetworkApi().getPublicIPv4AddressBlock(DimensionDataCloudControllerUtils.tryFindPropertyValue(response, "ipBlockId")).baseIp();
+            }
             try {
                 serverWithExternalIpBuilder.externalIp(externalIp);
                 String internalIp = api.getServerApi().getServer(serverId).networkInfo().primaryNic().privateIpv4();
@@ -166,11 +177,7 @@ public class DimensionDataCloudControllerComputeServiceAdapter implements
                 lock.unlock();
             }
 
-            // TODO set more fine-grained firewall policies when v2.2 is out, remove them from GetOrCreateNetworkDomain
-            // set firewall rules on networkDomain
             List<FirewallRuleTarget.Port> ports = simplifyPorts(templateOptions.getInboundPorts());
-
-            // TODO remove portsToBeInstalled with create PortList when v2.2 is available
             Response createPorlListResponse = api.getNetworkApi()
                     .createPortList(networkDomainId,
                             generatePortListName(serverId),
@@ -179,7 +186,6 @@ public class DimensionDataCloudControllerComputeServiceAdapter implements
                             ImmutableList.<String>of());
             final String portListId = DimensionDataCloudControllerUtils.tryFindPropertyValue(createPorlListResponse, "portListId");
 
-            FirewallRuleTarget.PortList portList = api.getNetworkApi().getPortList(portListId);
             Response createFirewallRuleResponse = api.getNetworkApi().createFirewallRule(
                     templateOptions.getNetworkDomainId(),
                     generateFirewallRuleName(serverId),
@@ -191,7 +197,7 @@ public class DimensionDataCloudControllerComputeServiceAdapter implements
                             .build(),
                     FirewallRuleTarget.builder()
                             .ip(IpRange.create(externalIp, null))
-                            .portList(portList)
+                            .portListId(portListId)
                             .build(),
                     Boolean.TRUE,
                     Placement.builder().position("LAST").build());
@@ -202,16 +208,7 @@ public class DimensionDataCloudControllerComputeServiceAdapter implements
                 destroyNode(serverId);
                 throw new IllegalStateException(firewallRuleErrorMessage);
             }
-/*
-            Set<FirewallRuleTarget.Port> existingDestinationPorts = getExistingDestinationPorts(templateOptions);
-
-            Set<FirewallRuleTarget.Port> portsToBeInstalled = Sets.difference(ports, existingDestinationPorts).immutableCopy();
-            for (FirewallRuleTarget.Port destinationPort : portsToBeInstalled) {
-                tryCreateOrCheckFirewallRuleExists(serverId, templateOptions, destinationPort);
-            }
-*/
         }
-
         return new NodeAndInitialCredentials<ServerWithExternalIp>(serverWithExternalIpBuilder.build(), serverId, credsBuilder.build());
     }
 
@@ -275,12 +272,6 @@ public class DimensionDataCloudControllerComputeServiceAdapter implements
         });
     }
 
-    private String tryFindExternalIp(DimensionDataCloudControllerApi api, final String networkDomainId) {
-        // check nat rule in use
-        final Set<String> publicIpAddressesInUse = getExternalIPv4AddressesInUse(api, networkDomainId);
-        return getOrAddPublicIPv4Address(api, publicIpAddressesInUse, networkDomainId);
-    }
-
     private Set<String> getExternalIPv4AddressesInUse(DimensionDataCloudControllerApi api, final String networkDomainId) {
         return api.getNetworkApi().listNatRules(networkDomainId).concat()
                     .filter(new Predicate<NatRule>() {
@@ -298,30 +289,14 @@ public class DimensionDataCloudControllerComputeServiceAdapter implements
                     .toSet();
     }
 
-    private String getOrAddPublicIPv4Address(final DimensionDataCloudControllerApi api, final Set<String> publicIpAddressesInUse, final String networkDomainId) {
-        Optional<String> optionalPublicIPv4Address = api.getNetworkApi().listPublicIPv4AddressBlocks(networkDomainId).concat()
+    private Set<String> getAllPublicIPv4AddressAvailable(DimensionDataCloudControllerApi api, String networkDomainId) {
+        return api.getNetworkApi().listPublicIPv4AddressBlocks(networkDomainId).concat()
                 .transformAndConcat(new Function<PublicIpBlock, Iterable<String>>() {
                     @Override
                     public Iterable<String> apply(PublicIpBlock publicIpBlock) {
                         return generateAllPublicIPv4Addresses(publicIpBlock);
                     }
-                })
-                .filter(new Predicate<String>() {
-                    @Override
-                    public boolean apply(String publicIpAddress) {
-                        // first publicIpBlock with an available externalIp
-                        return !publicIpAddressesInUse.contains(publicIpAddress);
-                    }
-                }).first();
-
-        if (optionalPublicIPv4Address.isPresent()) return optionalPublicIPv4Address.get();
-
-        // addPublicIPv4AddressBlock
-        Response response = api.getNetworkApi().addPublicIpBlock(networkDomainId);
-        if (!response.error().isEmpty()) {
-           throw new IllegalStateException("Cannot add a publicIpBlock to networkDomainId: " + networkDomainId);
-        }
-         return api.getNetworkApi().getPublicIPv4AddressBlock(DimensionDataCloudControllerUtils.tryFindPropertyValue(response, "ipBlockId")).baseIp();
+                }).toSet();
     }
 
     private static String getNextIPV4Address(String ip) {
@@ -345,66 +320,5 @@ public class DimensionDataCloudControllerComputeServiceAdapter implements
         }
         return ipAddresses;
     }
-
-
-    private Set<FirewallRuleTarget.Port> getExistingDestinationPorts(DimensionDataCloudControllerTemplateOptions templateOptions) {
-        return api.getNetworkApi().listFirewallRules(templateOptions.getNetworkDomainId()).concat()
-                .filter(new Predicate<FirewallRule>() {
-                    @Override
-                    public boolean apply(FirewallRule firewallRule) {
-                        return firewallRule.destination() != null;
-                    }
-                })
-                .transform(new Function<FirewallRule, FirewallRuleTarget.Port>() {
-                    @Override
-                    public FirewallRuleTarget.Port apply(FirewallRule firewallRule) {
-                        return firewallRule.destination().port();
-                    }
-                })
-                .filter(Predicates.<FirewallRuleTarget.Port>notNull())
-                .toSet();
-    }
-
-/*
-    private void tryCreateOrCheckFirewallRuleExists(String serverId, DimensionDataCloudControllerTemplateOptions templateOptions, FirewallRuleTarget.Port destinationPort) {
-        final String firewallRuleName = convertServerId(serverId, destinationPort);
-        try {
-            Response createFirewallRuleResponse = api.getNetworkApi().createFirewallRule(
-                    templateOptions.getNetworkDomainId(),
-                    firewallRuleName,
-                    DEFAULT_ACTION,
-                    DEFAULT_IP_VERSION,
-                    DEFAULT_PROTOCOL,
-                    FirewallRuleTarget.builder()
-                            .ip(IpRange.create("ANY", null))
-                            .build(),
-                    FirewallRuleTarget.builder()
-                            .ip(IpRange.create("ANY", null))
-                            .port(destinationPort)
-                            .build(),
-                    Boolean.TRUE,
-                    Placement.builder().position("LAST").build());
-            if (!createFirewallRuleResponse.error().isEmpty()) {
-                String firewallRuleErrorMessage = String.format("Cannot create a firewall rule %s-%s. Rolling back ...", destinationPort.begin(), destinationPort.end());
-                logger.warn(firewallRuleErrorMessage);
-                throw new IllegalStateException(firewallRuleErrorMessage);
-            } else {
-                DimensionDataCloudControllerUtils.tryFindPropertyValue(createFirewallRuleResponse, "firewallRuleId");
-            }
-        } catch (ResourceAlreadyExistsException e) {
-            logger.debug("Cannot create a firewall rule with name %s. Looking for an existing firewall rule in the network domain %s ...", firewallRuleName, templateOptions.getNetworkDomainId());
-            if (!api.getNetworkApi().listFirewallRules(templateOptions.getNetworkDomainId()).concat()
-                    .filter(new Predicate<FirewallRule>() {
-                        @Override
-                        public boolean apply(FirewallRule firewallRule) {
-                            return firewallRule.name().equals(firewallRuleName);
-                        }
-                    }).isEmpty()) {
-                logger.debug("Cannot found an existing firewall rule %s", firewallRuleName);
-                throw Throwables.propagate(e);
-            }
-        }
-    }
-*/
 
 }

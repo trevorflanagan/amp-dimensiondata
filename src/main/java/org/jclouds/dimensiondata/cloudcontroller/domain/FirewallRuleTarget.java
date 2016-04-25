@@ -48,8 +48,8 @@ public abstract class FirewallRuleTarget {
         public abstract String id();
         @Nullable public abstract String name();
         @Nullable public abstract String description();
-        public abstract List<Port> port();
-        public abstract List<String> childPortList();
+        @Nullable public abstract List<Port> port();
+        @Nullable public abstract List<String> childPortList();
 
         @SerializedNames({ "id", "name", "description", "port", "childPortList" })
         public static PortList create(String id, String name, String description, List<Port> port, List<String> childPortList) {
@@ -65,11 +65,12 @@ public abstract class FirewallRuleTarget {
 
     @Nullable public abstract IpRange ip();
     @Nullable public abstract Port port();
+    @Nullable public abstract String portListId();
     @Nullable public abstract PortList portList();
 
-    @SerializedNames({ "ip", "port", "portList" })
-    public static FirewallRuleTarget create(IpRange ip, Port port, PortList portList) {
-        return builder().ip(ip).port(port).portList(portList).build();
+    @SerializedNames({ "ip", "port", "portListId", "portList" })
+    public static FirewallRuleTarget create(IpRange ip, Port port, String portListId, PortList portList) {
+        return builder().ip(ip).port(port).portListId(portListId).portList(portList).build();
     }
 
     public abstract Builder toBuilder();
@@ -78,6 +79,7 @@ public abstract class FirewallRuleTarget {
     public abstract static class Builder {
         public abstract Builder ip(IpRange ip);
         public abstract Builder port(Port port);
+        public abstract Builder portListId(String portListId);
         public abstract Builder portList(PortList portList);
 
         public abstract FirewallRuleTarget build();
