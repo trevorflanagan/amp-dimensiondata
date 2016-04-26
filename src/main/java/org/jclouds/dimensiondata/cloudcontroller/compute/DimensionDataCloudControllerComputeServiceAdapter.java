@@ -149,16 +149,16 @@ public class DimensionDataCloudControllerComputeServiceAdapter implements
             manageResponse(response, format("Cannot add a publicIpBlock to networkDomainId %s", networkDomainId));
             String externalIp = api.getNetworkApi().getPublicIPv4AddressBlock(DimensionDataCloudControllerUtils.tryFindPropertyValue(response, "ipBlockId")).baseIp();
 
-                serverWithExternalIpBuilder.externalIp(externalIp);
-                String internalIp = api.getServerApi().getServer(serverId).networkInfo().primaryNic().privateIpv4();
-                Response createNatRuleOperation = api.getNetworkApi().createNatRule(networkDomainId, internalIp, externalIp);
-                if (!createNatRuleOperation.error().isEmpty()) {
-                    // rollback
-                    String natRuleErrorMessage = String.format("Cannot create a NAT rule for internalIp %s (server %s) using externalIp %s. Rolling back ...", internalIp, serverId, externalIp);
-                    logger.warn(natRuleErrorMessage);
-                    destroyNode(serverId);
-                    throw new IllegalStateException(natRuleErrorMessage);
-                }
+            serverWithExternalIpBuilder.externalIp(externalIp);
+            String internalIp = api.getServerApi().getServer(serverId).networkInfo().primaryNic().privateIpv4();
+            Response createNatRuleOperation = api.getNetworkApi().createNatRule(networkDomainId, internalIp, externalIp);
+            if (!createNatRuleOperation.error().isEmpty()) {
+                // rollback
+                String natRuleErrorMessage = String.format("Cannot create a NAT rule for internalIp %s (server %s) using externalIp %s. Rolling back ...", internalIp, serverId, externalIp);
+                logger.warn(natRuleErrorMessage);
+                destroyNode(serverId);
+                throw new IllegalStateException(natRuleErrorMessage);
+            }
 
             List<FirewallRuleTarget.Port> ports = simplifyPorts(templateOptions.getInboundPorts());
             Response createPorlListResponse = api.getNetworkApi()
