@@ -22,7 +22,6 @@ import static java.lang.String.format;
 import static org.jclouds.compute.reference.ComputeServiceConstants.COMPUTE_LOGGER;
 import static org.jclouds.dimensiondata.cloudcontroller.utils.DimensionDataCloudControllerUtils.generateFirewallRuleName;
 import static org.jclouds.dimensiondata.cloudcontroller.utils.DimensionDataCloudControllerUtils.generatePortListName;
-import static org.jclouds.dimensiondata.cloudcontroller.utils.DimensionDataCloudControllerUtils.manageResponse;
 import static org.jclouds.dimensiondata.cloudcontroller.utils.DimensionDataCloudControllerUtils.simplifyPorts;
 
 import java.util.List;
@@ -145,9 +144,10 @@ public class DimensionDataCloudControllerComputeServiceAdapter implements
 
         if (templateOptions.autoCreateNatRule()) {
             // addPublicIPv4AddressBlock
-            Response response = api.getNetworkApi().addPublicIpBlock(networkDomainId);
-            manageResponse(response, format("Cannot add a publicIpBlock to networkDomainId %s", networkDomainId));
-            String externalIp = api.getNetworkApi().getPublicIPv4AddressBlock(DimensionDataCloudControllerUtils.tryFindPropertyValue(response, "ipBlockId")).baseIp();
+            Response addPublicIpBlockResponse = api.getNetworkApi().addPublicIpBlock(networkDomainId);
+            //manageResponse(response, format("Cannot add a publicIpBlock to networkDomainId %s", networkDomainId));
+            String ipBlockId = DimensionDataCloudControllerUtils.tryFindPropertyValue(addPublicIpBlockResponse, "ipBlockId");
+            String externalIp = api.getNetworkApi().getPublicIPv4AddressBlock(ipBlockId).baseIp();
 
             serverWithExternalIpBuilder.externalIp(externalIp);
             String internalIp = api.getServerApi().getServer(serverId).networkInfo().primaryNic().privateIpv4();

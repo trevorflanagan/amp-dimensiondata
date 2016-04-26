@@ -106,6 +106,14 @@ public class NetworkApiLiveTest extends BaseDimensionDataCloudControllerApiLiveT
         api().deployNetworkDomain(DATACENTER, NetworkApiLiveTest.class.getSimpleName(), NetworkApiLiveTest.class.getSimpleName(), "ESSENTIALS");
     }
 
+    @Test(dependsOnMethods = "testDeployVlan")
+    public void testAddPublicIpBlock() {
+        Response addPublicIpBlockResponse = api.getNetworkApi().addPublicIpBlock(networkDomainId);
+        //manageResponse(response, format("Cannot add a publicIpBlock to networkDomainId %s", networkDomainId));
+        String ipBlockId = DimensionDataCloudControllerUtils.tryFindPropertyValue(addPublicIpBlockResponse, "ipBlockId");
+        System.out.println(ipBlockId);
+    }
+
     @AfterClass
     public void tearDown() {
         if (!firewallRuleIds.isEmpty()) {

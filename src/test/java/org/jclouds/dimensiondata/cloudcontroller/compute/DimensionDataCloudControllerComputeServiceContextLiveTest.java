@@ -48,7 +48,7 @@ import com.google.inject.Module;
 @Test(groups = "live", testName = "DimensionDataCloudControllerComputeServiceContextLiveTest")
 public class DimensionDataCloudControllerComputeServiceContextLiveTest extends BaseComputeServiceContextLiveTest {
 
-    private static final int NUM_NODES = 1;
+    private static final int NUM_NODES = 2;
 
     @Resource
     @Named(ComputeServiceConstants.COMPUTE_LOGGER)
@@ -89,7 +89,7 @@ public class DimensionDataCloudControllerComputeServiceContextLiveTest extends B
         Template template = view.getComputeService().templateBuilder()
                 .osFamily(OsFamily.UBUNTU)
                 .locationId("NA9")
-                .minRam(8192)
+                //.minRam(8192)
                 //.locationId("NA12")
                 .build();
 

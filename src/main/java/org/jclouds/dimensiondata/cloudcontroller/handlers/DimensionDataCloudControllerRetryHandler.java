@@ -54,7 +54,7 @@ public class DimensionDataCloudControllerRetryHandler extends BackoffLimitedRetr
       String message = data != null ? new String(data) : null;
       // Do not retry client errors that are not retryable errors
       if (response.getStatusCode() != 400 &&
-              (!message.contains("Please try again later") || !message.contains("UNEXPECTED_ERROR"))) {
+              (!message.contains("RESOURCE_BUSY") || !message.contains("UNEXPECTED_ERROR"))) {
          return false;
       } else if (!command.isReplayable()) {
          logger.error("Cannot retry after server error, command is not replayable: %1$s", command);

@@ -30,6 +30,7 @@ import org.jclouds.dimensiondata.cloudcontroller.domain.internal.ServerWithExter
 import org.jclouds.logging.Logger;
 
 import com.google.common.base.Function;
+import com.google.common.base.Optional;
 import com.google.common.base.Predicate;
 
 public class ServerToServetWithExternalIp implements Function<Server, ServerWithExternalIp> {
@@ -46,21 +47,20 @@ public class ServerToServetWithExternalIp implements Function<Server, ServerWith
     }
 
     @Override
-    public ServerWithExternalIp apply(Server input) {
-        if (input == null) return null;
+    public ServerWithExternalIp apply(final Server server) {
+        if (server == null) return null;
+        ServerWithExternalIp.Builder builder = ServerWithExternalIp.builder().server(server);
 
-        NatRule natRule = api.getNetworkApi().listNatRules(input.networkInfo().networkDomainId()).concat()
+        Optional<NatRule> natRuleOptional = api.getNetworkApi().listNatRules(server.networkInfo().networkDomainId()).concat()
                 .firstMatch(new Predicate<NatRule>() {
                     @Override
                     public boolean apply(NatRule input) {
-                        return input.internalIp().equalsIgnoreCase(input.internalIp());
+                        return input.internalIp().equalsIgnoreCase(server.networkInfo().primaryNic().privateIpv4());
                     }
-                })
-                .orNull();
+                });
 
-        ServerWithExternalIp.Builder builder = ServerWithExternalIp.builder().server(input);
-        if (natRule != null) {
-            builder.externalIp(natRule.externalIp());
+        if (natRuleOptional.isPresent()) {
+            builder.externalIp(natRuleOptional.get().externalIp());
         }
         return builder.build();
     }

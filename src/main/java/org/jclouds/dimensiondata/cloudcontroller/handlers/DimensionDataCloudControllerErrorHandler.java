@@ -51,7 +51,7 @@ public class DimensionDataCloudControllerErrorHandler implements HttpErrorHandle
                         message.contains("ORGANIZATION_NOT_VERIFIED") ||
                         message.contains("SYSTEM_ERROR") && !message.contains("RETRYABLE_SYSTEM_ERROR")) {
                     exception = new IllegalStateException(message, exception);
-                } else if (message.contains("Please try again later") || message.contains("UNEXPECTED_ERROR")) {
+                } else if (message.contains("RESOURCE_BUSY") || message.contains("UNEXPECTED_ERROR")) {
                     exception = new ResourceNotFoundException(message, exception);
                 } else if (message.contains("NAME_NOT_UNIQUE")) {
                     exception = new ResourceAlreadyExistsException(message, exception);
