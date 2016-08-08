@@ -16,6 +16,8 @@
  */
 package org.jclouds.dimensiondata.cloudcontroller.domain;
 
+import java.util.List;
+
 import org.jclouds.javax.annotation.Nullable;
 import org.jclouds.json.SerializedNames;
 
@@ -38,6 +40,23 @@ public abstract class FirewallRuleTarget {
         }
     }
 
+    @AutoValue
+    public abstract static class PortList {
+
+        PortList() {} // For AutoValue only!
+
+        public abstract String id();
+        @Nullable public abstract String name();
+        @Nullable public abstract String description();
+        @Nullable public abstract List<Port> port();
+        @Nullable public abstract List<String> childPortList();
+
+        @SerializedNames({ "id", "name", "description", "port", "childPortList" })
+        public static PortList create(String id, String name, String description, List<Port> port, List<String> childPortList) {
+            return new AutoValue_FirewallRuleTarget_PortList(id, name, description, port, childPortList);
+        }
+    }
+
     public static Builder builder() {
         return new AutoValue_FirewallRuleTarget.Builder();
     }
@@ -46,10 +65,12 @@ public abstract class FirewallRuleTarget {
 
     @Nullable public abstract IpRange ip();
     @Nullable public abstract Port port();
+    @Nullable public abstract String portListId();
+    @Nullable public abstract PortList portList();
 
-    @SerializedNames({ "ip", "port" })
-    public static FirewallRuleTarget create(IpRange ip, Port port) {
-        return builder().ip(ip).port(port).build();
+    @SerializedNames({ "ip", "port", "portListId", "portList" })
+    public static FirewallRuleTarget create(IpRange ip, Port port, String portListId, PortList portList) {
+        return builder().ip(ip).port(port).portListId(portListId).portList(portList).build();
     }
 
     public abstract Builder toBuilder();
@@ -58,6 +79,8 @@ public abstract class FirewallRuleTarget {
     public abstract static class Builder {
         public abstract Builder ip(IpRange ip);
         public abstract Builder port(Port port);
+        public abstract Builder portListId(String portListId);
+        public abstract Builder portList(PortList portList);
 
         public abstract FirewallRuleTarget build();
     }

@@ -34,11 +34,10 @@ public class InfrastructureApiMockTest extends BaseDimensionDataCloudControllerM
         server.enqueue(jsonResponse("/datacenters.json"));
         Iterable<Datacenter> datacenters = api.getInfrastructureApi().listDatacenters().concat();
 
-        assertEquals(size(datacenters), 8); // Force the PagedIterable to advance
-        assertEquals(server.getRequestCount(), 2);
+        assertEquals(size(datacenters), 2); // Force the PagedIterable to advance
+        assertEquals(server.getRequestCount(), 1);
 
         assertSent(server, "GET", "/infrastructure/datacenter");
-        assertSent(server, "GET", "/infrastructure/datacenter?page=2&per_page=5");
     }
 
 }

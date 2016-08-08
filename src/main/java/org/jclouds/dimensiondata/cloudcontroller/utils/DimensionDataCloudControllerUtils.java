@@ -39,8 +39,6 @@ import com.google.common.collect.Lists;
 
 public class DimensionDataCloudControllerUtils {
 
-    public static final String JCLOUDS_FW_RULE_PATTERN = "jclouds.%s.%s";
-
     public static String tryFindPropertyValue(Response response, final String propertyName) {
         if (!response.info().isEmpty()) {
             Optional<String> optionalPropertyName = FluentIterable.from(response.info()).firstMatch(new Predicate<Property>() {
@@ -111,7 +109,7 @@ public class DimensionDataCloudControllerUtils {
         return ports;
     }
 
-    // Helper function for simplifyPorts. Formats port range strings.
+    // Helper function for simplifyPorts.
     public static List<Port> formatRange(int range_start, int range_end, List<Port> ports) {
         int allowed_range = 1024;
 
@@ -122,13 +120,42 @@ public class DimensionDataCloudControllerUtils {
                 formatRange(range_start, range_start + allowed_range, ports);
                 range_start = range_start + allowed_range + 1;
             }
+        } else if (range_end == range_start) {
+            ports.add(Port.create(range_start, null));
         } else {
             ports.add(Port.create(range_start, range_end));
         }
         return ports;
     }
 
-    public static String generateFirewallName(String serverId, Port destinationPort) {
-        return String.format(JCLOUDS_FW_RULE_PATTERN, serverId.replaceAll("-", "_"), destinationPort.end() == null || destinationPort.begin().equals(destinationPort.end()) ? destinationPort.begin() : destinationPort.begin() + "_" + destinationPort.end());
+    public static String convertServerId(String serverId) {
+        return serverId.replaceAll("-", "_");
     }
+
+    public static String generateFirewallRuleName(String serverId) {
+        return String.format("fw.%s", convertServerId(serverId));
+    }
+
+    public static String generatePortListName(String serverId) {
+        return String.format("pl.%s", convertServerId(serverId));
+    }
+
+    public static void manageResponse(Response response, String errorMessage) {
+        if (!response.error().isEmpty()) {
+            throw new IllegalStateException(errorMessage);
+        }
+    }
+
+    public static String getNextIPV4Address(String ip) {
+        String[] nums = ip.split("\\.");
+        int i = (Integer.parseInt(nums[0]) << 24 | Integer.parseInt(nums[2]) << 8
+                |  Integer.parseInt(nums[1]) << 16 | Integer.parseInt(nums[3])) + 1;
+
+        // If you wish to skip over .255 addresses.
+        if ((byte) i == -1) i++;
+
+        return String.format("%d.%d.%d.%d", i >>> 24 & 0xFF, i >> 16 & 0xFF,
+                i >>   8 & 0xFF, i >>  0 & 0xFF);
+    }
+
 }

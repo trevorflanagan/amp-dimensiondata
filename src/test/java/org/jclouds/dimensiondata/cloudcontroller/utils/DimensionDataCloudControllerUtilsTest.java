@@ -35,7 +35,6 @@ public class DimensionDataCloudControllerUtilsTest {
         Assert.assertEquals(portList.size(), 2);
     }
 
-
     @Test
     public void testSimplifyPortsWithFullRange() throws Exception {
         int[] ports = new int[65535];

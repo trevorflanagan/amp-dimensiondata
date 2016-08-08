@@ -16,10 +16,6 @@
  */
 package org.jclouds.dimensiondata.cloudcontroller.features;
 
-import static com.google.common.collect.Iterables.size;
-import static org.testng.Assert.assertEquals;
-
-import org.jclouds.dimensiondata.cloudcontroller.domain.OsImage;
 import org.jclouds.dimensiondata.cloudcontroller.internal.BaseDimensionDataCloudControllerMockTest;
 import org.testng.annotations.Test;
 
@@ -29,19 +25,6 @@ import org.testng.annotations.Test;
 @Test(groups = "unit", testName = "ServerImageApiMockTest")
 public class ServerImageApiMockTest extends BaseDimensionDataCloudControllerMockTest {
 
-
-    public void testListServers() throws Exception {
-
-        server.enqueue(jsonResponse("/osImages.json"));
-        //MockWebServer server = mockWebServer(new MockResponse().setBody(payloadFromResource("/networkDomains.json")));
-        //NetworkApi api = api(server);
-        Iterable<OsImage> osImages = api.getServerImageApi().listOsImages().concat();
-
-        assertEquals(size(osImages), 8); // Force the PagedIterable to advance
-        assertEquals(server.getRequestCount(), 2);
-
-        assertSent(server, "GET", "/image/osImage");
-        assertSent(server, "GET", "/image/osImage?page=2&per_page=5");
-    }
+    // TODO
 
 }

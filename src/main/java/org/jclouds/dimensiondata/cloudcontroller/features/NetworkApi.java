@@ -91,6 +91,14 @@ public interface NetworkApi {
     @Fallback(Fallbacks.EmptyPagedIterableOnNotFoundOr404.class)
     PagedIterable<NetworkDomain> listNetworkDomains();
 
+    @Named("network:deleteNetwotkDomain")
+    @POST
+    @Path("/deleteNetworkDomain")
+    @Produces(MediaType.APPLICATION_JSON)
+    @MapBinder(BindToJsonPayload.class)
+    @Fallback(NullOnNotFoundOr404.class)
+    Response deleteNetworkDomain(@PayloadParam("id") String networkDomainId);
+
     @Named("network:deployVlan")
     @POST
     @Path("/deployVlan")
@@ -121,6 +129,14 @@ public interface NetworkApi {
     @Fallback(Fallbacks.EmptyPagedIterableOnNotFoundOr404.class)
     PagedIterable<Vlan> listVlans(@QueryParam("networkDomainId") String networkDomainId);
 
+    @Named("network:deleteVlan")
+    @POST
+    @Path("/deleteVlan")
+    @Produces(MediaType.APPLICATION_JSON)
+    @MapBinder(BindToJsonPayload.class)
+    @Fallback(NullOnNotFoundOr404.class)
+    Response deleteVlan(@PayloadParam("id") String vlanId);
+
     @Named("network:addPublicIpBlock")
     @POST
     @Path("/addPublicIpBlock")
@@ -142,6 +158,14 @@ public interface NetworkApi {
     @ResponseParser(ParsePublicIpBlocks.class)
     @Fallback(Fallbacks.EmptyPagedIterableOnNotFoundOr404.class)
     PagedIterable<PublicIpBlock> listPublicIPv4AddressBlocks(@QueryParam("networkDomainId") String networkDomainId);
+
+    @Named("network:removePublicIpBlock")
+    @POST
+    @Path("/removePublicIpBlock")
+    @Produces(MediaType.APPLICATION_JSON)
+    @MapBinder(BindToJsonPayload.class)
+    @Fallback(NullOnNotFoundOr404.class)
+    Response removePublicIpBlock(@PayloadParam("id") String publicIpBlockId);
 
     @Named("server:getPublicIpBlock")
     @GET
@@ -199,7 +223,7 @@ public interface NetworkApi {
 
     @Named("network:listFirewallRules")
     @GET
-    @Path("/firewallRule")
+        @Path("/firewallRule")
     @ResponseParser(ParseFirewallRules.class)
     @Fallback(Fallbacks.EmptyIterableWithMarkerOnNotFoundOr404.class)
     PaginatedCollection<FirewallRule> listFirewallRules(@QueryParam("networkDomainId") String networkDomainId, PaginationOptions options);
@@ -227,5 +251,20 @@ public interface NetworkApi {
     @MapBinder(BindToJsonPayload.class)
     Response createPortList(@PayloadParam("networkDomainId") String networkDomainId, @PayloadParam("name") String name,
                             @PayloadParam("description") String description, @PayloadParam("port") List<Port> port, @PayloadParam("childPortListId") List<String> childPortListId);
+
+    @Named("network:getPortList")
+    @GET
+    @Path("/portList/{id}")
+    @Fallback(NullOnNotFoundOr404.class)
+    FirewallRuleTarget.PortList getPortList(@PathParam("id") String portListId);
+
+    @Named("network:deletePortList")
+    @POST
+    @Path("/deletePortList")
+    @Produces(MediaType.APPLICATION_JSON)
+    @MapBinder(BindToJsonPayload.class)
+    @Fallback(NullOnNotFoundOr404.class)
+    Response deletePortList(@PayloadParam("id") String portListId);
+
 
 }
