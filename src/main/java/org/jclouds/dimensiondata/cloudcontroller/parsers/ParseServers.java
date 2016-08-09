@@ -24,6 +24,7 @@ import javax.inject.Singleton;
 import org.jclouds.collect.IterableWithMarker;
 import org.jclouds.collect.internal.ArgsToPagedIterable;
 import org.jclouds.dimensiondata.cloudcontroller.DimensionDataCloudControllerApi;
+import org.jclouds.dimensiondata.cloudcontroller.compute.DimensionDataCloudControllerComputeServiceAdapter;
 import org.jclouds.dimensiondata.cloudcontroller.domain.Server;
 import org.jclouds.dimensiondata.cloudcontroller.domain.Servers;
 import org.jclouds.dimensiondata.cloudcontroller.options.PaginationOptions;
@@ -56,7 +57,7 @@ public class ParseServers extends ParseJson<Servers> {
                 @Override
                 public IterableWithMarker<Server> apply(Object input) {
                     PaginationOptions paginationOptions = PaginationOptions.class.cast(input);
-                    return api.getServerApi().listServers(paginationOptions);
+                    return api.getServerApi().listServers(DimensionDataCloudControllerComputeServiceAdapter.ORG_ID, paginationOptions);
                 }
             };
         }

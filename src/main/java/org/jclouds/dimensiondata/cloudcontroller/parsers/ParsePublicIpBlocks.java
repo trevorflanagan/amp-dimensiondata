@@ -24,6 +24,7 @@ import javax.inject.Singleton;
 import org.jclouds.collect.IterableWithMarker;
 import org.jclouds.collect.internal.ArgsToPagedIterable;
 import org.jclouds.dimensiondata.cloudcontroller.DimensionDataCloudControllerApi;
+import org.jclouds.dimensiondata.cloudcontroller.compute.DimensionDataCloudControllerComputeServiceAdapter;
 import org.jclouds.dimensiondata.cloudcontroller.domain.PublicIpBlock;
 import org.jclouds.dimensiondata.cloudcontroller.domain.PublicIpBlocks;
 import org.jclouds.dimensiondata.cloudcontroller.options.PaginationOptions;
@@ -56,7 +57,7 @@ public class ParsePublicIpBlocks extends ParseJson<PublicIpBlocks> {
                 @Override
                 public IterableWithMarker<PublicIpBlock> apply(Object input) {
                     PaginationOptions paginationOptions = PaginationOptions.class.cast(input);
-                    return api.getNetworkApi().listPublicIPv4AddressBlocks(getArgs(request).get(0).toString(), paginationOptions);
+                    return api.getNetworkApi().listPublicIPv4AddressBlocks(DimensionDataCloudControllerComputeServiceAdapter.ORG_ID, getArgs(request).get(0).toString(), paginationOptions);
                 }
             };
         }

@@ -30,6 +30,7 @@ import org.jclouds.ContextBuilder;
 import org.jclouds.concurrent.config.ExecutorServiceModule;
 import org.jclouds.dimensiondata.cloudcontroller.DimensionDataCloudControllerApi;
 import org.jclouds.dimensiondata.cloudcontroller.DimensionDataCloudControllerProviderMetadata;
+import org.jclouds.dimensiondata.cloudcontroller.compute.DimensionDataCloudControllerComputeServiceAdapter;
 import org.jclouds.json.Json;
 import org.jclouds.rest.ApiContext;
 import org.testng.annotations.AfterMethod;
@@ -51,6 +52,8 @@ import com.squareup.okhttp.mockwebserver.RecordedRequest;
 public class BaseDimensionDataCloudControllerMockTest {
 
    private static final String DEFAULT_ENDPOINT = new DimensionDataCloudControllerProviderMetadata().getEndpoint();
+
+   protected String orgId = "mockOrgId";
 
    /*extends BaseMockWebServerTest {
 
@@ -94,6 +97,8 @@ private final Set<Module> modules = ImmutableSet.<Module> of(new ExecutorService
    public void start() throws IOException {
       server = new MockWebServer();
       server.play();
+      // TODO set the value for the ORG_ID before constructing.
+      DimensionDataCloudControllerComputeServiceAdapter.ORG_ID = orgId;
       ApiContext<DimensionDataCloudControllerApi> ctx = ContextBuilder.newBuilder("dimensiondata-cloudcontroller")
               .credentials("", "")
               .endpoint(url(""))
@@ -120,6 +125,10 @@ private final Set<Module> modules = ImmutableSet.<Module> of(new ExecutorService
 
    protected MockResponse jsonResponse(String resource) {
       return new MockResponse().addHeader("Content-Type", "application/json").setBody(stringFromResource(resource));
+   }
+
+   protected MockResponse xmlResponse(String resource) {
+      return new MockResponse().addHeader("Content-Type", "application/xml").setBody(stringFromResource(resource));
    }
 
    protected MockResponse responseUnexpectedError() {

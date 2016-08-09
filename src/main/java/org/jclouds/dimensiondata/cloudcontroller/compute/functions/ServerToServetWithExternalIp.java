@@ -18,12 +18,14 @@ package org.jclouds.dimensiondata.cloudcontroller.compute.functions;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 import static org.jclouds.compute.reference.ComputeServiceConstants.COMPUTE_LOGGER;
+import static org.jclouds.dimensiondata.cloudcontroller.compute.DimensionDataCloudControllerComputeServiceAdapter.ORG_ID;
 
 import javax.annotation.Resource;
 import javax.inject.Inject;
 import javax.inject.Named;
 
 import org.jclouds.dimensiondata.cloudcontroller.DimensionDataCloudControllerApi;
+import org.jclouds.dimensiondata.cloudcontroller.compute.DimensionDataCloudControllerComputeServiceAdapter;
 import org.jclouds.dimensiondata.cloudcontroller.domain.NatRule;
 import org.jclouds.dimensiondata.cloudcontroller.domain.Server;
 import org.jclouds.dimensiondata.cloudcontroller.domain.internal.ServerWithExternalIp;
@@ -51,7 +53,7 @@ public class ServerToServetWithExternalIp implements Function<Server, ServerWith
         if (server == null) return null;
         ServerWithExternalIp.Builder builder = ServerWithExternalIp.builder().server(server);
 
-        Optional<NatRule> natRuleOptional = api.getNetworkApi().listNatRules(server.networkInfo().networkDomainId()).concat()
+        Optional<NatRule> natRuleOptional = api.getNetworkApi().listNatRules(ORG_ID, server.networkInfo().networkDomainId()).concat()
                 .firstMatch(new Predicate<NatRule>() {
                     @Override
                     public boolean apply(NatRule input) {

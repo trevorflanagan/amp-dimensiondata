@@ -30,7 +30,7 @@ public class InfrastructureApiLiveTest extends BaseDimensionDataCloudControllerA
 
     @Test
     public void testListDatacenters() {
-        List<Datacenter> datacenters = api().listDatacenters().concat().toList();
+        List<Datacenter> datacenters = api().listDatacenters(ORG_ID).concat().toList();
         assertNotNull(datacenters);
         for (Datacenter datacenter : datacenters) {
             assertNotNull(datacenter);
@@ -39,7 +39,7 @@ public class InfrastructureApiLiveTest extends BaseDimensionDataCloudControllerA
 
     @Test
     public void testListOperatingSystems() {
-        List<OperatingSystem> operatingSystems = api().listOperatingSystems("NA9").concat().toList();
+        List<OperatingSystem> operatingSystems = api().listOperatingSystems(ORG_ID, "NA9").concat().toList();
         assertNotNull(operatingSystems);
         for (OperatingSystem operatingSystem : operatingSystems) {
             assertNotNull(operatingSystem);

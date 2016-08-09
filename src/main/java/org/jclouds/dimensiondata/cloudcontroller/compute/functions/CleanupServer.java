@@ -19,6 +19,7 @@ package org.jclouds.dimensiondata.cloudcontroller.compute.functions;
 import static java.lang.String.format;
 import static org.jclouds.dimensiondata.cloudcontroller.utils.DimensionDataCloudControllerUtils.generateFirewallRuleName;
 import static org.jclouds.dimensiondata.cloudcontroller.utils.DimensionDataCloudControllerUtils.manageResponse;
+import static org.jclouds.dimensiondata.cloudcontroller.compute.DimensionDataCloudControllerComputeServiceAdapter.ORG_ID;
 
 import java.util.List;
 
@@ -60,13 +61,13 @@ public class CleanupServer implements Function<String, Boolean> {
 
    @Override
    public Boolean apply(final String serverId) {
-      Server server = api.getServerApi().getServer(serverId);
+      Server server = api.getServerApi().getServer(ORG_ID, serverId);
       if (server == null) return true;
       String networkDomainId = server.networkInfo().networkDomainId();
       final String internalIp = server.networkInfo().primaryNic().privateIpv4();
 
       // delete nat rules associated to the server, if any
-      List<NatRule> natRulesToBeDeleted = api.getNetworkApi().listNatRules(networkDomainId).concat().filter(new Predicate<NatRule>() {
+      List<NatRule> natRulesToBeDeleted = api.getNetworkApi().listNatRules(ORG_ID, networkDomainId).concat().filter(new Predicate<NatRule>() {
          @Override
          public boolean apply(NatRule natRule) {
             return natRule.internalIp().equals(internalIp);
@@ -74,23 +75,23 @@ public class CleanupServer implements Function<String, Boolean> {
       }).toList();
 
       for (final NatRule natRule : natRulesToBeDeleted) {
-         Response deleteNatRuleResponse = api.getNetworkApi().deleteNatRule(natRule.id());
+         Response deleteNatRuleResponse = api.getNetworkApi().deleteNatRule(ORG_ID, natRule.id());
          manageResponse(deleteNatRuleResponse, format("Cannot delete NAT rule for internalIp (%s) - externalIp %s created for server (%s). Rolling back ...", natRule.id(), natRule.internalIp(), natRule.externalIp(), serverId));
 
-         Optional<PublicIpBlock> optionalPublicIpBlock = api.getNetworkApi().listPublicIPv4AddressBlocks(networkDomainId).concat().firstMatch(new Predicate<PublicIpBlock>() {
+         Optional<PublicIpBlock> optionalPublicIpBlock = api.getNetworkApi().listPublicIPv4AddressBlocks(ORG_ID, networkDomainId).concat().firstMatch(new Predicate<PublicIpBlock>() {
             @Override
             public boolean apply(PublicIpBlock input) {
                return input.baseIp().equals(natRule.externalIp());
             }
          });
          if (optionalPublicIpBlock.isPresent()) {
-            Response deleteIpBlockResponse = api.getNetworkApi().removePublicIpBlock(optionalPublicIpBlock.get().id());
+            Response deleteIpBlockResponse = api.getNetworkApi().removePublicIpBlock(ORG_ID, optionalPublicIpBlock.get().id());
             manageResponse(deleteIpBlockResponse, format("Cannot delete ip block address for externalIp (%s) created for server (%s). Rolling back ...", natRule.externalIp(), serverId));
          }
       }
 
       // delete firewall rules
-      List<FirewallRule> firewallRulesToBeDeleted = api.getNetworkApi().listFirewallRules(networkDomainId).concat().filter(new Predicate<FirewallRule>() {
+      List<FirewallRule> firewallRulesToBeDeleted = api.getNetworkApi().listFirewallRules(ORG_ID, networkDomainId).concat().filter(new Predicate<FirewallRule>() {
          @Override
          public boolean apply(FirewallRule firewallRule) {
             return firewallRule.name().equals(generateFirewallRuleName(serverId));
@@ -98,25 +99,25 @@ public class CleanupServer implements Function<String, Boolean> {
       }).toList();
 
       for (FirewallRule firewallRule : firewallRulesToBeDeleted) {
-         Response deleteFirewallRuleResponse = api.getNetworkApi().deleteFirewallRule(firewallRule.id());
+         Response deleteFirewallRuleResponse = api.getNetworkApi().deleteFirewallRule(ORG_ID, firewallRule.id());
          manageResponse(deleteFirewallRuleResponse, format("Cannot delete firewall rule %s created for server (%s). Rolling back ...", firewallRule.id(), serverId));
       }
 
       for (FirewallRule firewallRule : firewallRulesToBeDeleted) {
          if (firewallRule.destination() != null && firewallRule.destination().portList() != null) {
-            Response deletePortListResponse = api.getNetworkApi().deletePortList(firewallRule.destination().portList().id());
+            Response deletePortListResponse = api.getNetworkApi().deletePortList(ORG_ID, firewallRule.destination().portList().id());
             manageResponse(deletePortListResponse, format("Cannot delete port list %s created for server (%s). Rolling back ...", firewallRule.destination().portList().id(), serverId));
          }
       }
 
       // power off the server
-      Response powerOffResponse = api.getServerApi().powerOffServer(serverId);
+      Response powerOffResponse = api.getServerApi().powerOffServer(ORG_ID, serverId);
       manageResponse(powerOffResponse, format("Cannot power off the server %s.", serverId));
       String message = format("server(%s) not terminated within %d ms.", serverId, timeouts.nodeTerminated);
       DimensionDataCloudControllerUtils.waitForServerStatus(api.getServerApi(), serverId, false, true, timeouts.nodeTerminated, message);
 
       // delete server
-      Response deleteServerResponse = api.getServerApi().deleteServer(serverId);
+      Response deleteServerResponse = api.getServerApi().deleteServer(ORG_ID, serverId);
       return deleteServerResponse.error().isEmpty();
    }
 

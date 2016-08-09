@@ -37,7 +37,7 @@ import org.jclouds.rest.annotations.Transform;
 
 @RequestFilters({BasicAuthentication.class})
 @Consumes(MediaType.APPLICATION_JSON)
-@Path("/image")
+@Path("/caas/{jclouds.api-version}/{org-id}/image")
 public interface ServerImageApi {
 
     @Named("image:list")
@@ -45,7 +45,7 @@ public interface ServerImageApi {
     @Path("/osImage")
     @ResponseParser(ParseOsImages.class)
     @Fallback(Fallbacks.EmptyIterableWithMarkerOnNotFoundOr404.class)
-    PaginatedCollection<OsImage> listOsImages(PaginationOptions options);
+    PaginatedCollection<OsImage> listOsImages(@PathParam("org-id") String organisationId,PaginationOptions options);
 
     @Named("image:list")
     @GET
@@ -53,11 +53,11 @@ public interface ServerImageApi {
     @Transform(ParseOsImages.ToPagedIterable.class)
     @ResponseParser(ParseOsImages.class)
     @Fallback(Fallbacks.EmptyPagedIterableOnNotFoundOr404.class)
-    PagedIterable<OsImage> listOsImages();
+    PagedIterable<OsImage> listOsImages(@PathParam("org-id") String organisationId);
 
     @Named("image:get")
     @GET
     @Path("/osImage/{id}")
     @Fallback(Fallbacks.NullOnNotFoundOr404.class)
-    OsImage getOsImage(@PathParam("id") String id);
+    OsImage getOsImage(@PathParam("org-id") String organisationId, @PathParam("id") String id);
 }
