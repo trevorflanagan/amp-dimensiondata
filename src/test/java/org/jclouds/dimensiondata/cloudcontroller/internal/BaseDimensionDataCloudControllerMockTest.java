@@ -53,7 +53,7 @@ public class BaseDimensionDataCloudControllerMockTest {
 
    private static final String DEFAULT_ENDPOINT = new DimensionDataCloudControllerProviderMetadata().getEndpoint();
 
-   protected String orgId = "mockOrgId";
+   protected String ORG_ID = "mockOrgId";
 
    /*extends BaseMockWebServerTest {
 
@@ -97,8 +97,7 @@ private final Set<Module> modules = ImmutableSet.<Module> of(new ExecutorService
    public void start() throws IOException {
       server = new MockWebServer();
       server.play();
-      // TODO set the value for the ORG_ID before constructing.
-      DimensionDataCloudControllerComputeServiceAdapter.ORG_ID = orgId;
+      DimensionDataCloudControllerComputeServiceAdapter.ORG_ID = ORG_ID;
       ApiContext<DimensionDataCloudControllerApi> ctx = ContextBuilder.newBuilder("dimensiondata-cloudcontroller")
               .credentials("", "")
               .endpoint(url(""))
