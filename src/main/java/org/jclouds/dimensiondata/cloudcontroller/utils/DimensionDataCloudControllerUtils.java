@@ -22,7 +22,6 @@ import static org.jclouds.util.Predicates2.retry;
 import java.util.Arrays;
 import java.util.List;
 
-import org.jclouds.dimensiondata.cloudcontroller.compute.DimensionDataCloudControllerComputeServiceAdapter;
 import org.jclouds.dimensiondata.cloudcontroller.domain.FirewallRuleTarget.Port;
 import org.jclouds.dimensiondata.cloudcontroller.domain.Property;
 import org.jclouds.dimensiondata.cloudcontroller.domain.Response;
@@ -63,7 +62,7 @@ public class DimensionDataCloudControllerUtils {
     }
 
     public static Optional<Vlan> tryGetVlan(NetworkApi api, String networkDomainId) {
-        return api.listVlans(DimensionDataCloudControllerComputeServiceAdapter.ORG_ID, networkDomainId).concat().firstMatch(Predicates.<Vlan>notNull());
+        return api.listVlans(networkDomainId).concat().firstMatch(Predicates.<Vlan>notNull());
     }
 
     public static void waitForServerStatus(ServerApi api, String serverId, boolean started, boolean deployed, long timeoutMillis, String message) {

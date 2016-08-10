@@ -24,7 +24,6 @@ import javax.inject.Singleton;
 import org.jclouds.collect.IterableWithMarker;
 import org.jclouds.collect.internal.ArgsToPagedIterable;
 import org.jclouds.dimensiondata.cloudcontroller.DimensionDataCloudControllerApi;
-import org.jclouds.dimensiondata.cloudcontroller.compute.DimensionDataCloudControllerComputeServiceAdapter;
 import org.jclouds.dimensiondata.cloudcontroller.domain.OperatingSystem;
 import org.jclouds.dimensiondata.cloudcontroller.domain.OperatingSystems;
 import org.jclouds.dimensiondata.cloudcontroller.options.PaginationOptions;
@@ -57,7 +56,7 @@ public class ParseOperatingSystems extends ParseJson<OperatingSystems> {
                 @Override
                 public IterableWithMarker<OperatingSystem> apply(Object input) {
                     PaginationOptions paginationOptions = PaginationOptions.class.cast(input);
-                    return api.getInfrastructureApi().listOperatingSystems(DimensionDataCloudControllerComputeServiceAdapter.ORG_ID, getArgs(request).get(0).toString(), paginationOptions);
+                    return api.getInfrastructureApi().listOperatingSystems(getArgs(request).get(0).toString(), paginationOptions);
                 }
             };
         }

@@ -41,6 +41,7 @@ import org.jclouds.dimensiondata.cloudcontroller.domain.Placement;
 import org.jclouds.dimensiondata.cloudcontroller.domain.PublicIpBlock;
 import org.jclouds.dimensiondata.cloudcontroller.domain.Response;
 import org.jclouds.dimensiondata.cloudcontroller.domain.Vlan;
+import org.jclouds.dimensiondata.cloudcontroller.filters.OrganisationIdFilter;
 import org.jclouds.dimensiondata.cloudcontroller.parsers.ParseFirewallRules;
 import org.jclouds.dimensiondata.cloudcontroller.parsers.ParseNatRules;
 import org.jclouds.dimensiondata.cloudcontroller.parsers.ParseNetworkDomains;
@@ -55,9 +56,9 @@ import org.jclouds.rest.annotations.RequestFilters;
 import org.jclouds.rest.annotations.ResponseParser;
 import org.jclouds.rest.annotations.Transform;
 import org.jclouds.rest.binders.BindToJsonPayload;
-@RequestFilters({BasicAuthentication.class})
+@RequestFilters({BasicAuthentication.class, OrganisationIdFilter.class})
 @Consumes(MediaType.APPLICATION_JSON)
-@Path("/caas/{jclouds.api-version}/{org-id}/network")
+@Path("/caas/{jclouds.api-version}/network")
 public interface NetworkApi {
 
 
@@ -66,21 +67,20 @@ public interface NetworkApi {
     @Path("/deployNetworkDomain")
     @Produces(MediaType.APPLICATION_JSON)
     @MapBinder(BindToJsonPayload.class)
-    Response deployNetworkDomain(@PathParam("org-id") String organisationId, @PayloadParam("datacenterId") String datacenterId, @PayloadParam("name") String name,
-                                 @PayloadParam("description") String description, @PayloadParam("type") String type);
+    Response deployNetworkDomain(@PayloadParam("datacenterId") String datacenterId, @PayloadParam("name") String name, @PayloadParam("description") String description, @PayloadParam("type") String type);
 
     @Named("server:getNetworkDomain")
     @GET
     @Path("/networkDomain/{id}")
     @Fallback(NullOnNotFoundOr404.class)
-    NetworkDomain getNetworkDomain(@PathParam("org-id") String organisationId, @PathParam("id") String networkDomainId);
+    NetworkDomain getNetworkDomain(@PathParam("id") String networkDomainId);
 
     @Named("network:list")
     @GET
     @Path("/networkDomain")
     @ResponseParser(ParseNetworkDomains.class)
     @Fallback(Fallbacks.EmptyIterableWithMarkerOnNotFoundOr404.class)
-    PaginatedCollection<NetworkDomain> listNetworkDomains(@PathParam("org-id") String organisationId, PaginationOptions options);
+    PaginatedCollection<NetworkDomain> listNetworkDomains(PaginationOptions options);
 
     @Named("network:list")
     @GET
@@ -88,7 +88,7 @@ public interface NetworkApi {
     @Transform(ParseNetworkDomains.ToPagedIterable.class)
     @ResponseParser(ParseNetworkDomains.class)
     @Fallback(Fallbacks.EmptyPagedIterableOnNotFoundOr404.class)
-    PagedIterable<NetworkDomain> listNetworkDomains(@PathParam("org-id") String organisationId);
+    PagedIterable<NetworkDomain> listNetworkDomains();
 
     @Named("network:deleteNetwotkDomain")
     @POST
@@ -96,29 +96,28 @@ public interface NetworkApi {
     @Produces(MediaType.APPLICATION_JSON)
     @MapBinder(BindToJsonPayload.class)
     @Fallback(NullOnNotFoundOr404.class)
-    Response deleteNetworkDomain(@PathParam("org-id") String organisationId, @PayloadParam("id") String networkDomainId);
+    Response deleteNetworkDomain(@PayloadParam("id") String networkDomainId);
 
     @Named("network:deployVlan")
     @POST
     @Path("/deployVlan")
     @Produces(MediaType.APPLICATION_JSON)
     @MapBinder(BindToJsonPayload.class)
-    Response deployVlan(@PathParam("org-id") String organisationId, @PayloadParam("networkDomainId") String networkDomainId, @PayloadParam("name") String name,
-                        @PayloadParam("description") String description, @PayloadParam("privateIpv4BaseAddress") String privateIpv4BaseAddress,
-                        @PayloadParam("privateIpv4PrefixSize") Integer privateIpv4PrefixSize);
+    Response deployVlan(@PayloadParam("networkDomainId") String networkDomainId, @PayloadParam("name") String name, @PayloadParam("description") String description,
+          @PayloadParam("privateIpv4BaseAddress") String privateIpv4BaseAddress, @PayloadParam("privateIpv4PrefixSize") Integer privateIpv4PrefixSize);
 
     @Named("server:getVlan")
     @GET
     @Path("/vlan/{id}")
     @Fallback(NullOnNotFoundOr404.class)
-    Vlan getVlan(@PathParam("org-id") String organisationId, @PathParam("id") String vlanId);
+    Vlan getVlan(@PathParam("id") String vlanId);
 
     @Named("network:vlan")
     @GET
     @Path("/vlan")
     @ResponseParser(ParseVlans.class)
     @Fallback(Fallbacks.EmptyIterableWithMarkerOnNotFoundOr404.class)
-    PaginatedCollection<Vlan> listVlans(@PathParam("org-id") String organisationId, @QueryParam("networkDomainId") String networkDomainId, PaginationOptions options);
+    PaginatedCollection<Vlan> listVlans(@QueryParam("networkDomainId") String networkDomainId, PaginationOptions options);
 
     @Named("network:vlan")
     @GET
@@ -126,7 +125,7 @@ public interface NetworkApi {
     @Transform(ParseVlans.ToPagedIterable.class)
     @ResponseParser(ParseVlans.class)
     @Fallback(Fallbacks.EmptyPagedIterableOnNotFoundOr404.class)
-    PagedIterable<Vlan> listVlans(@PathParam("org-id") String organisationId, @QueryParam("networkDomainId") String networkDomainId);
+    PagedIterable<Vlan> listVlans(@QueryParam("networkDomainId") String networkDomainId);
 
     @Named("network:deleteVlan")
     @POST
@@ -134,21 +133,21 @@ public interface NetworkApi {
     @Produces(MediaType.APPLICATION_JSON)
     @MapBinder(BindToJsonPayload.class)
     @Fallback(NullOnNotFoundOr404.class)
-    Response deleteVlan(@PathParam("org-id") String organisationId, @PayloadParam("id") String vlanId);
+    Response deleteVlan(@PayloadParam("id") String vlanId);
 
     @Named("network:addPublicIpBlock")
     @POST
     @Path("/addPublicIpBlock")
     @Produces(MediaType.APPLICATION_JSON)
     @MapBinder(BindToJsonPayload.class)
-    Response addPublicIpBlock(@PathParam("org-id") String organisationId, @PayloadParam("networkDomainId") String networkDomainId);
+    Response addPublicIpBlock(@PayloadParam("networkDomainId") String networkDomainId);
 
     @Named("network:publicIpBlock")
     @GET
     @Path("/publicIpBlock")
     @ResponseParser(ParsePublicIpBlocks.class)
     @Fallback(Fallbacks.EmptyIterableWithMarkerOnNotFoundOr404.class)
-    PaginatedCollection<PublicIpBlock> listPublicIPv4AddressBlocks(@PathParam("org-id") String organisationId, @QueryParam("networkDomainId") String networkDomainId, PaginationOptions options);
+    PaginatedCollection<PublicIpBlock> listPublicIPv4AddressBlocks(@QueryParam("networkDomainId") String networkDomainId, PaginationOptions options);
 
     @Named("network:publicIpBlock")
     @GET
@@ -156,7 +155,7 @@ public interface NetworkApi {
     @Transform(ParsePublicIpBlocks.ToPagedIterable.class)
     @ResponseParser(ParsePublicIpBlocks.class)
     @Fallback(Fallbacks.EmptyPagedIterableOnNotFoundOr404.class)
-    PagedIterable<PublicIpBlock> listPublicIPv4AddressBlocks(@PathParam("org-id") String organisationId, @QueryParam("networkDomainId") String networkDomainId);
+    PagedIterable<PublicIpBlock> listPublicIPv4AddressBlocks(@QueryParam("networkDomainId") String networkDomainId);
 
     @Named("network:removePublicIpBlock")
     @POST
@@ -164,13 +163,13 @@ public interface NetworkApi {
     @Produces(MediaType.APPLICATION_JSON)
     @MapBinder(BindToJsonPayload.class)
     @Fallback(NullOnNotFoundOr404.class)
-    Response removePublicIpBlock(@PathParam("org-id") String organisationId, @PayloadParam("id") String publicIpBlockId);
+    Response removePublicIpBlock(@PayloadParam("id") String publicIpBlockId);
 
     @Named("server:getPublicIpBlock")
     @GET
     @Path("/publicIpBlock/{id}")
     @Fallback(NullOnNotFoundOr404.class)
-    PublicIpBlock getPublicIPv4AddressBlock(@PathParam("org-id") String organisationId, @PathParam("id") String publicIPv4AddressBlockId);
+    PublicIpBlock getPublicIPv4AddressBlock(@PathParam("id") String publicIPv4AddressBlockId);
 
     @Named("network:createNatRule")
     @POST
@@ -178,15 +177,15 @@ public interface NetworkApi {
     @Produces(MediaType.APPLICATION_JSON)
     @MapBinder(BindToJsonPayload.class)
     @Fallback(Fallbacks.VoidOnNotFoundOr404.class)
-    Response createNatRule(@PathParam("org-id") String organisationId, @PayloadParam("networkDomainId") String networkDomainId, @PayloadParam("internalIp") String internalIp,
-                           @PayloadParam("externalIp") String externalIp);
+    Response createNatRule(@PayloadParam("networkDomainId") String networkDomainId, @PayloadParam("internalIp") String internalIp,
+          @PayloadParam("externalIp") String externalIp);
 
     @Named("network:natRule")
     @GET
     @Path("/natRule")
     @ResponseParser(ParseNatRules.class)
     @Fallback(Fallbacks.EmptyIterableWithMarkerOnNotFoundOr404.class)
-    PaginatedCollection<NatRule> listNatRules(@PathParam("org-id") String organisationId, @QueryParam("networkDomainId") String networkDomainId, PaginationOptions options);
+    PaginatedCollection<NatRule> listNatRules(@QueryParam("networkDomainId") String networkDomainId, PaginationOptions options);
 
     @Named("network:natRule")
     @GET
@@ -194,38 +193,38 @@ public interface NetworkApi {
     @Transform(ParseNatRules.ToPagedIterable.class)
     @ResponseParser(ParseNatRules.class)
     @Fallback(Fallbacks.EmptyPagedIterableOnNotFoundOr404.class)
-    PagedIterable<NatRule> listNatRules(@PathParam("org-id") String organisationId, @QueryParam("networkDomainId") String networkDomainId);
+    PagedIterable<NatRule> listNatRules(@QueryParam("networkDomainId") String networkDomainId);
 
     @Named("server:getNatRule")
     @GET
     @Path("/natRule/{id}")
     @Fallback(NullOnNotFoundOr404.class)
-    NatRule getNatRule(@PathParam("org-id") String organisationId, @PathParam("id") String natRuleId);
+    NatRule getNatRule(@PathParam("id") String natRuleId);
 
     @Named("network:deleteNatRule")
     @POST
     @Path("/deleteNatRule")
     @Produces(MediaType.APPLICATION_JSON)
     @MapBinder(BindToJsonPayload.class)
-    Response deleteNatRule(@PathParam("org-id") String organisationId, @PayloadParam("id") String natRuleId);
+    Response deleteNatRule(@PayloadParam("id") String natRuleId);
 
     @Named("network:createFirewallRule")
     @POST
     @Path("/createFirewallRule")
     @Produces(MediaType.APPLICATION_JSON)
     @MapBinder(BindToJsonPayload.class)
-    Response createFirewallRule(@PathParam("org-id") String organisationId, @PayloadParam("networkDomainId") String networkDomainId, @PayloadParam("name") String name,
-                                @PayloadParam("action") String action, @PayloadParam("ipVersion") String ipVersion,
-                                @PayloadParam("protocol") String protocol, @PayloadParam("source") FirewallRuleTarget source,
-                                @PayloadParam("destination") FirewallRuleTarget destination, @PayloadParam("enabled") Boolean enabled,
-                                @PayloadParam("placement") Placement placement);
+    Response createFirewallRule(@PayloadParam("networkDomainId") String networkDomainId, @PayloadParam("name") String name,
+          @PayloadParam("action") String action, @PayloadParam("ipVersion") String ipVersion, @PayloadParam("protocol") String protocol,
+          @PayloadParam("source") FirewallRuleTarget source, @PayloadParam("destination") FirewallRuleTarget destination, @PayloadParam("enabled") Boolean enabled,
+          @PayloadParam("placement") Placement placement);
 
     @Named("network:listFirewallRules")
     @GET
         @Path("/firewallRule")
     @ResponseParser(ParseFirewallRules.class)
     @Fallback(Fallbacks.EmptyIterableWithMarkerOnNotFoundOr404.class)
-    PaginatedCollection<FirewallRule> listFirewallRules(@PathParam("org-id") String organisationId, @QueryParam("networkDomainId") String networkDomainId, PaginationOptions options);
+    PaginatedCollection<FirewallRule> listFirewallRules(@QueryParam("networkDomainId") String networkDomainId,
+          PaginationOptions options);
 
     @Named("network:listFirewallRules")
     @GET
@@ -233,7 +232,7 @@ public interface NetworkApi {
     @Transform(ParseFirewallRules.ToPagedIterable.class)
     @ResponseParser(ParseFirewallRules.class)
     @Fallback(Fallbacks.EmptyPagedIterableOnNotFoundOr404.class)
-    PagedIterable<FirewallRule> listFirewallRules(@PathParam("org-id") String organisationId, @QueryParam("networkDomainId") String networkDomainId);
+    PagedIterable<FirewallRule> listFirewallRules(@QueryParam("networkDomainId") String networkDomainId);
 
     @Named("network:deleteFirewallRule")
     @POST
@@ -241,21 +240,21 @@ public interface NetworkApi {
     @Produces(MediaType.APPLICATION_JSON)
     @MapBinder(BindToJsonPayload.class)
     @Fallback(NullOnNotFoundOr404.class)
-    Response deleteFirewallRule(@PathParam("org-id") String organisationId, @PayloadParam("id") String natRuleId);
+    Response deleteFirewallRule(@PayloadParam("id") String natRuleId);
 
     @Named("network:createPortList")
     @POST
     @Path("/createPortList")
     @Produces(MediaType.APPLICATION_JSON)
     @MapBinder(BindToJsonPayload.class)
-    Response createPortList(@PathParam("org-id") String organisationId, @PayloadParam("networkDomainId") String networkDomainId, @PayloadParam("name") String name,
-                            @PayloadParam("description") String description, @PayloadParam("port") List<Port> port, @PayloadParam("childPortListId") List<String> childPortListId);
+    Response createPortList(@PayloadParam("networkDomainId") String networkDomainId, @PayloadParam("name") String name,
+          @PayloadParam("description") String description, @PayloadParam("port") List<Port> port, @PayloadParam("childPortListId") List<String> childPortListId);
 
     @Named("network:getPortList")
     @GET
     @Path("/portList/{id}")
     @Fallback(NullOnNotFoundOr404.class)
-    FirewallRuleTarget.PortList getPortList(@PathParam("org-id") String organisationId, @PathParam("id") String portListId);
+    FirewallRuleTarget.PortList getPortList(@PathParam("id") String portListId);
 
     @Named("network:deletePortList")
     @POST
@@ -263,6 +262,6 @@ public interface NetworkApi {
     @Produces(MediaType.APPLICATION_JSON)
     @MapBinder(BindToJsonPayload.class)
     @Fallback(NullOnNotFoundOr404.class)
-    Response deletePortList(@PathParam("org-id") String organisationId, @PayloadParam("id") String portListId);
+    Response deletePortList(@PayloadParam("id") String portListId);
 
 }

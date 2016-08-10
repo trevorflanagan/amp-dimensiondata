@@ -24,7 +24,6 @@ import javax.inject.Singleton;
 import org.jclouds.collect.IterableWithMarker;
 import org.jclouds.collect.internal.ArgsToPagedIterable;
 import org.jclouds.dimensiondata.cloudcontroller.DimensionDataCloudControllerApi;
-import org.jclouds.dimensiondata.cloudcontroller.compute.DimensionDataCloudControllerComputeServiceAdapter;
 import org.jclouds.dimensiondata.cloudcontroller.domain.OsImage;
 import org.jclouds.dimensiondata.cloudcontroller.domain.OsImages;
 import org.jclouds.dimensiondata.cloudcontroller.options.PaginationOptions;
@@ -57,7 +56,7 @@ public class ParseOsImages extends ParseJson<OsImages> {
                 @Override
                 public IterableWithMarker<OsImage> apply(Object input) {
                     PaginationOptions paginationOptions = PaginationOptions.class.cast(input);
-                    return api.getServerImageApi().listOsImages(DimensionDataCloudControllerComputeServiceAdapter.ORG_ID, paginationOptions);
+                    return api.getServerImageApi().listOsImages(paginationOptions);
                 }
             };
         }

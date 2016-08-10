@@ -40,7 +40,6 @@ import org.jclouds.compute.strategy.CustomizeNodeAndAddToGoodMapOrPutExceptionIn
 import org.jclouds.compute.strategy.ListNodesStrategy;
 import org.jclouds.compute.strategy.impl.CreateNodesWithGroupEncodedIntoNameThenAddToSet;
 import org.jclouds.dimensiondata.cloudcontroller.DimensionDataCloudControllerApi;
-import org.jclouds.dimensiondata.cloudcontroller.compute.DimensionDataCloudControllerComputeServiceAdapter;
 import org.jclouds.dimensiondata.cloudcontroller.compute.options.DimensionDataCloudControllerTemplateOptions;
 import org.jclouds.dimensiondata.cloudcontroller.domain.NetworkDomain;
 import org.jclouds.dimensiondata.cloudcontroller.domain.Response;
@@ -113,7 +112,7 @@ public class GetOrCreateNetworkDomainThenCreateNodes
 
         String networkDomainId;
         try {
-            Response deployNetworkDomainResponse = api.getNetworkApi().deployNetworkDomain(DimensionDataCloudControllerComputeServiceAdapter.ORG_ID, location, networkDomainName, "network domain created by jclouds", "ESSENTIALS");
+            Response deployNetworkDomainResponse = api.getNetworkApi().deployNetworkDomain(location, networkDomainName, "network domain created by jclouds", "ESSENTIALS");
             networkDomainId = DimensionDataCloudControllerUtils.tryFindPropertyValue(deployNetworkDomainResponse, "networkDomainId");
             DimensionDataCloudControllerUtils.tryFindPropertyValue(deployNetworkDomainResponse, "networkDomainId");
             String message = format("networkDomain(%s) is not ready within %d ms.", networkDomainId, timeouts.nodeRunning);
@@ -123,7 +122,7 @@ public class GetOrCreateNetworkDomainThenCreateNodes
             }
         } catch (ResourceAlreadyExistsException e) {
             logger.debug("Cannot create a network domain with name %s. Looking for a suitable existing network domain in datacenter %s ...", networkDomainName, location);
-            List<NetworkDomain> networkDomains = api.getNetworkApi().listNetworkDomains(DimensionDataCloudControllerComputeServiceAdapter.ORG_ID).concat().toList();
+            List<NetworkDomain> networkDomains = api.getNetworkApi().listNetworkDomains().concat().toList();
 
             Optional<NetworkDomain> networkDomainOptional = tryFind(networkDomains, networkDomainPredicate(location, networkDomainName));
             if (networkDomainOptional.isPresent()) {
@@ -143,7 +142,7 @@ public class GetOrCreateNetworkDomainThenCreateNodes
 
         logger.debug("Creating a vlan %s in network domain '%s' ...", vlanName, networkDomainId);
         try {
-            Response deployVlanResponse = api.getNetworkApi().deployVlan(DimensionDataCloudControllerComputeServiceAdapter.ORG_ID, networkDomainId, vlanName, "vlan created by jclouds", defaultPrivateIPv4BaseAddress, defaultPrivateIPv4PrefixSize);
+            Response deployVlanResponse = api.getNetworkApi().deployVlan(networkDomainId, vlanName, "vlan created by jclouds", defaultPrivateIPv4BaseAddress, defaultPrivateIPv4PrefixSize);
             String vlanId = DimensionDataCloudControllerUtils.tryFindPropertyValue(deployVlanResponse, "vlanId");
             String message = format("vlan(%s) is not ready within %d ms.", vlanId, timeouts.nodeRunning);
             boolean isVlanReady = retry(new VlanStatus(api.getNetworkApi()), timeouts.nodeRunning).apply(vlanId);
@@ -178,7 +177,7 @@ public class GetOrCreateNetworkDomainThenCreateNodes
         public boolean apply(String networkDomainId) {
             logger.trace("looking for networkDomain state %s", networkDomainId);
 
-            NetworkDomain found = api.getNetworkDomain(DimensionDataCloudControllerComputeServiceAdapter.ORG_ID, networkDomainId);
+            NetworkDomain found = api.getNetworkDomain(networkDomainId);
 
             // perhaps networkDomain isn't available, yet
             if (found == null) return false;
@@ -207,7 +206,7 @@ public class GetOrCreateNetworkDomainThenCreateNodes
         public boolean apply(String vlanId) {
             logger.trace("looking for vlan state %s", vlanId);
 
-            Vlan found = api.getVlan(DimensionDataCloudControllerComputeServiceAdapter.ORG_ID, vlanId);
+            Vlan found = api.getVlan(vlanId);
 
             // perhaps networkDomain isn't available, yet
             if (found == null) return false;

@@ -24,7 +24,6 @@ import javax.inject.Singleton;
 import org.jclouds.collect.IterableWithMarker;
 import org.jclouds.collect.internal.ArgsToPagedIterable;
 import org.jclouds.dimensiondata.cloudcontroller.DimensionDataCloudControllerApi;
-import org.jclouds.dimensiondata.cloudcontroller.compute.DimensionDataCloudControllerComputeServiceAdapter;
 import org.jclouds.dimensiondata.cloudcontroller.domain.Vlan;
 import org.jclouds.dimensiondata.cloudcontroller.domain.Vlans;
 import org.jclouds.dimensiondata.cloudcontroller.options.PaginationOptions;
@@ -57,7 +56,7 @@ public class ParseVlans extends ParseJson<Vlans> {
                 @Override
                 public IterableWithMarker<Vlan> apply(Object input) {
                     PaginationOptions paginationOptions = PaginationOptions.class.cast(input);
-                    return api.getNetworkApi().listVlans(DimensionDataCloudControllerComputeServiceAdapter.ORG_ID, getArgs(request).get(0).toString(), paginationOptions);
+                    return api.getNetworkApi().listVlans(getArgs(request).get(0).toString(), paginationOptions);
                 }
             };
         }

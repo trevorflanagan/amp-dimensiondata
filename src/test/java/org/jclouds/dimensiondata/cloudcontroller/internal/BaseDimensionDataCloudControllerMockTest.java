@@ -51,7 +51,7 @@ public class BaseDimensionDataCloudControllerMockTest {
 
    private static final String DEFAULT_ENDPOINT = new DimensionDataCloudControllerProviderMetadata().getEndpoint();
 
-   protected String ORG_ID = "mockOrgId";
+   protected static final String ORG_ID = "mockOrgId";
 
    /*extends BaseMockWebServerTest {
 

@@ -20,7 +20,6 @@ import static com.google.common.base.Preconditions.checkNotNull;
 
 import javax.annotation.Resource;
 
-import org.jclouds.dimensiondata.cloudcontroller.compute.DimensionDataCloudControllerComputeServiceAdapter;
 import org.jclouds.dimensiondata.cloudcontroller.domain.Server;
 import org.jclouds.dimensiondata.cloudcontroller.features.ServerApi;
 import org.jclouds.logging.Logger;
@@ -47,7 +46,7 @@ public class ServerStatus implements Predicate<String> {
       checkNotNull(serverId, "serverId");
       logger.trace("looking for state on server %s", serverId);
 
-      Server server = serverApi.getServer(DimensionDataCloudControllerComputeServiceAdapter.ORG_ID, serverId);
+      Server server = serverApi.getServer(serverId);
 
       // perhaps request isn't available, yet
       if (server == null) return false;

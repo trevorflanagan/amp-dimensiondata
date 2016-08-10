@@ -43,8 +43,7 @@ public class ServerApiMockTest extends BaseDimensionDataCloudControllerMockTest 
                 // TODO allow additional NICs
                 Lists.<NIC>newArrayList()
         );
-        Response response = api.getServerApi().deployServer(ORG_ID,
-                ServerApiMockTest.class.getSimpleName(),
+        Response response = api.getServerApi().deployServer(ServerApiMockTest.class.getSimpleName(),
                 "imageId",
                 true,
                 networkInfo,
