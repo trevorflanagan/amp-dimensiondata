@@ -16,16 +16,8 @@
  */
 package org.jclouds.dimensiondata.cloudcontroller.compute;
 
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.jclouds.compute.predicates.NodePredicates.inGroup;
-import static org.jclouds.compute.predicates.NodePredicates.runningInGroup;
-
-import java.util.Map;
-import java.util.Set;
-
-import javax.annotation.Resource;
-import javax.inject.Named;
-
+import com.google.common.collect.ImmutableSet;
+import com.google.inject.Module;
 import org.jclouds.compute.RunNodesException;
 import org.jclouds.compute.RunScriptOnNodesException;
 import org.jclouds.compute.domain.ExecResponse;
@@ -42,8 +34,14 @@ import org.jclouds.sshj.config.SshjSshClientModule;
 import org.testng.Assert;
 import org.testng.annotations.Test;
 
-import com.google.common.collect.ImmutableSet;
-import com.google.inject.Module;
+import javax.annotation.Resource;
+import javax.inject.Named;
+import java.util.Map;
+import java.util.Set;
+
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.jclouds.compute.predicates.NodePredicates.inGroup;
+import static org.jclouds.compute.predicates.NodePredicates.runningInGroup;
 
 @Test(groups = "live", testName = "DimensionDataCloudControllerComputeServiceContextLiveTest")
 public class DimensionDataCloudControllerComputeServiceContextLiveTest extends BaseComputeServiceContextLiveTest {

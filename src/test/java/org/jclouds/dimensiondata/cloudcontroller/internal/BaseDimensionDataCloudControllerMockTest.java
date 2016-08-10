@@ -16,16 +16,6 @@
  */
 package org.jclouds.dimensiondata.cloudcontroller.internal;
 
-import static com.google.common.util.concurrent.MoreExecutors.sameThreadExecutor;
-import static org.assertj.core.api.Assertions.assertThat;
-
-import java.io.IOException;
-import java.util.Properties;
-import java.util.Set;
-
-import javax.ws.rs.core.HttpHeaders;
-import javax.ws.rs.core.MediaType;
-
 import org.jclouds.ContextBuilder;
 import org.jclouds.concurrent.config.ExecutorServiceModule;
 import org.jclouds.dimensiondata.cloudcontroller.DimensionDataCloudControllerApi;
@@ -45,6 +35,14 @@ import com.google.inject.Module;
 import com.squareup.okhttp.mockwebserver.MockResponse;
 import com.squareup.okhttp.mockwebserver.MockWebServer;
 import com.squareup.okhttp.mockwebserver.RecordedRequest;
+import javax.ws.rs.core.HttpHeaders;
+import javax.ws.rs.core.MediaType;
+import java.io.IOException;
+import java.util.Properties;
+import java.util.Set;
+
+import static com.google.common.util.concurrent.MoreExecutors.sameThreadExecutor;
+import static org.assertj.core.api.Assertions.assertThat;
 
 /**
  * Base class for all DimensionDataCloudController mock tests.
@@ -158,5 +156,9 @@ private final Set<Module> modules = ImmutableSet.<Module> of(new ExecutorService
       assertThat(request.getPath()).isEqualTo(path);
       assertThat(request.getHeader(HttpHeaders.ACCEPT)).isEqualTo(MediaType.APPLICATION_JSON);
       return request;
+   }
+
+   protected void assertBodyContains(RecordedRequest recordedRequest, String expectedText){
+      assertThat(recordedRequest.getUtf8Body()).contains(expectedText);
    }
 }
