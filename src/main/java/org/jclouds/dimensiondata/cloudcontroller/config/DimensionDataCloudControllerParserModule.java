@@ -16,13 +16,12 @@
  */
 package org.jclouds.dimensiondata.cloudcontroller.config;
 
+import com.google.inject.AbstractModule;
 import com.google.inject.name.Names;
 import org.jclouds.Constants;
 import org.jclouds.json.config.GsonModule;
 
-import com.google.inject.AbstractModule;
-
-import java.util.*;
+import java.util.Collections;
 
 public class DimensionDataCloudControllerParserModule extends AbstractModule {
 

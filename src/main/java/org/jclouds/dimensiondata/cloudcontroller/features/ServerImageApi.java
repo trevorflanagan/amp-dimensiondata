@@ -45,7 +45,7 @@ public interface ServerImageApi {
     @Path("/osImage")
     @ResponseParser(ParseOsImages.class)
     @Fallback(Fallbacks.EmptyIterableWithMarkerOnNotFoundOr404.class)
-    PaginatedCollection<OsImage> listOsImages(@PathParam("org-id") String organisationId,PaginationOptions options);
+    PaginatedCollection<OsImage> listOsImages(@PathParam("org-id") String organisationId, PaginationOptions options);
 
     @Named("image:list")
     @GET

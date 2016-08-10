@@ -55,7 +55,7 @@ public class ServerApiMockTest extends BaseDimensionDataCloudControllerMockTest 
         assertNull(response);
 
         assertEquals(server.getRequestCount(), 2);
-        assertSent(server, "POST", "/caas/2.2/"+ ORG_ID + "/server/deployServer");
+        assertSent(server, "POST", "/caas/2.2/" + ORG_ID + "/server/deployServer");
     }
 
 /*
