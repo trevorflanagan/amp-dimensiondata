@@ -16,6 +16,7 @@
  */
 package org.jclouds.dimensiondata.cloudcontroller.domain;
 
+import org.jclouds.javax.annotation.Nullable;
 import org.jclouds.json.SerializedNames;
 
 import com.google.auto.value.AutoValue;
@@ -26,7 +27,8 @@ public abstract class Property {
     Property() {} // For AutoValue only!
 
     public abstract String name();
-    public abstract String value();
+    @Nullable public abstract String value();
+//    public abstract String value(); // FIXME problem caused by HYPERV CCD-7357
 
     @SerializedNames({ "name", "value" })
     public static Property create(String name, String value) {
