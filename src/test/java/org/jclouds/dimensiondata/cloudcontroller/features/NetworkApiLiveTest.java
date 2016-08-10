@@ -26,6 +26,9 @@ import static org.testng.Assert.assertNotNull;
 
 import java.util.List;
 
+import com.google.common.collect.ImmutableList;
+import com.google.common.collect.Lists;
+import org.jclouds.dimensiondata.cloudcontroller.compute.DimensionDataCloudControllerComputeServiceAdapter;
 import org.jclouds.dimensiondata.cloudcontroller.domain.FirewallRuleTarget;
 import org.jclouds.dimensiondata.cloudcontroller.domain.IpRange;
 import org.jclouds.dimensiondata.cloudcontroller.domain.Placement;
@@ -58,20 +61,18 @@ public class NetworkApiLiveTest extends BaseDimensionDataCloudControllerApiLiveT
 
     @Test(dependsOnMethods = "testDeployVlan")
     public void testCreatePortList() {
-        Response response = api().createPortList(
-              ORG_ID, networkDomainId, this.getClass().getCanonicalName(), this.getClass().getCanonicalName(),
+        Response response = api().createPortList(networkDomainId, this.getClass().getCanonicalName(), this.getClass().getCanonicalName(),
                 ImmutableList.of(FirewallRuleTarget.Port.create(22, null)), Lists.<String>newArrayList());
         portListId = DimensionDataCloudControllerUtils.tryFindPropertyValue(response, "portListId");
     }
 
     @Test(dependsOnMethods = "testCreatePortList")
     public void testCreateFirewallRuleWithPortList() {
-        Response createFirewallRuleResponse = api().createFirewallRule(ORG_ID,
-                networkDomainId,
+        Response createFirewallRuleResponse = api().createFirewallRule(networkDomainId,
                 generateFirewallRuleName("server-id"),
-                DEFAULT_ACTION,
-                DEFAULT_IP_VERSION,
-                DEFAULT_PROTOCOL,
+                DimensionDataCloudControllerComputeServiceAdapter.DEFAULT_ACTION,
+                DimensionDataCloudControllerComputeServiceAdapter.DEFAULT_IP_VERSION,
+                DimensionDataCloudControllerComputeServiceAdapter.DEFAULT_PROTOCOL,
                 FirewallRuleTarget.builder()
                         .ip(IpRange.create("ANY", null))
                         .build(),
@@ -89,7 +90,7 @@ public class NetworkApiLiveTest extends BaseDimensionDataCloudControllerApiLiveT
 
     @Test(dependsOnMethods = "testDeployNetworkDomain")
     public void testDeployVlan() {
-        Response deployVlanResponse =  api().deployVlan(ORG_ID, networkDomainId, NetworkApiLiveTest.class.getSimpleName(), NetworkApiLiveTest.class.getSimpleName(), DEFAULT_PRIVATE_IPV4_BASE_ADDRESS, DEFAULT_PRIVATE_IPV4_PREFIX_SIZE);
+        Response deployVlanResponse =  api().deployVlan(networkDomainId, NetworkApiLiveTest.class.getSimpleName(), NetworkApiLiveTest.class.getSimpleName(), DEFAULT_PRIVATE_IPV4_BASE_ADDRESS, DEFAULT_PRIVATE_IPV4_PREFIX_SIZE);
         vlanId = DimensionDataCloudControllerUtils.tryFindPropertyValue(deployVlanResponse, "vlanId");
         assertNotNull(vlanId);
     }
@@ -97,19 +98,19 @@ public class NetworkApiLiveTest extends BaseDimensionDataCloudControllerApiLiveT
     @Test
     public void testDeployNetworkDomain() {
         String networkDomainName = NetworkApiLiveTest.class.getSimpleName();
-        Response deployNetworkDomainResponse = api().deployNetworkDomain(ORG_ID, DATACENTER, networkDomainName, NetworkApiLiveTest.class.getSimpleName(), "ESSENTIALS");
+        Response deployNetworkDomainResponse = api().deployNetworkDomain(DATACENTER, networkDomainName, NetworkApiLiveTest.class.getSimpleName(), "ESSENTIALS");
         networkDomainId = DimensionDataCloudControllerUtils.tryFindPropertyValue(deployNetworkDomainResponse, "networkDomainId");
         assertNotNull(networkDomainId);
     }
 
     @Test(expectedExceptions = ResourceAlreadyExistsException.class)
     public void testDeploySameNetworkDomain() {
-        api().deployNetworkDomain(ORG_ID, DATACENTER, NetworkApiLiveTest.class.getSimpleName(), NetworkApiLiveTest.class.getSimpleName(), "ESSENTIALS");
+        api().deployNetworkDomain(DATACENTER, NetworkApiLiveTest.class.getSimpleName(), NetworkApiLiveTest.class.getSimpleName(), "ESSENTIALS");
     }
 
     @Test(dependsOnMethods = "testDeployVlan")
     public void testAddPublicIpBlock() {
-        Response addPublicIpBlockResponse = api.getNetworkApi().addPublicIpBlock(ORG_ID, networkDomainId);
+        Response addPublicIpBlockResponse = api.getNetworkApi().addPublicIpBlock(networkDomainId);
         //manageResponse(response, format("Cannot add a publicIpBlock to networkDomainId %s", networkDomainId));
         String ipBlockId = DimensionDataCloudControllerUtils.tryFindPropertyValue(addPublicIpBlockResponse, "ipBlockId");
         System.out.println(ipBlockId);
@@ -119,19 +120,19 @@ public class NetworkApiLiveTest extends BaseDimensionDataCloudControllerApiLiveT
     public void tearDown() {
         if (!firewallRuleIds.isEmpty()) {
             for (String firewallRuleId : firewallRuleIds) {
-                Response response = api().deleteFirewallRule(ORG_ID, firewallRuleId);
+                Response response = api().deleteFirewallRule(firewallRuleId);
             }
         }
         if (portListId != null) {
-            api().deletePortList(ORG_ID, portListId);
+            api().deletePortList(portListId);
         }
         if (vlanId != null) {
-            api().deleteVlan(ORG_ID, vlanId);
+            api().deleteVlan(vlanId);
             // TODO wait for deletion
-            api().getVlan(ORG_ID, vlanId);
+            api().getVlan(vlanId);
         }
         if (networkDomainId != null) {
-            api().deleteNetworkDomain(ORG_ID, networkDomainId);
+            api().deleteNetworkDomain(networkDomainId);
         }
 
     }

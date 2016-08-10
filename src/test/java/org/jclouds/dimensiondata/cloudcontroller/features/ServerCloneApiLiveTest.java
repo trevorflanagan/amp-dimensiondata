@@ -28,7 +28,7 @@ public class ServerCloneApiLiveTest extends BaseDimensionDataCloudControllerApiL
     @Test
     public void testCloneServer()
     {
-        Response response = api().clone(ORG_ID, "0896551e-4fe3-4450-a627-ad5548e7e83a", "trevor-test2", "trevor-description2");
+        Response response = api().clone("0896551e-4fe3-4450-a627-ad5548e7e83a", "trevor-test2", "trevor-description2");
         assertNotNull(response);
         if (null != response)
         {

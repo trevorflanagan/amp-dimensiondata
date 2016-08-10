@@ -35,6 +35,7 @@ import org.jclouds.dimensiondata.cloudcontroller.domain.Response;
 import org.jclouds.dimensiondata.cloudcontroller.domain.Server;
 import org.jclouds.dimensiondata.cloudcontroller.domain.options.CreateServerOptions;
 import org.jclouds.dimensiondata.cloudcontroller.domain.NetworkInfo;
+import org.jclouds.dimensiondata.cloudcontroller.filters.OrganisationIdFilter;
 import org.jclouds.dimensiondata.cloudcontroller.options.PaginationOptions;
 import org.jclouds.dimensiondata.cloudcontroller.parsers.ParseServers;
 import org.jclouds.http.filters.BasicAuthentication;
@@ -46,9 +47,9 @@ import org.jclouds.rest.annotations.ResponseParser;
 import org.jclouds.rest.annotations.Transform;
 import org.jclouds.rest.binders.BindToJsonPayload;
 
-@RequestFilters({BasicAuthentication.class})
+@RequestFilters({BasicAuthentication.class, OrganisationIdFilter.class})
 @Consumes(MediaType.APPLICATION_JSON)
-@Path("/caas/{jclouds.api-version}/{org-id}/server")
+@Path("/caas/{jclouds.api-version}/server")
 public interface ServerApi {
 
     @Named("server:list")
@@ -56,7 +57,7 @@ public interface ServerApi {
     @Path("/server")
     @ResponseParser(ParseServers.class)
     @Fallback(Fallbacks.EmptyIterableWithMarkerOnNotFoundOr404.class)
-    PaginatedCollection<Server> listServers(@PathParam("org-id") String organisationId, PaginationOptions options);
+    PaginatedCollection<Server> listServers(PaginationOptions options);
 
     @Named("server:list")
     @GET
@@ -64,31 +65,30 @@ public interface ServerApi {
     @Transform(ParseServers.ToPagedIterable.class)
     @ResponseParser(ParseServers.class)
     @Fallback(Fallbacks.EmptyPagedIterableOnNotFoundOr404.class)
-    PagedIterable<Server> listServers(@PathParam("org-id") String organisationId);
+    PagedIterable<Server> listServers();
 
     @Named("server:get")
     @GET
     @Path("/server/{id}")
     @Fallback(Fallbacks.NullOnNotFoundOr404.class)
-    Server getServer(@PathParam("org-id") String organisationId, @PathParam("id") String id);
+    Server getServer(@PathParam("id") String id);
 
     @Named("server:deploy")
     @POST
     @Path("/deployServer")
     @Produces(MediaType.APPLICATION_JSON)
     @MapBinder(BindToJsonPayload.class)
-    Response deployServer(@PathParam("org-id") String organisationId, @PayloadParam("name") String name, @PayloadParam("imageId") String imageId,
-                          @PayloadParam("start") Boolean start, @PayloadParam("networkInfo") NetworkInfo networkInfo, @PayloadParam("disk") List<Disk> disks,
-                          @PayloadParam("administratorPassword") String administratorPassword);
+    Response deployServer(@PayloadParam("name") String name, @PayloadParam("imageId") String imageId, @PayloadParam("start") Boolean start,
+          @PayloadParam("networkInfo") NetworkInfo networkInfo, @PayloadParam("disk") List<Disk> disks, @PayloadParam("administratorPassword") String administratorPassword);
 
     @Named("server:deploy")
     @POST
     @Path("/deployServer")
     @Produces(MediaType.APPLICATION_JSON)
     @MapBinder(CreateServerOptions.class)
-    Response deployServer(@PathParam("org-id") String organisationId, @PayloadParam("name") String name, @PayloadParam("imageId") String imageId,
-                          @PayloadParam("start") Boolean start, @PayloadParam("networkInfo") NetworkInfo networkInfo, @PayloadParam("disk") List<Disk> disks,
-                          @PayloadParam("administratorPassword") String administratorPassword, CreateServerOptions options);
+    Response deployServer(@PayloadParam("name") String name, @PayloadParam("imageId") String imageId, @PayloadParam("start") Boolean start,
+          @PayloadParam("networkInfo") NetworkInfo networkInfo, @PayloadParam("disk") List<Disk> disks, @PayloadParam("administratorPassword") String administratorPassword,
+          CreateServerOptions options);
 
     @Named("server:delete")
     @POST
@@ -96,20 +96,20 @@ public interface ServerApi {
     @Produces(MediaType.APPLICATION_JSON)
     @Fallback(Fallbacks.VoidOnNotFoundOr404.class)
     @MapBinder(BindToJsonPayload.class)
-    Response deleteServer(@PathParam("org-id") String organisationId, @PayloadParam("id") String id);
+    Response deleteServer(@PayloadParam("id") String id);
 
     @Named("server:powerOffServer")
     @POST
     @Path("/powerOffServer")
     @Produces(MediaType.APPLICATION_JSON)
     @MapBinder(BindToJsonPayload.class)
-    Response powerOffServer(@PathParam("org-id") String organisationId, @PayloadParam("id") String id);
+    Response powerOffServer(@PayloadParam("id") String id);
 
     @Named("server:rebootServer")
     @POST
     @Path("/rebootServer")
     @Produces(MediaType.APPLICATION_JSON)
     @MapBinder(BindToJsonPayload.class)
-    Response rebootServerServer(@PathParam("org-id") String organisationId, @PayloadParam("id") String id);
+    Response rebootServerServer(@PayloadParam("id") String id);
 
 }

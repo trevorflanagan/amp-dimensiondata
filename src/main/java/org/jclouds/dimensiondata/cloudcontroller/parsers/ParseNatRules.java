@@ -24,7 +24,6 @@ import javax.inject.Singleton;
 import org.jclouds.collect.IterableWithMarker;
 import org.jclouds.collect.internal.ArgsToPagedIterable;
 import org.jclouds.dimensiondata.cloudcontroller.DimensionDataCloudControllerApi;
-import org.jclouds.dimensiondata.cloudcontroller.compute.DimensionDataCloudControllerComputeServiceAdapter;
 import org.jclouds.dimensiondata.cloudcontroller.domain.NatRule;
 import org.jclouds.dimensiondata.cloudcontroller.domain.NatRules;
 import org.jclouds.dimensiondata.cloudcontroller.options.PaginationOptions;
@@ -57,7 +56,7 @@ public class ParseNatRules extends ParseJson<NatRules> {
                 @Override
                 public IterableWithMarker<NatRule> apply(Object input) {
                     PaginationOptions paginationOptions = PaginationOptions.class.cast(input);
-                    return api.getNetworkApi().listNatRules(DimensionDataCloudControllerComputeServiceAdapter.ORG_ID, getArgs(request).get(0).toString(), paginationOptions);
+                    return api.getNetworkApi().listNatRules(getArgs(request).get(0).toString(), paginationOptions);
                 }
             };
         }

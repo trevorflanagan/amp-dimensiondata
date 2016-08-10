@@ -42,7 +42,7 @@ public class ServerApiLiveTest extends BaseDimensionDataCloudControllerApiLiveTe
 
     @Test
     public void testListServers() {
-        List<Server> servers = api().listServers(ORG_ID).concat().toList();
+        List<Server> servers = api().listServers().concat().toList();
         assertNotNull(servers);
         for (Server s : servers) {
             assertNotNull(s);
@@ -65,7 +65,7 @@ public class ServerApiLiveTest extends BaseDimensionDataCloudControllerApiLiveTe
                         .speed("STANDARD")
                         .build()
         );
-        Response response = api().deployServer(ORG_ID, ServerApiLiveTest.class.getSimpleName(), "4c02126c-32fc-4b4c-9466-9824c1b5aa0f", started, networkInfo, disks, "P$$ssWwrrdGoDd!");
+        Response response = api().deployServer(ServerApiLiveTest.class.getSimpleName(), "4c02126c-32fc-4b4c-9466-9824c1b5aa0f", started, networkInfo, disks, "P$$ssWwrrdGoDd!");
         assertNotNull(response);
         serverId = DimensionDataCloudControllerUtils.tryFindPropertyValue(response, "serverId");
         assertNotNull(serverId);
@@ -74,16 +74,16 @@ public class ServerApiLiveTest extends BaseDimensionDataCloudControllerApiLiveTe
 
     @Test(dependsOnMethods = "testDeployAndStartServer")
     public void testPowerOffServer() {
-        Response response = api().powerOffServer(ORG_ID, serverId);
+        Response response = api().powerOffServer(serverId);
         DimensionDataCloudControllerUtils.waitForServerStatus(api(), serverId, false, true, 30 * 60 * 1000, "Error");
-        assertFalse(api().getServer(ORG_ID, serverId).started());
+        assertFalse(api().getServer(serverId).started());
         assertTrue(response.error().isEmpty());
     }
 
     @AfterTest
     public void testDeleteServer() {
         if (serverId != null) {
-            Response response = api().deleteServer(ORG_ID, serverId);
+            Response response = api().deleteServer(serverId);
             assertTrue(response.error().isEmpty());
         }
     }

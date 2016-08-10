@@ -18,6 +18,7 @@ package org.jclouds.dimensiondata.cloudcontroller.features;
 
 import org.jclouds.Fallbacks;
 import org.jclouds.dimensiondata.cloudcontroller.domain.Response;
+import org.jclouds.dimensiondata.cloudcontroller.filters.OrganisationIdFilter;
 import org.jclouds.http.filters.BasicAuthentication;
 import org.jclouds.rest.annotations.Fallback;
 import org.jclouds.rest.annotations.RequestFilters;
@@ -30,9 +31,9 @@ import javax.ws.rs.PathParam;
 import javax.ws.rs.QueryParam;
 import javax.ws.rs.core.MediaType;
 
-@RequestFilters({BasicAuthentication.class})
+@RequestFilters({BasicAuthentication.class, OrganisationIdFilter.class})
 @Consumes(MediaType.APPLICATION_XML)
-@Path("/oec/0.9/{org-id}")
+@Path("/oec/0.9/")
 public interface ServerCloneApi
 {
 
@@ -40,6 +41,6 @@ public interface ServerCloneApi
     @GET
     @Path("/server/{id}")
     @Fallback(Fallbacks.NullOnNotFoundOr404.class)
-    Response clone(@PathParam("org-id") String organisationId, @PathParam("id") String id, @QueryParam("clone") String newImageName, @QueryParam("desc") String newImageDescription);
+    Response clone(@PathParam("id") String id, @QueryParam("clone") String newImageName, @QueryParam("desc") String newImageDescription);
 
 }

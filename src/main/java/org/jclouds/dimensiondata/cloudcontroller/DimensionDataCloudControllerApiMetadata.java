@@ -59,7 +59,7 @@ public class DimensionDataCloudControllerApiMetadata extends BaseHttpApiMetadata
          id("dimensiondata-cloudcontroller").name("DimensionData CloudController API").identityName("user name")
                .credentialName("user password")
                .documentation(URI.create("http://www.dimensiondata.com/en-US/Solutions/Cloud"))
-               .defaultEndpoint("https://api-REGION.dimensiondata.com/caas/2.1/ORG-ID").version("2.2")
+               .defaultEndpoint("https://api-REGION.dimensiondata.com/").version("2.2")
                .defaultProperties(DimensionDataCloudControllerApiMetadata.defaultProperties())
                .view(typeToken(ComputeServiceContext.class)).defaultModules(
                ImmutableSet.<Class<? extends Module>>builder().add(DimensionDataCloudControllerHttpApiModule.class)

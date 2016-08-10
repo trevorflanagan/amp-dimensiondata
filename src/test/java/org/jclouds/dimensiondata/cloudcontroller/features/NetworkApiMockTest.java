@@ -33,7 +33,7 @@ public class NetworkApiMockTest extends BaseDimensionDataCloudControllerMockTest
         server.enqueue(jsonResponse("/networkDomains.json"));
         //MockWebServer server = mockWebServer(new MockResponse().setBody(payloadFromResource("/networkDomains.json")));
         //NetworkApi api = api(server);
-        Iterable<NetworkDomain> networkDomains = api.getNetworkApi().listNetworkDomains(ORG_ID).concat();
+        Iterable<NetworkDomain> networkDomains = api.getNetworkApi().listNetworkDomains().concat();
 
         assertEquals(size(networkDomains), 1); // Force the PagedIterable to advance
         assertEquals(server.getRequestCount(), 1);
