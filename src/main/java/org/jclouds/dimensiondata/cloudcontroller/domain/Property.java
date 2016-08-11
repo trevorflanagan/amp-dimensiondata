@@ -16,9 +16,9 @@
  */
 package org.jclouds.dimensiondata.cloudcontroller.domain;
 
-import org.jclouds.json.SerializedNames;
-
 import com.google.auto.value.AutoValue;
+import org.jclouds.javax.annotation.Nullable;
+import org.jclouds.json.SerializedNames;
 
 @AutoValue
 public abstract class Property {
@@ -26,6 +26,8 @@ public abstract class Property {
     Property() {} // For AutoValue only!
 
     public abstract String name();
+
+    @Nullable
     public abstract String value();
 
     @SerializedNames({ "name", "value" })

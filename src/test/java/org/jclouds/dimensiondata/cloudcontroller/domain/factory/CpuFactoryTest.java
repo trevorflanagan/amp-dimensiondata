@@ -29,8 +29,8 @@ import static org.testng.Assert.assertEquals;
 @Test(groups = "unit", testName = "CpuFactoryTest")
 public class CpuFactoryTest {
 
-   private static final double ECONOMY_SPEED = 200D;
-   private static final double HIGHPERFORMANCE_SPEED = 800D;
+   private static final double ECONOMY_SPEED = 10D;
+   private static final double HIGHPERFORMANCE_SPEED = 30D;
    private static final double INVALID_SPEED = 666D;
    private static final double TWO_CORES = 2D;
    private static final double FOUR_CORES = 4D;

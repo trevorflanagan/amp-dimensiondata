@@ -20,17 +20,18 @@ import org.testng.annotations.Test;
 
 import static org.testng.Assert.assertEquals;
 
-@Test(groups = "unit", testName = "CpuSpeedTest") public class CpuSpeedTest {
+@Test(groups = "unit", testName = "CpuSpeedTest")
+public class CpuSpeedTest {
 
    public void getDefaultCpuSpeedReturnsStandardSpeed() {
       assertEquals(CpuSpeed.getDefaultCpuSpeed(), CpuSpeed.STANDARD);
    }
 
    public void getFromJCloudsSpeed() {
-      assertEquals(CpuSpeed.fromJCloudsSpeed(200D), CpuSpeed.ECONOMY);
-      assertEquals(CpuSpeed.fromJCloudsSpeed(339D), CpuSpeed.STANDARD);
-      assertEquals(CpuSpeed.fromJCloudsSpeed(800D), CpuSpeed.HIGHPERFORMANCE);
-      assertEquals(CpuSpeed.fromJCloudsSpeed(123D), CpuSpeed.getDefaultCpuSpeed());
+      assertEquals(CpuSpeed.fromJCloudsSpeed(10D), CpuSpeed.ECONOMY);
+      assertEquals(CpuSpeed.fromJCloudsSpeed(20D), CpuSpeed.STANDARD);
+      assertEquals(CpuSpeed.fromJCloudsSpeed(30D), CpuSpeed.HIGHPERFORMANCE);
+      assertEquals(CpuSpeed.fromJCloudsSpeed(666D), CpuSpeed.getDefaultCpuSpeed());
    }
 
    public void getFromDimensionDataSpeed() {
