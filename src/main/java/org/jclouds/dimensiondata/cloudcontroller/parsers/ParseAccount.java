@@ -22,7 +22,7 @@ import org.jclouds.http.functions.ParseSax;
 
 import static org.jclouds.util.SaxUtils.currentOrNull;
 
-public class ParseAccount extends ParseSax.HandlerForGeneratedRequestWithResult<Account> /*ParseSax.HandlerWithResult<Account> extends ParseXMLWithJAXB<Account>*/
+public class ParseAccount extends ParseSax.HandlerForGeneratedRequestWithResult<Account>
 {
 
     private StringBuilder currentText = new StringBuilder();
@@ -57,37 +57,6 @@ public class ParseAccount extends ParseSax.HandlerForGeneratedRequestWithResult<
         return result;
     }
 
-//    @Inject
-//    public ParseAccount(XMLParser xml, TypeLiteral<Account> type)
-//    {
-//        super(xml, type);
-//    }
-
-    //    @Override
-//    public void startElement(String uri, String localName, String qName, Attributes attributes) {
-//       if (qName.equals("userName")) {
-//          inConfigurationSets = true;
-//       }
-//       if (inConfigurationSets) {
-//          configurationSetHandler.startElement(uri, localName, qName, attributes);
-//       }
-//       if (qName.equals("OSVirtualHardDisk")) {
-//          inOSVirtualHardDisk = true;
-//       }
-//       if (qName.equals("DataVirtualHardDisks")) {
-//          inDataVirtualHardDisks = true;
-//       }
-//       if (inDataVirtualHardDisks) {
-//          dataVirtualHardDiskHandler.startElement(uri, localName, qName, attributes);
-//       }
-//       if (qName.equals("ResourceExtensionReference")) {
-//          inResourceExtensionReference = true;
-//       }
-//       if (inResourceExtensionReference) {
-//          resourceExtensionReferenceHandler.startElement(uri, localName, qName, attributes);
-//       }
-//    }
-//
     @Override
     public void endElement(String ignoredUri, String ignoredName, String qName)
     {

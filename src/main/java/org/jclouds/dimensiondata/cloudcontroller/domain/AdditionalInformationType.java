@@ -17,10 +17,38 @@
 package org.jclouds.dimensiondata.cloudcontroller.domain;
 
 import com.google.auto.value.AutoValue;
+import org.jclouds.json.SerializedNames;
 
 @AutoValue
 public abstract class AdditionalInformationType
 {
 
+    public abstract String value();
+
+    public abstract String name();
+
     AdditionalInformationType() {}
+
+    @SerializedNames({"value", "name"})
+    public static AdditionalInformationType create(String value, String name)
+    {
+        return builder().value(value).name(name).build();
+    }
+
+    public abstract AdditionalInformationType.Builder toBuilder();
+
+    @AutoValue.Builder
+    public abstract static class Builder
+    {
+        public abstract AdditionalInformationType.Builder value(String value);
+
+        public abstract AdditionalInformationType.Builder name(String name);
+
+        public abstract AdditionalInformationType build();
+    }
+
+    public static AdditionalInformationType.Builder builder()
+    {
+        return new AutoValue_AdditionalInformationType.Builder();
+    }
 }

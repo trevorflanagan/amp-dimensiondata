@@ -16,7 +16,7 @@
  */
 package org.jclouds.dimensiondata.cloudcontroller.features;
 
-import org.jclouds.dimensiondata.cloudcontroller.domain.Response;
+import org.jclouds.dimensiondata.cloudcontroller.domain.Status;
 import org.jclouds.dimensiondata.cloudcontroller.internal.BaseDimensionDataCloudControllerApiLiveTest;
 import org.testng.annotations.Test;
 
@@ -28,11 +28,11 @@ public class ServerCloneApiLiveTest extends BaseDimensionDataCloudControllerApiL
     @Test
     public void testCloneServer()
     {
-        Response response = api().clone("0896551e-4fe3-4450-a627-ad5548e7e83a", "trevor-test2", "trevor-description2");
-        assertNotNull(response);
-        if (null != response)
+        Status status = api().clone("0896551e-4fe3-4450-a627-ad5548e7e83a", "trevor-test2", "trevor-description2");
+        assertNotNull(status);
+        if (null != status)
         {
-            response.info();
+            status.operation().equals("Clone Server");
         }
     }
 

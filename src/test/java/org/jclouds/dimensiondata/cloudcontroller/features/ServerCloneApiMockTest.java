@@ -18,23 +18,28 @@ package org.jclouds.dimensiondata.cloudcontroller.features;
 
 import com.squareup.okhttp.mockwebserver.MockWebServer;
 import com.squareup.okhttp.mockwebserver.RecordedRequest;
-import org.jclouds.dimensiondata.cloudcontroller.domain.Account;
+import org.jclouds.dimensiondata.cloudcontroller.domain.Status;
 import org.jclouds.dimensiondata.cloudcontroller.internal.BaseDimensionDataCloudControllerMockTest;
 import org.testng.annotations.Test;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertNotNull;
+import static org.testng.Assert.assertNull;
 
-@Test(groups = "unit", testName = "AccountApiMockTest")
-public class AccountApiMockTest extends BaseDimensionDataCloudControllerMockTest {
+public class ServerCloneApiMockTest extends BaseDimensionDataCloudControllerMockTest {
 
    @Test
-   public void testGetAccount() throws Exception {
-      server.enqueue(xmlResponse("/account.xml"));
-      Account account = api.getAccountApi().getMyAccount();
-      assertNotNull(account);
-      // TODO need to add more assertions here.
-      assertSent(server, "GET", "/oec/0.9/myaccount");
+   public void testClone() throws Exception {
+      server.enqueue(xmlResponse("/serverclone.xml"));
+      Status status = api.getServerCloneApi().clone("serverId", "serverNewImageName", "serverNewImageDescrption");
+      assertNotNull(status);
+      assertEquals("Clone Server", status.operation());
+      assertNull(status.additionalInformation());
+      assertEquals("REASON_0", status.resultCode());
+      assertEquals(Status.ResultType.SUCCESS, status.result());
+      assertEquals("Server \"Clone\" issued", status.resultDetail());
+      assertSent(server, "GET", "/oec/0.9/" + ORG_ID + "/server/serverId?clone=serverNewImageName&desc=serverNewImageDescrption");
    }
 
    protected RecordedRequest assertSent(MockWebServer server, String method, String path) throws InterruptedException {
@@ -42,7 +47,7 @@ public class AccountApiMockTest extends BaseDimensionDataCloudControllerMockTest
       assertThat(request.getMethod()).isEqualTo(method);
       assertThat(request.getPath()).isEqualTo(path);
       // TODO - header is "text/html, image/gif, image/jpeg, *; q=.2, */*; q=.2" not XML.
-//      assertThat(request.getHeader(HttpHeaders.ACCEPT)).isEqualTo(MediaType.APPLICATION_XML);
+      // assertThat(request.getHeader(HttpHeaders.ACCEPT)).isEqualTo(MediaType.APPLICATION_XML);
       return request;
    }
 }

@@ -17,22 +17,23 @@
 package org.jclouds.dimensiondata.cloudcontroller.features;
 
 import org.jclouds.Fallbacks;
-import org.jclouds.dimensiondata.cloudcontroller.domain.Response;
+import org.jclouds.dimensiondata.cloudcontroller.domain.Status;
 import org.jclouds.dimensiondata.cloudcontroller.filters.OrganisationIdFilter;
+import org.jclouds.dimensiondata.cloudcontroller.parsers.ParseStatus;
 import org.jclouds.http.filters.BasicAuthentication;
 import org.jclouds.rest.annotations.Fallback;
 import org.jclouds.rest.annotations.RequestFilters;
+import org.jclouds.rest.annotations.XMLResponseParser;
 
 import javax.inject.Named;
-import javax.ws.rs.Consumes;
 import javax.ws.rs.GET;
 import javax.ws.rs.Path;
 import javax.ws.rs.PathParam;
+import javax.ws.rs.Produces;
 import javax.ws.rs.QueryParam;
 import javax.ws.rs.core.MediaType;
 
 @RequestFilters({BasicAuthentication.class, OrganisationIdFilter.class})
-@Consumes(MediaType.APPLICATION_XML)
 @Path("/oec/0.9/")
 public interface ServerCloneApi
 {
@@ -41,6 +42,8 @@ public interface ServerCloneApi
     @GET
     @Path("/server/{id}")
     @Fallback(Fallbacks.NullOnNotFoundOr404.class)
-    Response clone(@PathParam("id") String id, @QueryParam("clone") String newImageName, @QueryParam("desc") String newImageDescription);
+    @Produces(MediaType.APPLICATION_XML)
+    @XMLResponseParser(ParseStatus.class)
+    Status clone(@PathParam("id") String id, @QueryParam("clone") String newImageName, @QueryParam("desc") String newImageDescription);
 
 }
