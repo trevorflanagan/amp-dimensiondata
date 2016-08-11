@@ -30,11 +30,13 @@ import javax.ws.rs.core.MediaType;
 import org.jclouds.Fallbacks;
 import org.jclouds.collect.PagedIterable;
 import org.jclouds.dimensiondata.cloudcontroller.domain.Disk;
+import org.jclouds.dimensiondata.cloudcontroller.domain.NetworkInfo;
 import org.jclouds.dimensiondata.cloudcontroller.domain.PaginatedCollection;
 import org.jclouds.dimensiondata.cloudcontroller.domain.Response;
 import org.jclouds.dimensiondata.cloudcontroller.domain.Server;
 import org.jclouds.dimensiondata.cloudcontroller.domain.options.CreateServerOptions;
-import org.jclouds.dimensiondata.cloudcontroller.domain.NetworkInfo;
+import org.jclouds.dimensiondata.cloudcontroller.filters.DatacenterIdFilter;
+import org.jclouds.dimensiondata.cloudcontroller.filters.NetworkDomainIdFilter;
 import org.jclouds.dimensiondata.cloudcontroller.filters.OrganisationIdFilter;
 import org.jclouds.dimensiondata.cloudcontroller.options.PaginationOptions;
 import org.jclouds.dimensiondata.cloudcontroller.parsers.ParseServers;
@@ -65,6 +67,7 @@ public interface ServerApi {
     @Transform(ParseServers.ToPagedIterable.class)
     @ResponseParser(ParseServers.class)
     @Fallback(Fallbacks.EmptyPagedIterableOnNotFoundOr404.class)
+    @RequestFilters({DatacenterIdFilter.class, NetworkDomainIdFilter.class})
     PagedIterable<Server> listServers();
 
     @Named("server:get")
