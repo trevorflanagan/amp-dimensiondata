@@ -16,25 +16,27 @@
  */
 package org.jclouds.dimensiondata.cloudcontroller.filters;
 
-import com.google.common.base.Supplier;
-import org.jclouds.dimensiondata.cloudcontroller.compute.options.DimensionDataCloudControllerTemplateOptions;
-import org.jclouds.http.HttpException;
-import org.jclouds.http.HttpRequest;
-import org.jclouds.http.HttpRequestFilter;
+import java.util.Set;
 
 import javax.inject.Inject;
 
+import com.google.common.base.Supplier;
+import org.jclouds.http.HttpException;
+import org.jclouds.http.HttpRequest;
+import org.jclouds.http.HttpRequestFilter;
+import org.jclouds.location.Zone;
+
 /**
- * Adds Network Domain ID from TemplateOptions to the request.
+ * Adds set of Datacenter IDs as set in jclouds.zones JVM property.
  */
-public class NetworkDomainIdFilter implements HttpRequestFilter {
-   @Inject
-   protected Supplier<DimensionDataCloudControllerTemplateOptions> templateOptionsSupplier;
+public class DatacenterIdListDatacentersFilter implements HttpRequestFilter {
+   @Inject @Zone
+   protected Supplier<Set<String>> datacenterIdsSupplier;
 
    @Override public HttpRequest filter(HttpRequest request) throws HttpException {
-      DimensionDataCloudControllerTemplateOptions templateOptions = templateOptionsSupplier.get();
-      if (templateOptions != null && templateOptions.getNetworkDomainId() != null) {
-         return request.toBuilder().addQueryParam("networkDomainId", templateOptions.getNetworkDomainId()).build();
+      Set<String> datacenterIds = datacenterIdsSupplier.get();
+      if (datacenterIds != null && !datacenterIds.isEmpty()) {
+         return request.toBuilder().addQueryParam("id", datacenterIds).build();
       } else {
          return request;
       }
