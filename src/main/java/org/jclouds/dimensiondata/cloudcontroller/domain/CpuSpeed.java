@@ -26,24 +26,27 @@ public enum CpuSpeed {
     * <p/>
     * May not be available in all datacenters.
     */
-   ECONOMY(200),
+   ECONOMY(10),
 
    /**
     * Dimension Data Standard speed CPU.
     * <p/>
     * The default CPU speed if not otherwise specified.
     */
-   STANDARD(339),
+   STANDARD(20),
 
    /**
     * Dimension Data High-Performance speed CPU.
     * <p/>
     * May not be available in all datacenters.
     */
-   HIGHPERFORMANCE(800);
+   HIGHPERFORMANCE(30);
 
    /**
-    * The values used to represent this CPU speed in JClouds.
+    * The value used to represent this CPU speed in JClouds.
+    * <p/>
+    * There is no significance to the numerical value other than ordering of the supported speeds. Values are not
+    * proportional to each other in any way.
     */
    private final double jCloudsSpeed;
 
