@@ -24,6 +24,7 @@ import javax.inject.Singleton;
 import org.jclouds.collect.IterableWithMarker;
 import org.jclouds.collect.internal.ArgsToPagedIterable;
 import org.jclouds.dimensiondata.cloudcontroller.DimensionDataCloudControllerApi;
+import org.jclouds.dimensiondata.cloudcontroller.compute.DimensionDataCloudControllerComputeServiceAdapter;
 import org.jclouds.dimensiondata.cloudcontroller.domain.NetworkDomain;
 import org.jclouds.dimensiondata.cloudcontroller.domain.NetworkDomains;
 import org.jclouds.dimensiondata.cloudcontroller.options.PaginationOptions;
@@ -56,7 +57,7 @@ public class ParseNetworkDomains extends ParseJson<NetworkDomains> {
                 @Override
                 public IterableWithMarker<NetworkDomain> apply(Object input) {
                     PaginationOptions paginationOptions = PaginationOptions.class.cast(input);
-                    return api.getNetworkApi().listNetworkDomains(paginationOptions);
+                    return api.getNetworkApi().listNetworkDomains(DimensionDataCloudControllerComputeServiceAdapter.ORG_ID, paginationOptions);
                 }
             };
         }

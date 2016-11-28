@@ -32,12 +32,13 @@ public class InfrastructureApiMockTest extends BaseDimensionDataCloudControllerM
 
     public void testListDatacenters() throws Exception {
         server.enqueue(jsonResponse("/datacenters.json"));
-        Iterable<Datacenter> datacenters = api.getInfrastructureApi().listDatacenters().concat();
+        Iterable<Datacenter> datacenters = api.getInfrastructureApi().listDatacenters(orgId).concat();
 
         assertEquals(size(datacenters), 2); // Force the PagedIterable to advance
         assertEquals(server.getRequestCount(), 1);
 
-        assertSent(server, "GET", "/infrastructure/datacenter");
+
+        assertSent(server, "GET", "/caas/2.2/" + orgId + "/infrastructure/datacenter");
     }
 
 }

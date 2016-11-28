@@ -58,14 +58,15 @@ public class NetworkApiLiveTest extends BaseDimensionDataCloudControllerApiLiveT
 
     @Test(dependsOnMethods = "testDeployVlan")
     public void testCreatePortList() {
-        Response response = api().createPortList(networkDomainId, this.getClass().getCanonicalName(), this.getClass().getCanonicalName(),
+        Response response = api().createPortList(
+              ORG_ID, networkDomainId, this.getClass().getCanonicalName(), this.getClass().getCanonicalName(),
                 ImmutableList.of(FirewallRuleTarget.Port.create(22, null)), Lists.<String>newArrayList());
         portListId = DimensionDataCloudControllerUtils.tryFindPropertyValue(response, "portListId");
     }
 
     @Test(dependsOnMethods = "testCreatePortList")
     public void testCreateFirewallRuleWithPortList() {
-        Response createFirewallRuleResponse = api().createFirewallRule(
+        Response createFirewallRuleResponse = api().createFirewallRule(ORG_ID,
                 networkDomainId,
                 generateFirewallRuleName("server-id"),
                 DEFAULT_ACTION,
@@ -88,7 +89,7 @@ public class NetworkApiLiveTest extends BaseDimensionDataCloudControllerApiLiveT
 
     @Test(dependsOnMethods = "testDeployNetworkDomain")
     public void testDeployVlan() {
-        Response deployVlanResponse =  api().deployVlan(networkDomainId, NetworkApiLiveTest.class.getSimpleName(), NetworkApiLiveTest.class.getSimpleName(), DEFAULT_PRIVATE_IPV4_BASE_ADDRESS, DEFAULT_PRIVATE_IPV4_PREFIX_SIZE);
+        Response deployVlanResponse =  api().deployVlan(ORG_ID, networkDomainId, NetworkApiLiveTest.class.getSimpleName(), NetworkApiLiveTest.class.getSimpleName(), DEFAULT_PRIVATE_IPV4_BASE_ADDRESS, DEFAULT_PRIVATE_IPV4_PREFIX_SIZE);
         vlanId = DimensionDataCloudControllerUtils.tryFindPropertyValue(deployVlanResponse, "vlanId");
         assertNotNull(vlanId);
     }
@@ -96,19 +97,19 @@ public class NetworkApiLiveTest extends BaseDimensionDataCloudControllerApiLiveT
     @Test
     public void testDeployNetworkDomain() {
         String networkDomainName = NetworkApiLiveTest.class.getSimpleName();
-        Response deployNetworkDomainResponse = api().deployNetworkDomain(DATACENTER, networkDomainName, NetworkApiLiveTest.class.getSimpleName(), "ESSENTIALS");
+        Response deployNetworkDomainResponse = api().deployNetworkDomain(ORG_ID, DATACENTER, networkDomainName, NetworkApiLiveTest.class.getSimpleName(), "ESSENTIALS");
         networkDomainId = DimensionDataCloudControllerUtils.tryFindPropertyValue(deployNetworkDomainResponse, "networkDomainId");
         assertNotNull(networkDomainId);
     }
 
     @Test(expectedExceptions = ResourceAlreadyExistsException.class)
     public void testDeploySameNetworkDomain() {
-        api().deployNetworkDomain(DATACENTER, NetworkApiLiveTest.class.getSimpleName(), NetworkApiLiveTest.class.getSimpleName(), "ESSENTIALS");
+        api().deployNetworkDomain(ORG_ID, DATACENTER, NetworkApiLiveTest.class.getSimpleName(), NetworkApiLiveTest.class.getSimpleName(), "ESSENTIALS");
     }
 
     @Test(dependsOnMethods = "testDeployVlan")
     public void testAddPublicIpBlock() {
-        Response addPublicIpBlockResponse = api.getNetworkApi().addPublicIpBlock(networkDomainId);
+        Response addPublicIpBlockResponse = api.getNetworkApi().addPublicIpBlock(ORG_ID, networkDomainId);
         //manageResponse(response, format("Cannot add a publicIpBlock to networkDomainId %s", networkDomainId));
         String ipBlockId = DimensionDataCloudControllerUtils.tryFindPropertyValue(addPublicIpBlockResponse, "ipBlockId");
         System.out.println(ipBlockId);
@@ -118,20 +119,21 @@ public class NetworkApiLiveTest extends BaseDimensionDataCloudControllerApiLiveT
     public void tearDown() {
         if (!firewallRuleIds.isEmpty()) {
             for (String firewallRuleId : firewallRuleIds) {
-                Response response = api().deleteFirewallRule(firewallRuleId);
+                Response response = api().deleteFirewallRule(ORG_ID, firewallRuleId);
             }
         }
         if (portListId != null) {
-            api().deletePortList(portListId);
+            api().deletePortList(ORG_ID, portListId);
         }
         if (vlanId != null) {
-            api().deleteVlan(vlanId);
+            api().deleteVlan(ORG_ID, vlanId);
             // TODO wait for deletion
-            api().getVlan(vlanId);
+            api().getVlan(ORG_ID, vlanId);
         }
         if (networkDomainId != null) {
-            api().deleteNetworkDomain(networkDomainId);
+            api().deleteNetworkDomain(ORG_ID, networkDomainId);
         }
+
     }
 
     private NetworkApi api() {

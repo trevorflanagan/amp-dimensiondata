@@ -20,6 +20,7 @@ import javax.inject.Named;
 import javax.ws.rs.Consumes;
 import javax.ws.rs.GET;
 import javax.ws.rs.Path;
+import javax.ws.rs.PathParam;
 import javax.ws.rs.QueryParam;
 import javax.ws.rs.core.MediaType;
 
@@ -39,7 +40,7 @@ import org.jclouds.rest.annotations.Transform;
 
 @RequestFilters({BasicAuthentication.class})
 @Consumes(MediaType.APPLICATION_JSON)
-@Path("/infrastructure")
+@Path("/caas/{jclouds.api-version}/{org-id}/infrastructure")
 public interface InfrastructureApi {
 
     @Named("infrastructure:datacenter")
@@ -47,7 +48,7 @@ public interface InfrastructureApi {
     @Path("/datacenter")
     @ResponseParser(ParseDatacenters.class)
     @Fallback(Fallbacks.EmptyIterableWithMarkerOnNotFoundOr404.class)
-    PaginatedCollection<Datacenter> listDatacenters(PaginationOptions options);
+    PaginatedCollection<Datacenter> listDatacenters(@PathParam("org-id") String organisationId, PaginationOptions options);
 
     @Named("infrastructure:datacenter")
     @GET
@@ -55,14 +56,14 @@ public interface InfrastructureApi {
     @Transform(ParseDatacenters.ToPagedIterable.class)
     @ResponseParser(ParseDatacenters.class)
     @Fallback(Fallbacks.EmptyPagedIterableOnNotFoundOr404.class)
-    PagedIterable<Datacenter> listDatacenters();
+    PagedIterable<Datacenter> listDatacenters(@PathParam("org-id") String organisationId);
 
     @Named("infrastructure:operatingSystem")
     @GET
     @Path("/operatingSystem")
     @ResponseParser(ParseOperatingSystems.class)
     @Fallback(Fallbacks.EmptyIterableWithMarkerOnNotFoundOr404.class)
-    PaginatedCollection<OperatingSystem> listOperatingSystems(@QueryParam("datacenterId") String datacenterId, PaginationOptions options);
+    PaginatedCollection<OperatingSystem> listOperatingSystems(@PathParam("org-id") String organisationId, @QueryParam("datacenterId") String datacenterId, PaginationOptions options);
 
     @Named("infrastructure:operatingSystem")
     @GET
@@ -70,6 +71,6 @@ public interface InfrastructureApi {
     @Transform(ParseOperatingSystems.ToPagedIterable.class)
     @ResponseParser(ParseOperatingSystems.class)
     @Fallback(Fallbacks.EmptyPagedIterableOnNotFoundOr404.class)
-    PagedIterable<OperatingSystem> listOperatingSystems(@QueryParam("datacenterId") String datacenterId);
+    PagedIterable<OperatingSystem> listOperatingSystems(@PathParam("org-id") String organisationId, @QueryParam("datacenterId") String datacenterId);
 
 }

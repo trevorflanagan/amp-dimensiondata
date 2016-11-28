@@ -41,6 +41,7 @@ import org.jclouds.dimensiondata.cloudcontroller.DimensionDataCloudControllerApi
 import org.jclouds.dimensiondata.cloudcontroller.compute.functions.CleanupServer;
 import org.jclouds.dimensiondata.cloudcontroller.compute.functions.ServerToServetWithExternalIp;
 import org.jclouds.dimensiondata.cloudcontroller.compute.options.DimensionDataCloudControllerTemplateOptions;
+import org.jclouds.dimensiondata.cloudcontroller.domain.Account;
 import org.jclouds.dimensiondata.cloudcontroller.domain.Datacenter;
 import org.jclouds.dimensiondata.cloudcontroller.domain.Disk;
 import org.jclouds.dimensiondata.cloudcontroller.domain.FirewallRuleTarget;
@@ -65,12 +66,12 @@ import com.google.common.collect.Lists;
 /**
  * defines the connection between the {@link org.jclouds.dimensiondata.cloudcontroller.DimensionDataCloudControllerApi} implementation and
  * the jclouds {@link org.jclouds.compute.ComputeService}
- *
  */
 @Singleton
 public class DimensionDataCloudControllerComputeServiceAdapter implements
         ComputeServiceAdapter<ServerWithExternalIp, OsImage, OsImage, Datacenter> {
 
+    public static String ORG_ID;
     private static final String DEFAULT_LOGIN_PASSWORD = "P$$ssWwrrdGoDd!";
     private static final String DEFAULT_LOGIN_USER = "root";
     public static final String DEFAULT_ACTION = "ACCEPT_DECISIVELY";
@@ -91,6 +92,10 @@ public class DimensionDataCloudControllerComputeServiceAdapter implements
         this.api = checkNotNull(api, "api");
         this.timeouts = timeouts;
         this.cleanupServer = cleanupServer;
+        if (ORG_ID == null) {
+            Account myAccount = api.getAccountApi().getMyAccount();
+            ORG_ID = myAccount.orgId();
+        }
     }
 
     @Override
@@ -134,24 +139,24 @@ public class DimensionDataCloudControllerComputeServiceAdapter implements
                 .memoryGb(template.getHardware().getRam() / 1024)
                 .build();
 
-        Response deployServerResponse = api.getServerApi().deployServer(name, imageId, Boolean.TRUE, networkInfo, disks, loginPassword, createServerOptions);
+        Response deployServerResponse = api.getServerApi().deployServer(ORG_ID, name, imageId, Boolean.TRUE, networkInfo, disks, loginPassword, createServerOptions);
         String serverId = DimensionDataCloudControllerUtils.tryFindPropertyValue(deployServerResponse, "serverId");
 
         String message = format("Server(%s) is not ready within %d ms.", serverId, timeouts.nodeRunning);
         DimensionDataCloudControllerUtils.waitForServerStatus(api.getServerApi(), serverId, true, true, timeouts.nodeRunning, message);
 
-        ServerWithExternalIp.Builder serverWithExternalIpBuilder = ServerWithExternalIp.builder().server(api.getServerApi().getServer(serverId));
+        ServerWithExternalIp.Builder serverWithExternalIpBuilder = ServerWithExternalIp.builder().server(api.getServerApi().getServer(ORG_ID, serverId));
 
         if (templateOptions.autoCreateNatRule()) {
             // addPublicIPv4AddressBlock
-            Response addPublicIpBlockResponse = api.getNetworkApi().addPublicIpBlock(networkDomainId);
+            Response addPublicIpBlockResponse = api.getNetworkApi().addPublicIpBlock(ORG_ID, networkDomainId);
             //manageResponse(response, format("Cannot add a publicIpBlock to networkDomainId %s", networkDomainId));
             String ipBlockId = DimensionDataCloudControllerUtils.tryFindPropertyValue(addPublicIpBlockResponse, "ipBlockId");
-            String externalIp = api.getNetworkApi().getPublicIPv4AddressBlock(ipBlockId).baseIp();
+            String externalIp = api.getNetworkApi().getPublicIPv4AddressBlock(ORG_ID, ipBlockId).baseIp();
 
             serverWithExternalIpBuilder.externalIp(externalIp);
-            String internalIp = api.getServerApi().getServer(serverId).networkInfo().primaryNic().privateIpv4();
-            Response createNatRuleOperation = api.getNetworkApi().createNatRule(networkDomainId, internalIp, externalIp);
+            String internalIp = api.getServerApi().getServer(ORG_ID, serverId).networkInfo().primaryNic().privateIpv4();
+            Response createNatRuleOperation = api.getNetworkApi().createNatRule(ORG_ID, networkDomainId, internalIp, externalIp);
             if (!createNatRuleOperation.error().isEmpty()) {
                 // rollback
                 String natRuleErrorMessage = String.format("Cannot create a NAT rule for internalIp %s (server %s) using externalIp %s. Rolling back ...", internalIp, serverId, externalIp);
@@ -162,7 +167,7 @@ public class DimensionDataCloudControllerComputeServiceAdapter implements
 
             List<FirewallRuleTarget.Port> ports = simplifyPorts(templateOptions.getInboundPorts());
             Response createPorlListResponse = api.getNetworkApi()
-                    .createPortList(networkDomainId,
+                    .createPortList(ORG_ID, networkDomainId,
                             generatePortListName(serverId),
                             "port list created by jclouds",
                             ports,
@@ -170,6 +175,7 @@ public class DimensionDataCloudControllerComputeServiceAdapter implements
             final String portListId = DimensionDataCloudControllerUtils.tryFindPropertyValue(createPorlListResponse, "portListId");
 
             Response createFirewallRuleResponse = api.getNetworkApi().createFirewallRule(
+                    ORG_ID,
                     templateOptions.getNetworkDomainId(),
                     generateFirewallRuleName(serverId),
                     DEFAULT_ACTION,
@@ -197,27 +203,27 @@ public class DimensionDataCloudControllerComputeServiceAdapter implements
 
     @Override
     public Iterable<OsImage> listHardwareProfiles() {
-        return api.getServerImageApi().listOsImages().concat().toList();
+        return api.getServerImageApi().listOsImages(ORG_ID).concat().toList();
     }
 
     @Override
     public Iterable<OsImage> listImages() {
-        return api.getServerImageApi().listOsImages().concat().toList();
+        return api.getServerImageApi().listOsImages(ORG_ID).concat().toList();
     }
 
     @Override
     public OsImage getImage(String id) {
-        return api.getServerImageApi().getOsImage(id);
+        return api.getServerImageApi().getOsImage(ORG_ID, id);
     }
 
     @Override
     public Iterable<Datacenter> listLocations() {
-        return api.getInfrastructureApi().listDatacenters().concat().toList();
+        return api.getInfrastructureApi().listDatacenters(ORG_ID).concat().toList();
     }
 
     @Override
     public ServerWithExternalIp getNode(String id) {
-        return new ServerToServetWithExternalIp(api).apply(api.getServerApi().getServer(id));
+        return new ServerToServetWithExternalIp(api).apply(api.getServerApi().getServer(ORG_ID, id));
     }
 
     @Override
@@ -227,7 +233,7 @@ public class DimensionDataCloudControllerComputeServiceAdapter implements
 
     @Override
     public void rebootNode(String id) {
-        api.getServerApi().rebootServerServer(id);
+        api.getServerApi().rebootServerServer(ORG_ID, id);
     }
 
     @Override
@@ -242,7 +248,7 @@ public class DimensionDataCloudControllerComputeServiceAdapter implements
 
     @Override
     public Iterable<ServerWithExternalIp> listNodes() {
-        return api.getServerApi().listServers().concat().transform(new ServerToServetWithExternalIp(api)).toList();
+        return api.getServerApi().listServers(ORG_ID).concat().transform(new ServerToServetWithExternalIp(api)).toList();
     }
 
     @Override

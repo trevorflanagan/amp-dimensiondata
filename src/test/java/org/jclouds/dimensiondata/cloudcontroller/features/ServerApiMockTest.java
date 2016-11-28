@@ -45,6 +45,7 @@ public class ServerApiMockTest extends BaseDimensionDataCloudControllerMockTest 
                 Lists.<NIC>newArrayList()
         );
         Response response = api.getServerApi().deployServer(
+                orgId,
                 ServerApiMockTest.class.getSimpleName(),
                 "imageId",
                 true,
@@ -55,7 +56,7 @@ public class ServerApiMockTest extends BaseDimensionDataCloudControllerMockTest 
         assertNull(response);
 
         assertEquals(server.getRequestCount(), 2);
-        assertSent(server, "POST", "/server/deployServer");
+        assertSent(server, "POST", "/caas/2.2/" + orgId + "/server/deployServer");
     }
 
 /*
