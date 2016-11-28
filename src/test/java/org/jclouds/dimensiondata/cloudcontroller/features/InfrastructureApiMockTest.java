@@ -38,7 +38,7 @@ public class InfrastructureApiMockTest extends BaseDimensionDataCloudControllerM
         assertEquals(server.getRequestCount(), 1);
 
 
-        assertSent(server, "GET", "/caas/2.2/"+ ORG_ID + "/infrastructure/datacenter");
+        assertSent(server, "GET", "/caas/2.2/" + ORG_ID + "/infrastructure/datacenter");
     }
 
 }
