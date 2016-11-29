@@ -26,6 +26,8 @@ import org.jclouds.compute.domain.NodeMetadata;
 import org.jclouds.compute.domain.OsFamily;
 import org.jclouds.compute.domain.Template;
 import org.jclouds.compute.internal.BaseComputeServiceContextLiveTest;
+import org.jclouds.compute.options.RunScriptOptions;
+import org.jclouds.compute.predicates.NodePredicates;
 import org.jclouds.compute.reference.ComputeServiceConstants;
 import org.jclouds.dimensiondata.cloudcontroller.compute.options.DimensionDataCloudControllerTemplateOptions;
 import org.jclouds.logging.Logger;
@@ -114,6 +116,35 @@ public class DimensionDataCloudControllerComputeServiceContextLiveTest extends B
             view.getComputeService().destroyNodesMatching(inGroup(name));
         }
 }
+
+    @Test
+    public void testLaunchOnExistingServers() throws RunNodesException, RunScriptOnNodesException
+    {
+        Template template = view.getComputeService().templateBuilder()
+                .osFamily(OsFamily.RHEL) // required, ootherwise will filter on selected versions of UBUNTU
+//                .locationId("DEV_LAB1_N2_VMWARE_1") // not needed, use jclouds.zones JVM proeprty instead
+                .build();
+
+        DimensionDataCloudControllerTemplateOptions options = template.getOptions().as(DimensionDataCloudControllerTemplateOptions.class);
+        options
+                .inboundPorts(22, 8080, 8081);
+//                .runScript(AdminAccess.standard()); // FIXME verify if test passes on unconfigured server, without running these scripts, if not document the steps needed
+//                .networkDomainId("2c7f6758-b78a-432e-8f49-62062b758182") // optional, Server name is used to filter here
+//                .vlanId("4032b86e-dfa5-4fa8-8b36-6bf808755faa"); // same as above
+
+        Map<? extends NodeMetadata, ExecResponse> responses
+                = view.getComputeService().runScriptOnNodesMatching(
+                        NodePredicates.runningInGroup("test10"), "echo hello",
+                RunScriptOptions.Builder.overrideLoginPassword("P$$ssWwrrdGoDd!").overrideLoginUser("root"));
+        // TODO credentials manager needed, inject LoginCredentials into ServerWithNatRuleToNodeMetadata?
+        // (tried to add to Nodes returned by view.getComputeService().listNodes(), but with no success)
+
+        assertThat(responses).hasSize(NUM_NODES);
+
+        for (ExecResponse execResponse : responses.values()) {
+            assertThat(execResponse.getOutput().trim()).isEqualTo("hello");
+        }
+    }
 
     @Override
     protected Iterable<Module> setupModules() {
