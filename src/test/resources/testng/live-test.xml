@@ -1,0 +1,19 @@
+<!DOCTYPE suite SYSTEM "http://beust.com/testng/testng-1.0.dtd" >
+<suite name="test-parameter">
+
+    <test name="ComputeServiceContextLiveTest">
+
+	<parameter name="username" value="<usernameHere>" />
+	<parameter name="password" value="<yourPasswordHere>" />
+
+	<classes>
+	  <class name="org.jclouds.dimensiondata.cloudcontroller.compute.DimensionDataCloudControllerComputeServiceContextLiveTest" >
+		  <methods>
+			  <include name="testLaunchOnExistingServers"/>
+		  </methods>
+	  </class>
+	</classes>
+
+    </test>
+
+</suite>
