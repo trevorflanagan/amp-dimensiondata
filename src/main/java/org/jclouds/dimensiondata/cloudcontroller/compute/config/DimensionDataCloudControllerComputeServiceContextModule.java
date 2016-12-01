@@ -16,8 +16,11 @@
  */
 package org.jclouds.dimensiondata.cloudcontroller.compute.config;
 
-import javax.inject.Singleton;
-
+import com.google.common.base.Function;
+import com.google.common.base.Supplier;
+import com.google.inject.Injector;
+import com.google.inject.Provides;
+import com.google.inject.TypeLiteral;
 import org.jclouds.compute.ComputeService;
 import org.jclouds.compute.ComputeServiceAdapter;
 import org.jclouds.compute.config.ComputeServiceAdapterContextModule;
@@ -28,43 +31,39 @@ import org.jclouds.compute.options.TemplateOptions;
 import org.jclouds.compute.strategy.CreateNodesInGroupThenAddToSet;
 import org.jclouds.compute.strategy.PrioritizeCredentialsFromTemplate;
 import org.jclouds.dimensiondata.cloudcontroller.compute.DimensionDataCloudControllerComputeService;
+import org.jclouds.dimensiondata.cloudcontroller.compute.DimensionDataCloudControllerComputeServiceAdapter;
 import org.jclouds.dimensiondata.cloudcontroller.compute.functions.DatacenterToLocation;
-import org.jclouds.dimensiondata.cloudcontroller.compute.functions.OsImageToHardware;
-import org.jclouds.dimensiondata.cloudcontroller.compute.functions.OsImageToImage;
+import org.jclouds.dimensiondata.cloudcontroller.compute.functions.BaseImageToHardware;
+import org.jclouds.dimensiondata.cloudcontroller.compute.functions.BaseImageToImage;
 import org.jclouds.dimensiondata.cloudcontroller.compute.functions.ServerWithNatRuleToNodeMetadata;
 import org.jclouds.dimensiondata.cloudcontroller.compute.options.DimensionDataCloudControllerTemplateOptions;
-import org.jclouds.dimensiondata.cloudcontroller.compute.DimensionDataCloudControllerComputeServiceAdapter;
 import org.jclouds.dimensiondata.cloudcontroller.compute.strategy.GetOrCreateNetworkDomainThenCreateNodes;
 import org.jclouds.dimensiondata.cloudcontroller.compute.strategy.UseNodeCredentialsButOverrideFromTemplate;
+import org.jclouds.dimensiondata.cloudcontroller.domain.BaseImage;
 import org.jclouds.dimensiondata.cloudcontroller.domain.Datacenter;
-import org.jclouds.dimensiondata.cloudcontroller.domain.OsImage;
 import org.jclouds.dimensiondata.cloudcontroller.domain.internal.ServerWithExternalIp;
 import org.jclouds.domain.Location;
 
-import com.google.common.base.Function;
-import com.google.common.base.Supplier;
-import com.google.inject.Injector;
-import com.google.inject.Provides;
-import com.google.inject.TypeLiteral;
+import javax.inject.Singleton;
 
 public class DimensionDataCloudControllerComputeServiceContextModule extends
-        ComputeServiceAdapterContextModule<ServerWithExternalIp, OsImage, OsImage, Datacenter> {
+        ComputeServiceAdapterContextModule<ServerWithExternalIp, BaseImage, BaseImage, Datacenter> {
 
     private DimensionDataCloudControllerTemplateOptions templateOptions;
 
     @Override
     protected void configure() {
         super.configure();
-        bind(new TypeLiteral<ComputeServiceAdapter<ServerWithExternalIp, OsImage, OsImage, Datacenter>>() {
+        bind(new TypeLiteral<ComputeServiceAdapter<ServerWithExternalIp, BaseImage, BaseImage, Datacenter>>() {
         }).to(DimensionDataCloudControllerComputeServiceAdapter.class);
         bind(ComputeService.class).to(DimensionDataCloudControllerComputeService.class);
 
         bind(new TypeLiteral<Function<ServerWithExternalIp, NodeMetadata>>() {
         }).to(ServerWithNatRuleToNodeMetadata.class);
-        bind(new TypeLiteral<Function<OsImage, Image>>() {
-        }).to(OsImageToImage.class);
-        bind(new TypeLiteral<Function<OsImage, Hardware>>() {
-        }).to(OsImageToHardware.class);
+        bind(new TypeLiteral<Function<BaseImage, Image>>() {
+        }).to(BaseImageToImage.class);
+        bind(new TypeLiteral<Function<BaseImage, Hardware>>() {
+        }).to(BaseImageToHardware.class);
         bind(new TypeLiteral<Function<Datacenter, Location>>() {
         }).to(DatacenterToLocation.class);
         bind(TemplateOptions.class).to(DimensionDataCloudControllerTemplateOptions.class);
@@ -72,7 +71,7 @@ public class DimensionDataCloudControllerComputeServiceContextModule extends
         bind(PrioritizeCredentialsFromTemplate.class).to(UseNodeCredentialsButOverrideFromTemplate.class);
 
         // to have the compute service adapter override default locations
-        install(new LocationsFromComputeServiceAdapterModule<ServerWithExternalIp, OsImage, OsImage, Datacenter>() {
+        install(new LocationsFromComputeServiceAdapterModule<ServerWithExternalIp, BaseImage, BaseImage, Datacenter>() {
         });
 
     }

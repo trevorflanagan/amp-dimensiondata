@@ -47,24 +47,27 @@ public class ServerWithNatRuleToNodeMetadata implements Function<ServerWithExter
     public static final Map<Server.State, NodeMetadata.Status> serverStateToNodeStatus = ImmutableMap
             .<Server.State, NodeMetadata.Status> builder()
             .put(Server.State.PENDING_DELETE, NodeMetadata.Status.PENDING)
+            .put(Server.State.FAILED_ADD, NodeMetadata.Status.ERROR)
+            .put(Server.State.FAILED_CHANGE, NodeMetadata.Status.ERROR)
+            .put(Server.State.FAILED_DELETE, NodeMetadata.Status.ERROR)
             .put(Server.State.DELETED, NodeMetadata.Status.TERMINATED)
             .put(Server.State.NORMAL, NodeMetadata.Status.RUNNING)
             .put(Server.State.UNRECOGNIZED, NodeMetadata.Status.UNRECOGNIZED).build();
 
     private final Supplier<Set<? extends Location>> locations;
     private final GroupNamingConvention nodeNamingConvention;
-    private final OsImageToImage osImageToImage;
-    private final OsImageToHardware osImageToHardware;
+    private final BaseImageToImage baseImageToImage;
+    private final BaseImageToHardware baseImageToHardware;
     private final Map<String, Credentials> credentialStore;
 
     @Inject
     ServerWithNatRuleToNodeMetadata(@Memoized Supplier<Set<? extends Location>> locations,
-                               GroupNamingConvention.Factory namingConvention, OsImageToImage osImageToImage,
-                               OsImageToHardware osImageToHardware, Map<String, Credentials> credentialStore) {
+                                    GroupNamingConvention.Factory namingConvention, BaseImageToImage baseImageToImage,
+                                    BaseImageToHardware baseImageToHardware, Map<String, Credentials> credentialStore) {
         this.nodeNamingConvention = checkNotNull(namingConvention, "namingConvention").createWithoutPrefix();
         this.locations = checkNotNull(locations, "locations");
-        this.osImageToImage = checkNotNull(osImageToImage, "osImageToImage");
-        this.osImageToHardware = checkNotNull(osImageToHardware, "osImageToHardware");
+        this.baseImageToImage = checkNotNull(baseImageToImage, "osImageToImage");
+        this.baseImageToHardware = checkNotNull(baseImageToHardware, "osImageToHardware");
         this.credentialStore = checkNotNull(credentialStore, "credentialStore cannot be null");
     }
 

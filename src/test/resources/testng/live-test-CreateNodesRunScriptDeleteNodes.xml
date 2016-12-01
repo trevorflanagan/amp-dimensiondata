@@ -1,0 +1,16 @@
+<!DOCTYPE suite SYSTEM "http://beust.com/testng/testng-1.0.dtd" >
+<suite name="suite">
+    <test name="ComputeServiceContextLiveTest">
+        <parameter name="networkDomainId" value=" 2c7f6758-b78a-432e-8f49-62062b758182"/>
+        <parameter name="vlanId" value="4032b86e-dfa5-4fa8-8b36-6bf808755faa"/>
+        <parameter name="imageId" value="db4040cf-d861-4909-9544-129c0bbfa9b5"/>
+
+        <classes>
+            <class name="org.jclouds.dimensiondata.cloudcontroller.compute.DimensionDataCloudControllerComputeServiceContextLiveTest">
+                <methods>
+                    <include name="testLaunchClusterWithDomainName"/>
+                </methods>
+            </class>
+        </classes>
+    </test>
+</suite>

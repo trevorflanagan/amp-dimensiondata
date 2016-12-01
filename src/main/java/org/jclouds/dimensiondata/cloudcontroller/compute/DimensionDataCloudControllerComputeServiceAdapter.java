@@ -32,6 +32,8 @@ import org.jclouds.dimensiondata.cloudcontroller.compute.functions.CleanupServer
 import org.jclouds.dimensiondata.cloudcontroller.compute.functions.ServerToServetWithExternalIp;
 import org.jclouds.dimensiondata.cloudcontroller.compute.options.DimensionDataCloudControllerTemplateOptions;
 import org.jclouds.dimensiondata.cloudcontroller.domain.Account;
+import org.jclouds.dimensiondata.cloudcontroller.domain.BaseImage;
+import org.jclouds.dimensiondata.cloudcontroller.domain.CustomerImage;
 import org.jclouds.dimensiondata.cloudcontroller.domain.Datacenter;
 import org.jclouds.dimensiondata.cloudcontroller.domain.Disk;
 import org.jclouds.dimensiondata.cloudcontroller.domain.FirewallRuleTarget;
@@ -52,6 +54,8 @@ import javax.annotation.Resource;
 import javax.inject.Inject;
 import javax.inject.Named;
 import javax.inject.Singleton;
+import java.util.ArrayList;
+import java.util.Collection;
 import java.util.List;
 
 import static com.google.common.base.Preconditions.checkNotNull;
@@ -68,7 +72,7 @@ import static org.jclouds.dimensiondata.cloudcontroller.utils.DimensionDataCloud
  */
 @Singleton
 public class DimensionDataCloudControllerComputeServiceAdapter implements
-        ComputeServiceAdapter<ServerWithExternalIp, OsImage, OsImage, Datacenter> {
+        ComputeServiceAdapter<ServerWithExternalIp, BaseImage, BaseImage, Datacenter> {
 
     public static String ORG_ID;
     private static final String DEFAULT_LOGIN_PASSWORD = "P$$ssWwrrdGoDd!";
@@ -139,7 +143,9 @@ public class DimensionDataCloudControllerComputeServiceAdapter implements
                 .cpu(new CpuFactory().create(template.getHardware().getProcessors()))
                 .build();
 
-        Response deployServerResponse = api.getServerApi().deployServer(name, imageId, Boolean.TRUE, networkInfo, disks, loginPassword, createServerOptions);
+        String loginPasswordToConfigureOnServer = getLoginPasswordToConfigureOnServer(loginPassword, image);
+        Response deployServerResponse = api.getServerApi().deployServer(
+                name, imageId, Boolean.TRUE, networkInfo, disks, loginPasswordToConfigureOnServer, createServerOptions);
         String serverId = DimensionDataCloudControllerUtils.tryFindPropertyValue(deployServerResponse, "serverId");
 
         String message = format("Server(%s) is not ready within %d ms.", serverId, timeouts.nodeRunning);
@@ -151,6 +157,7 @@ public class DimensionDataCloudControllerComputeServiceAdapter implements
         if (templateOptions.autoCreateNatRule()) {
             // addPublicIPv4AddressBlock
             Response addPublicIpBlockResponse = api.getNetworkApi().addPublicIpBlock(networkDomainId);
+            // TODO reuse IPs from existing blocks (typically there are 2 public IPv4 addresses in the block)
             //manageResponse(response, format("Cannot add a publicIpBlock to networkDomainId %s", networkDomainId));
             String ipBlockId = DimensionDataCloudControllerUtils.tryFindPropertyValue(addPublicIpBlockResponse, "ipBlockId");
             String externalIp = api.getNetworkApi().getPublicIPv4AddressBlock(ipBlockId).baseIp();
@@ -200,19 +207,33 @@ public class DimensionDataCloudControllerComputeServiceAdapter implements
         return new NodeAndInitialCredentials<ServerWithExternalIp>(serverWithExternalIpBuilder.build(), serverId, credsBuilder.build());
     }
 
-    @Override
-    public Iterable<OsImage> listHardwareProfiles() {
-        return api.getServerImageApi().listOsImages().concat().toList();
+    private String getLoginPasswordToConfigureOnServer(String loginPassword, Image image) {
+        return CustomerImage.OS_FAMILY_UNIX.equals(image.getUserMetadata().get(BaseImage.OS_FAMILY_METADATA_KEY))
+                && CustomerImage.TYPE.equals(image.getUserMetadata().get(BaseImage.IMAGE_TYPE_METADATA_KEY))
+                ? null : loginPassword;
     }
 
     @Override
-    public Iterable<OsImage> listImages() {
-        return api.getServerImageApi().listOsImages().concat().toList();
+    public Iterable<BaseImage> listHardwareProfiles() {
+        Collection<BaseImage> osAndCustomerImages = new ArrayList<BaseImage>();
+        osAndCustomerImages.addAll(api.getServerImageApi().listOsImages().concat().toList());
+        osAndCustomerImages.addAll(api.getServerImageApi().listCustomerImages().concat().toList());
+        return osAndCustomerImages;
     }
 
     @Override
-    public OsImage getImage(String id) {
-        return api.getServerImageApi().getOsImage(id);
+    public Iterable<BaseImage> listImages() {
+        return listHardwareProfiles();
+    }
+
+    @Override
+    public BaseImage getImage(String id) {
+        OsImage osImage = api.getServerImageApi().getOsImage(id);
+        if (osImage != null) {
+            return osImage;
+        } else {
+            return api.getServerImageApi().getCustomerImage(id);
+        }
     }
 
     @Override

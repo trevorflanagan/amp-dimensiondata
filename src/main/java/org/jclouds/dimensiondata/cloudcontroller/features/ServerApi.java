@@ -41,6 +41,7 @@ import org.jclouds.dimensiondata.cloudcontroller.filters.OrganisationIdFilter;
 import org.jclouds.dimensiondata.cloudcontroller.options.PaginationOptions;
 import org.jclouds.dimensiondata.cloudcontroller.parsers.ParseServers;
 import org.jclouds.http.filters.BasicAuthentication;
+import org.jclouds.javax.annotation.Nullable;
 import org.jclouds.rest.annotations.Fallback;
 import org.jclouds.rest.annotations.MapBinder;
 import org.jclouds.rest.annotations.PayloadParam;
@@ -89,9 +90,12 @@ public interface ServerApi {
     @Path("/deployServer")
     @Produces(MediaType.APPLICATION_JSON)
     @MapBinder(CreateServerOptions.class)
-    Response deployServer(@PayloadParam("name") String name, @PayloadParam("imageId") String imageId, @PayloadParam("start") Boolean start,
-          @PayloadParam("networkInfo") NetworkInfo networkInfo, @PayloadParam("disk") List<Disk> disks, @PayloadParam("administratorPassword") String administratorPassword,
-          CreateServerOptions options);
+    Response deployServer(
+            @PayloadParam("name") String name, @PayloadParam("imageId") String imageId,
+            @PayloadParam("start") Boolean start,
+            @PayloadParam("networkInfo") NetworkInfo networkInfo, @PayloadParam("disk") List<Disk> disks,
+            @Nullable @PayloadParam("administratorPassword") String administratorPassword,
+            CreateServerOptions options);
 
     @Named("server:delete")
     @POST

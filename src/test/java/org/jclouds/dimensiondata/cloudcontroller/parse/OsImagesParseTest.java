@@ -59,7 +59,7 @@ public class OsImagesParseTest extends BaseDimensionDataCloudControllerParseTest
                                 1
                         ))
                         .memoryGb(4)
-                        .disks(ImmutableList.of(
+                        .disk(ImmutableList.of(
                                 Disk.builder()
                                         .id("98299851-37a3-4ebe-9cf1-090da9ae42a0")
                                         .scsiId(0)
@@ -68,7 +68,7 @@ public class OsImagesParseTest extends BaseDimensionDataCloudControllerParseTest
                                         .build()
                                 )
                         )
-                        .softwareLabels(Lists.newArrayList())
+                        .softwareLabel(Lists.newArrayList())
                         .osImageKey("T-RHEL-7-64-2-4-20")
                         .createTime("2016-02-10T07:18:17.000Z")
                         .datacenterId("NA1")

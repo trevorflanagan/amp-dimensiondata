@@ -16,23 +16,25 @@
  */
 package org.jclouds.dimensiondata.cloudcontroller.domain;
 
-import java.util.List;
-
+import com.google.auto.value.AutoValue;
 import org.jclouds.json.SerializedNames;
 
-import com.google.auto.value.AutoValue;
+import java.util.List;
 
 @AutoValue
-public abstract class OsImage extends BaseImage
+public abstract class CustomerImage extends BaseImage
 {
-    public static final String TYPE = "OS_IMAGE";
 
-    OsImage() {
+    public static final String TYPE = "CUSTOMER_IMAGE";
+
+    CustomerImage()
+    {
         type = TYPE;
     }
 
-    public static Builder builder() {
-        return new AutoValue_OsImage.Builder();
+    public static Builder builder()
+    {
+        return new AutoValue_CustomerImage.Builder();
     }
 
     @SerializedNames({
@@ -47,9 +49,9 @@ public abstract class OsImage extends BaseImage
             "softwareLabel",
             "createTime",
 
-            "osImageKey"
+            "state"
     })
-    public static OsImage create(
+    public static CustomerImage create(
             String id,
             String datacenterId,
             String name,
@@ -61,8 +63,9 @@ public abstract class OsImage extends BaseImage
             List<Object> softwareLabel,
             String createTime,
 
-            String osImageKey
-    ) {
+            String state
+    )
+    {
         return builder()
                 .id(id)
                 .datacenterId(datacenterId)
@@ -75,16 +78,18 @@ public abstract class OsImage extends BaseImage
                 .softwareLabel(softwareLabel)
                 .createTime(createTime)
 
-                .osImageKey(osImageKey)
+                .state(state)
 
                 .build();
     }
-    public abstract String osImageKey();
+
+    public abstract String state();
 
     public abstract Builder toBuilder();
 
     @AutoValue.Builder
-    public abstract static class Builder {
+    public abstract static class Builder
+    {
         public abstract Builder id(String id);
         public abstract Builder datacenterId(String datacenterId);
         public abstract Builder name(String name);
@@ -96,8 +101,8 @@ public abstract class OsImage extends BaseImage
         public abstract Builder softwareLabel(List<Object> softwareLabels);
         public abstract Builder createTime(String createTime);
 
-        public abstract Builder osImageKey(String osImageKey);
+        public abstract Builder state(String state);
 
-        public abstract OsImage build();
+        public abstract CustomerImage build();
     }
 }

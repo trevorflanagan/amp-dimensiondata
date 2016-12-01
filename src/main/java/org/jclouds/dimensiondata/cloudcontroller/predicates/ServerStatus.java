@@ -26,6 +26,8 @@ import org.jclouds.logging.Logger;
 
 import com.google.common.base.Predicate;
 
+import java.text.MessageFormat;
+
 public class ServerStatus implements Predicate<String> {
 
    @Resource
@@ -51,6 +53,10 @@ public class ServerStatus implements Predicate<String> {
       // perhaps request isn't available, yet
       if (server == null) return false;
       logger.trace("%s: looking for server %s deployed: currently: %s", server, server.state());
+      if (server.state().isFailed())
+      {
+         throw new IllegalStateException(MessageFormat.format("Server {0} is in FAILED state", server.id()));
+      }
       return server.started() == started && server.deployed() == deployed;
    }
 

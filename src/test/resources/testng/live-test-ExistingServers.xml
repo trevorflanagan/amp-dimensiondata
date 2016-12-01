@@ -3,8 +3,8 @@
 
     <test name="ComputeServiceContextLiveTest">
 
-	<parameter name="username" value="<usernameHere>" />
-	<parameter name="password" value="<yourPasswordHere>" />
+	<parameter name="username" value="root" />
+	<parameter name="password" value="P$$ssWwrrdGoDd!" />
 
 	<classes>
 	  <class name="org.jclouds.dimensiondata.cloudcontroller.compute.DimensionDataCloudControllerComputeServiceContextLiveTest" >

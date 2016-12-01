@@ -23,29 +23,29 @@ import org.jclouds.compute.domain.HardwareBuilder;
 import org.jclouds.compute.domain.Processor;
 import org.jclouds.compute.domain.Volume;
 import org.jclouds.compute.domain.VolumeBuilder;
+import org.jclouds.dimensiondata.cloudcontroller.domain.BaseImage;
 import org.jclouds.dimensiondata.cloudcontroller.domain.CPU;
 import org.jclouds.dimensiondata.cloudcontroller.domain.CpuSpeed;
 import org.jclouds.dimensiondata.cloudcontroller.domain.Disk;
-import org.jclouds.dimensiondata.cloudcontroller.domain.OsImage;
 
 import javax.inject.Singleton;
 import java.util.ArrayList;
 import java.util.List;
 
 @Singleton
-public class OsImageToHardware implements Function<OsImage, Hardware> {
+public class BaseImageToHardware implements Function<BaseImage, Hardware> {
 
    @Override
-   public Hardware apply(final OsImage from) {
+   public Hardware apply(final BaseImage from) {
       HardwareBuilder builder = new HardwareBuilder().ids(from.id())
             .name(from.name())
             .hypervisor("vmx")
             .processors(buildProcessorList(from.cpu()))
             .ram(from.memoryGb() * 1024);
 
-      if (from.disks() != null) {
+      if (from.disk() != null) {
          builder.volumes(
-               FluentIterable.from(from.disks())
+               FluentIterable.from(from.disk())
                      .transform(new Function<Disk, Volume>() {
             @Override
             public Volume apply(Disk disk) {

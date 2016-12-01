@@ -80,7 +80,7 @@ public class CleanupServer implements Function<String, Boolean> {
          Optional<PublicIpBlock> optionalPublicIpBlock = api.getNetworkApi().listPublicIPv4AddressBlocks(networkDomainId).concat().firstMatch(new Predicate<PublicIpBlock>() {
             @Override
             public boolean apply(PublicIpBlock input) {
-               return input.baseIp().equals(natRule.externalIp());
+               return input.baseIp().equals(natRule.externalIp()); // TODO only delete if the NAT rule is the last (only) one using the Block
             }
          });
          if (optionalPublicIpBlock.isPresent()) {
@@ -109,7 +109,7 @@ public class CleanupServer implements Function<String, Boolean> {
             manageResponse(deletePortListResponse, format("Cannot delete port list %s created for server (%s). Rolling back ...", firewallRule.destination().portList().id(), serverId));
          }
       }
-
+      // TODO cleanup FAILED Server instead of powerOff + delete
       // power off the server
       Response powerOffResponse = api.getServerApi().powerOffServer(serverId);
       manageResponse(powerOffResponse, format("Cannot power off the server %s.", serverId));

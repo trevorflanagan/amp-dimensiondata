@@ -16,29 +16,27 @@
  */
 package org.jclouds.dimensiondata.cloudcontroller.compute.functions;
 
-import static com.google.common.collect.Iterables.get;
-
-import java.util.Set;
-
-import javax.inject.Singleton;
-
-import org.jclouds.collect.Memoized;
-import org.jclouds.compute.domain.Image;
-import org.jclouds.compute.domain.ImageBuilder;
-import org.jclouds.compute.domain.OperatingSystem;
-import org.jclouds.compute.domain.OsFamily;
-import org.jclouds.dimensiondata.cloudcontroller.domain.OsImage;
-import org.jclouds.domain.Location;
-import org.jclouds.location.predicates.LocationPredicates;
-
 import com.google.common.base.Function;
 import com.google.common.base.Splitter;
 import com.google.common.base.Supplier;
 import com.google.common.collect.FluentIterable;
 import com.google.inject.Inject;
+import org.jclouds.collect.Memoized;
+import org.jclouds.compute.domain.Image;
+import org.jclouds.compute.domain.ImageBuilder;
+import org.jclouds.compute.domain.OperatingSystem;
+import org.jclouds.compute.domain.OsFamily;
+import org.jclouds.dimensiondata.cloudcontroller.domain.BaseImage;
+import org.jclouds.domain.Location;
+import org.jclouds.location.predicates.LocationPredicates;
+
+import javax.inject.Singleton;
+import java.util.Set;
+
+import static com.google.common.collect.Iterables.get;
 
 @Singleton
-public class OsImageToImage implements Function<OsImage, Image> {
+public class BaseImageToImage implements Function<BaseImage, Image> {
 
     private static final String CENTOS = "CentOS";
     private static final String REDHAT = "RedHat";
@@ -49,12 +47,15 @@ public class OsImageToImage implements Function<OsImage, Image> {
     private final Supplier<Set<? extends Location>> locations;
 
     @Inject
-    OsImageToImage(@Memoized final Supplier<Set<? extends org.jclouds.domain.Location>> locations) {
+    BaseImageToImage(@Memoized final Supplier<Set<? extends org.jclouds.domain.Location>> locations) {
         this.locations = locations;
     }
 
+    @Inject
+    private ImageMetadataGenerator imageMetadataGenerator;
+
     @Override
-    public Image apply(OsImage from) {
+    public Image apply(BaseImage from) {
         OsFamily osFamily = osFamily().apply(from.description());
         String osVersion = parseVersion(from.description());
 
@@ -71,10 +72,11 @@ public class OsImageToImage implements Function<OsImage, Image> {
                 .status(Image.Status.AVAILABLE)
                 .operatingSystem(os)
                 .location(FluentIterable.from(locations.get()).firstMatch(LocationPredicates.idEquals(from.datacenterId())).orNull())
+                .userMetadata(imageMetadataGenerator.generateMetadata(from))
                 .build();
     }
 
-    private boolean is64bit(OsImage inspectedImage) {
+    private boolean is64bit(BaseImage inspectedImage) {
         return inspectedImage.operatingSystem().id().contains("64");
     }
 

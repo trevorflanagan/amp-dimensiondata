@@ -25,10 +25,12 @@ import javax.ws.rs.core.MediaType;
 
 import org.jclouds.Fallbacks;
 import org.jclouds.collect.PagedIterable;
+import org.jclouds.dimensiondata.cloudcontroller.domain.CustomerImage;
 import org.jclouds.dimensiondata.cloudcontroller.domain.OsImage;
 import org.jclouds.dimensiondata.cloudcontroller.domain.PaginatedCollection;
 import org.jclouds.dimensiondata.cloudcontroller.filters.OrganisationIdFilter;
 import org.jclouds.dimensiondata.cloudcontroller.options.PaginationOptions;
+import org.jclouds.dimensiondata.cloudcontroller.parsers.ParseCustomerImages;
 import org.jclouds.dimensiondata.cloudcontroller.parsers.ParseOsImages;
 import org.jclouds.http.filters.BasicAuthentication;
 import org.jclouds.rest.annotations.Fallback;
@@ -56,9 +58,30 @@ public interface ServerImageApi {
     @Fallback(Fallbacks.EmptyPagedIterableOnNotFoundOr404.class)
     PagedIterable<OsImage> listOsImages();
 
+    @Named("image:list")
+    @GET
+    @Path("/customerImage")
+    @ResponseParser(ParseCustomerImages.class)
+    @Fallback(Fallbacks.EmptyIterableWithMarkerOnNotFoundOr404.class)
+    PaginatedCollection<CustomerImage> listCustomerImages(PaginationOptions options);
+
+    @Named("image:list")
+    @GET
+    @Path("/customerImage")
+    @Transform(ParseCustomerImages.ToPagedIterable.class)
+    @ResponseParser(ParseCustomerImages.class)
+    @Fallback(Fallbacks.EmptyPagedIterableOnNotFoundOr404.class)
+    PagedIterable<CustomerImage> listCustomerImages();
+
     @Named("image:get")
     @GET
     @Path("/osImage/{id}")
     @Fallback(Fallbacks.NullOnNotFoundOr404.class)
     OsImage getOsImage(@PathParam("id") String id);
+
+    @Named("image:get")
+    @GET
+    @Path("/customerImage/{id}")
+    @Fallback(Fallbacks.NullOnNotFoundOr404.class)
+    CustomerImage getCustomerImage(@PathParam("id") String id);
 }

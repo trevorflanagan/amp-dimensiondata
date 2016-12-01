@@ -31,6 +31,9 @@ public abstract class Server {
 
     public enum State {
         NORMAL,
+        FAILED_ADD,
+        FAILED_CHANGE,
+        FAILED_DELETE,
         PENDING_DELETE,
         DELETED,
         UNRECOGNIZED;
@@ -46,6 +49,10 @@ public abstract class Server {
             } catch (IllegalArgumentException e) {
                 return UNRECOGNIZED;
             }
+        }
+
+        public boolean isFailed() {
+            return this == FAILED_ADD || this == FAILED_CHANGE || this == FAILED_DELETE;
         }
     }
 
