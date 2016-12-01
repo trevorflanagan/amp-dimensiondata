@@ -152,7 +152,7 @@
                         <exclude>**/DISCLAIMER</exclude>
                         <exclude>**/BUILD.txt</exclude>
                         <exclude>**/CHANGES.txt</exclude>
-                        <exclude>**/README.md</exclude>
+                        <exclude>**/README*.md</exclude>
                         <exclude>**/README.txt</exclude>
                         <exclude>**/DEPENDENCIES</exclude>
                         <exclude>**/CONTRIBUTING.md</exclude>
