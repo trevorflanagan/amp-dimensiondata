@@ -50,7 +50,7 @@ public class ServerToServetWithExternalIp implements Function<Server, ServerWith
         if (server == null) return null;
         ServerWithExternalIp.Builder builder = ServerWithExternalIp.builder().server(server);
 
-        if(server.networkInfo() != null) {
+        if (server.networkInfo() != null) {
             Optional<NatRule> natRuleOptional = api.getNetworkApi().listNatRules(server.networkInfo().networkDomainId())
                   .concat().firstMatch(new Predicate<NatRule>() {
                       @Override public boolean apply(NatRule input) {
