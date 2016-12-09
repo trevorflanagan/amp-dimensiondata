@@ -22,6 +22,7 @@ import org.jclouds.dimensiondata.cloudcontroller.features.NetworkApi;
 import org.jclouds.dimensiondata.cloudcontroller.features.ServerApi;
 import org.jclouds.dimensiondata.cloudcontroller.features.ServerCloneApi;
 import org.jclouds.dimensiondata.cloudcontroller.features.ServerImageApi;
+import org.jclouds.dimensiondata.cloudcontroller.features.TagApi;
 import org.jclouds.rest.annotations.Delegate;
 
 import java.io.Closeable;
@@ -45,4 +46,7 @@ public interface DimensionDataCloudControllerApi extends Closeable {
 
    @Delegate
    ServerCloneApi getServerCloneApi();
+
+   @Delegate
+   TagApi getTagApi();
 }
