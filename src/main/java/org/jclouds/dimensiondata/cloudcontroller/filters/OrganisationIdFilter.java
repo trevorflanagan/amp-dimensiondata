@@ -17,7 +17,9 @@
 package org.jclouds.dimensiondata.cloudcontroller.filters;
 
 import com.google.common.annotations.VisibleForTesting;
-import org.jclouds.dimensiondata.cloudcontroller.compute.DimensionDataCloudControllerComputeServiceAdapter;
+import com.google.inject.Inject;
+import com.google.inject.Singleton;
+import org.jclouds.dimensiondata.cloudcontroller.features.AccountApi;
 import org.jclouds.http.HttpException;
 import org.jclouds.http.HttpRequest;
 import org.jclouds.http.HttpRequestFilter;
@@ -26,10 +28,17 @@ import org.jclouds.http.HttpRequestFilter;
  * Accepts requests and modifies the endpoint path so that it is injected with the organisation id.
  * Handles both oec and caas based URLs.
  */
+@Singleton
 public class OrganisationIdFilter implements HttpRequestFilter {
 
-   public static final String CAAS = "caas";
-   public static final String OEC = "oec";
+   private static final String CAAS = "caas";
+   private static final String OEC = "oec";
+   private static String ORG_ID;
+
+   @Inject
+   public OrganisationIdFilter(AccountApi accountApi) {
+      ORG_ID = accountApi.getMyAccount().orgId();
+   }
 
    @Override public HttpRequest filter(HttpRequest request) throws HttpException {
       return request.toBuilder().replacePath(injectOrganisationId(request.getEndpoint().getPath())).build();
@@ -37,6 +46,7 @@ public class OrganisationIdFilter implements HttpRequestFilter {
 
    @VisibleForTesting
    public String injectOrganisationId(String path) {
+
       int indexOfApiBase = path.indexOf(CAAS);
       int indexOfVersionParam;
       if (indexOfApiBase != -1) {
@@ -48,7 +58,7 @@ public class OrganisationIdFilter implements HttpRequestFilter {
          indexOfVersionParam = path.indexOf("/", indexOfApiBase + 4);
       }
       String substring = path.substring(0, indexOfVersionParam);
-               substring = substring + "/" + DimensionDataCloudControllerComputeServiceAdapter.ORG_ID;
+               substring = substring + "/" + ORG_ID;
       return substring + path.substring(indexOfVersionParam, path.length());
    }
 
