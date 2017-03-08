@@ -30,7 +30,6 @@ import org.jclouds.ContextBuilder;
 import org.jclouds.concurrent.config.ExecutorServiceModule;
 import org.jclouds.dimensiondata.cloudcontroller.DimensionDataCloudControllerApi;
 import org.jclouds.dimensiondata.cloudcontroller.DimensionDataCloudControllerProviderMetadata;
-import org.jclouds.dimensiondata.cloudcontroller.compute.DimensionDataCloudControllerComputeServiceAdapter;
 import org.jclouds.json.Json;
 import org.jclouds.rest.ApiContext;
 import org.testng.annotations.AfterMethod;
@@ -97,7 +96,6 @@ private final Set<Module> modules = ImmutableSet.<Module> of(new ExecutorService
    public void start() throws IOException {
       server = new MockWebServer();
       server.play();
-      DimensionDataCloudControllerComputeServiceAdapter.ORG_ID = ORG_ID;
       ApiContext<DimensionDataCloudControllerApi> ctx = ContextBuilder.newBuilder("dimensiondata-cloudcontroller")
               .credentials("", "")
               .endpoint(url(""))
