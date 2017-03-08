@@ -52,8 +52,6 @@ public class BaseDimensionDataCloudControllerMockTest {
 
    private static final String DEFAULT_ENDPOINT = new DimensionDataCloudControllerProviderMetadata().getEndpoint();
 
-   protected static final String ORG_ID = "mockOrgId";
-
    /*extends BaseMockWebServerTest {
 
    @Override
@@ -104,6 +102,7 @@ private final Set<Module> modules = ImmutableSet.<Module> of(new ExecutorService
               .build();
       json = ctx.utils().injector().getInstance(Json.class);
       api = ctx.getApi();
+      server.enqueue(xmlResponse("/account.xml"));
    }
 
    @AfterMethod(alwaysRun = true)
@@ -157,4 +156,5 @@ private final Set<Module> modules = ImmutableSet.<Module> of(new ExecutorService
       assertThat(request.getHeader(HttpHeaders.ACCEPT)).isEqualTo(MediaType.APPLICATION_JSON);
       return request;
    }
+
 }

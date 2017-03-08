@@ -18,6 +18,7 @@ package org.jclouds.dimensiondata.cloudcontroller.filters;
 
 import java.util.List;
 
+import com.google.inject.Singleton;
 import org.jclouds.collect.Memoized;
 import org.jclouds.http.HttpException;
 import org.jclouds.http.HttpRequest;

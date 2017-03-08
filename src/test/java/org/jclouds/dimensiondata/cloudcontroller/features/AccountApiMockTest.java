@@ -22,6 +22,8 @@ import org.jclouds.dimensiondata.cloudcontroller.domain.Account;
 import org.jclouds.dimensiondata.cloudcontroller.internal.BaseDimensionDataCloudControllerMockTest;
 import org.testng.annotations.Test;
 
+import javax.ws.rs.core.MediaType;
+
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.testng.Assert.assertNotNull;
 
@@ -33,10 +35,10 @@ public class AccountApiMockTest extends BaseDimensionDataCloudControllerMockTest
       Account account = api.getAccountApi().getMyAccount();
       assertNotNull(account);
 
-      assertSent(server, "GET", "/oec/0.9/myaccount");
+      assertSent(server, "GET", "/oec/0.9/myaccount", MediaType.APPLICATION_JSON);
    }
 
-   protected RecordedRequest assertSent(MockWebServer server, String method, String path) throws InterruptedException {
+   protected RecordedRequest assertSent(MockWebServer server, String method, String path, String applicationJson) throws InterruptedException {
       RecordedRequest request = server.takeRequest();
       assertThat(request.getMethod()).isEqualTo(method);
       assertThat(request.getPath()).isEqualTo(path);

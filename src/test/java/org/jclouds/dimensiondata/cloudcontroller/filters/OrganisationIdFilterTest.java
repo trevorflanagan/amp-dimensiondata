@@ -16,10 +16,9 @@
  */
 package org.jclouds.dimensiondata.cloudcontroller.filters;
 
-import org.jclouds.dimensiondata.cloudcontroller.features.AccountApi;
+import com.google.common.base.Supplier;
+import org.jclouds.dimensiondata.cloudcontroller.compute.suppliers.OrganisationIdForAccount;
 import org.jclouds.dimensiondata.cloudcontroller.internal.BaseDimensionDataCloudControllerMockTest;
-import org.testng.annotations.BeforeClass;
-import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 
 import static org.testng.Assert.assertEquals;
@@ -27,31 +26,21 @@ import static org.testng.Assert.assertEquals;
 @Test(groups = "unit", testName = "OrganisationIdFilterTest")
 public class OrganisationIdFilterTest extends BaseDimensionDataCloudControllerMockTest {
 
-   private AccountApi accountApi;
-
-   @BeforeClass
-   public void setup() {
-   }
-
-   @BeforeMethod
-   public void setUp() throws Exception {
-      server.enqueue(xmlResponse("/account.xml"));
-      accountApi = api.getAccountApi();
-   }
-
    @Test
    public void testCaasUrl() {
-      String expectedPath = "https://apidevlab1.opsourcecloud.net/caas/2.2/6ac1e746-b1ea-4da5-a24e-caf1a978789d/server/0896551e-4fe3-4450-a627-ad5548e7e83a?clone=trevor-test2&desc=trevor-description2";
-      String updatedPath = new OrganisationIdFilter(accountApi).injectOrganisationId(
-            "https://apidevlab1.opsourcecloud.net/caas/2.2/server/0896551e-4fe3-4450-a627-ad5548e7e83a?clone=trevor-test2&desc=trevor-description2");
+      Supplier<String> orgIdSupplier = new OrganisationIdForAccount(api);
+      String expectedPath = "/caas/2.2/6ac1e746-b1ea-4da5-a24e-caf1a978789d/server/0896551e-4fe3-4450-a627-ad5548e7e83a?clone=trevor-test2&desc=trevor-description2";
+      String updatedPath = new OrganisationIdFilter(orgIdSupplier).injectOrganisationId(
+            "/caas/2.2/server/0896551e-4fe3-4450-a627-ad5548e7e83a?clone=trevor-test2&desc=trevor-description2");
       assertEquals(updatedPath, expectedPath);
    }
 
    @Test
    public void testOecUrl() {
-      String expectedPath = "https://apidevlab1.opsourcecloud.net/oec/0.9/6ac1e746-b1ea-4da5-a24e-caf1a978789d/server/0896551e-4fe3-4450-a627-ad5548e7e83a?clone=trevor-test2&desc=trevor-description2";
-      String updatedPath = new OrganisationIdFilter(accountApi).injectOrganisationId(
-            "https://apidevlab1.opsourcecloud.net/oec/0.9/server/0896551e-4fe3-4450-a627-ad5548e7e83a?clone=trevor-test2&desc=trevor-description2");
+      Supplier<String> orgIdSupplier = new OrganisationIdForAccount(api);
+      String expectedPath = "/oec/0.9/6ac1e746-b1ea-4da5-a24e-caf1a978789d/server/0896551e-4fe3-4450-a627-ad5548e7e83a?clone=trevor-test2&desc=trevor-description2";
+      String updatedPath = new OrganisationIdFilter(orgIdSupplier).injectOrganisationId(
+            "/oec/0.9/server/0896551e-4fe3-4450-a627-ad5548e7e83a?clone=trevor-test2&desc=trevor-description2");
       assertEquals(updatedPath, expectedPath);
    }
 
