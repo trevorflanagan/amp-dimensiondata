@@ -71,7 +71,6 @@ import com.google.common.collect.Lists;
 public class DimensionDataCloudControllerComputeServiceAdapter implements
         ComputeServiceAdapter<ServerWithExternalIp, OsImage, OsImage, Datacenter> {
 
-    public static String ORG_ID;
     private static final String DEFAULT_LOGIN_PASSWORD = "P$$ssWwrrdGoDd!";
     private static final String DEFAULT_LOGIN_USER = "root";
     public static final String DEFAULT_ACTION = "ACCEPT_DECISIVELY";
@@ -92,10 +91,6 @@ public class DimensionDataCloudControllerComputeServiceAdapter implements
         this.api = checkNotNull(api, "api");
         this.timeouts = timeouts;
         this.cleanupServer = cleanupServer;
-        if (ORG_ID == null) {
-            Account myAccount = getAccount();
-            ORG_ID = myAccount.orgId();
-        }
     }
 
     @Override

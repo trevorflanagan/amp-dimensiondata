@@ -16,11 +16,19 @@
  */
 package org.jclouds.dimensiondata.cloudcontroller.filters;
 
-import com.google.common.annotations.VisibleForTesting;
-import org.jclouds.dimensiondata.cloudcontroller.compute.DimensionDataCloudControllerComputeServiceAdapter;
+import java.util.List;
+
+import org.jclouds.collect.Memoized;
 import org.jclouds.http.HttpException;
 import org.jclouds.http.HttpRequest;
 import org.jclouds.http.HttpRequestFilter;
+
+import com.google.common.annotations.VisibleForTesting;
+import com.google.common.base.Joiner;
+import com.google.common.base.Splitter;
+import com.google.common.base.Supplier;
+import com.google.common.collect.Lists;
+import com.google.inject.Inject;
 
 /**
  * Accepts requests and modifies the endpoint path so that it is injected with the organisation id.
@@ -28,8 +36,12 @@ import org.jclouds.http.HttpRequestFilter;
  */
 public class OrganisationIdFilter implements HttpRequestFilter {
 
-   public static final String CAAS = "caas";
-   public static final String OEC = "oec";
+   private final Supplier<String> organisationIdSupplier;
+
+   @Inject
+   public OrganisationIdFilter(@Memoized Supplier<String> organisationIdSupplier) {
+      this.organisationIdSupplier = organisationIdSupplier;
+   }
 
    @Override public HttpRequest filter(HttpRequest request) throws HttpException {
       return request.toBuilder().replacePath(injectOrganisationId(request.getEndpoint().getPath())).build();
@@ -37,19 +49,10 @@ public class OrganisationIdFilter implements HttpRequestFilter {
 
    @VisibleForTesting
    public String injectOrganisationId(String path) {
-      int indexOfApiBase = path.indexOf(CAAS);
-      int indexOfVersionParam;
-      if (indexOfApiBase != -1) {
-         // looks for index of next slash after the slash preceding the API version
-         indexOfVersionParam = path.indexOf("/", indexOfApiBase + 5);
-      } else {
-         indexOfApiBase = path.indexOf(OEC);
-         // looks for index of next slash after the slash preceding the API version
-         indexOfVersionParam = path.indexOf("/", indexOfApiBase + 4);
-      }
-      String substring = path.substring(0, indexOfVersionParam);
-               substring = substring + "/" + DimensionDataCloudControllerComputeServiceAdapter.ORG_ID;
-      return substring + path.substring(indexOfVersionParam, path.length());
+      String organisationId = organisationIdSupplier.get();
+      List<String> list = Lists.newArrayList(Splitter.on("/").split(path));
+      list.add(3, organisationId);
+      return Joiner.on("/").join(list);
    }
 
 }
